@@ -1,5 +1,6 @@
+# Main script for data generation, proxy training, and hyperparameter finetuning (slider regression)
+
 import sys
-#sys.path.append('..')
 import os
 import torch
 
@@ -25,8 +26,6 @@ weight_out_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_'
 
 # Stage 2 constants
 possible_values = getattr(c.POSSIBLE_VALUES(), proxy_type + '_' + param)
-#get_possible_values = getattr(c.POSSIBLE_VALUES(), 'get_' + proxy_type + '_' + param)
-#possible_values = get_possible_values()
 stage_2_batch_size = c.PARAM_TUNING_BATCH_SIZE
 num_iters = c.PARAM_TUNING_NUM_ITER
 param_out_dir = c.PARAM_PATH

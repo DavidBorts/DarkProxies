@@ -1,3 +1,12 @@
+# Utility script to evaluate the learned parameter domain of a proxy.
+# 
+# Uniformly sweeps across the parameter range for a given proxy, saving numbered outputs,
+# formatted for use with ffmpeg to create animations. 
+# 
+# Sample ffmpeg command: ffmpeg -r 25 -f image2 -s 1920x1080 -i [image name]_[proxy type]_[parameter]_sweep_%04d.png -vcodec libx264 -crf 15  -pix_fmt yuv420p [VIDEO NAME].mp4
+#
+# How to use: python Darktable_sweep.py [proxy type]_[parameter] [path to .DNG image to use as input] [integer number of values to sweep over]
+
 import sys
 import os
 import time
@@ -12,6 +21,7 @@ from Models import UNet, load_checkpoint, eval
 from Darktable_dataset import Darktable_Dataset
 import Darktable_constants as c
 import PyDarktable as dt
+from npy_convert import convert
 
 # Constants
 add_params = True
@@ -30,11 +40,8 @@ def sweep(proxy_type, param, possible_values, num):
     
     # Writing num equally-spaced floats to a .npy file
     vals = [value for value in np.linspace(min, max, int(num))]
-    vals = np.array(vals)
-    vals = np.expand_dims(vals, axis=0)
     vals_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_' + param + '_sweep_params.npy')
-    with open(vals_path, 'wb') as f:
-        np.save(f, vals)
+    convert(vals, vals_path)
         
     return vals, vals_path
         

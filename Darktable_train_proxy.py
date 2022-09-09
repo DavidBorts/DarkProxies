@@ -2,19 +2,21 @@
 
 import sys
 sys.path.append('../')
-
-import Darktable_constants as c
+import os
 import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
-
-from Models import UNet, train_model, load_checkpoint, eval
-from Darktable_dataset import Darktable_Dataset
 from torch.optim import lr_scheduler
 from torch.nn.utils.rnn import pad_sequence
 
+# Local files
+from Models import UNet, train_model, load_checkpoint, eval
+from Darktable_dataset import Darktable_Dataset
+import Darktable_constants as c
+
+# Constants
 image_root_dir = c.IMAGE_ROOT_DIR
 add_params = True
 skip_connect = True
@@ -26,23 +28,6 @@ use_checkpoint = True
 learning_rate = 0.0001
 gamma = 0.1
 step_size = 7
-
-'''
-Custom collate_fn to allow the Dataloaders to create batches out of variable-length images
-(based on my_collate() by jdhao on discuss.pytorch.org)
-'''
-def proxy_collate(batch):
-    names = [item[0] for item in batch]
-    inputs = [item[1] for item in batch]
-    labels = [item[2] for item in batch]
-    #for item in batch:
-        #print(item[1].size())
-    #print('labels')
-    #for item in batch:
-        #print(item[2].size())
-    #labels = torch.LongTensor(labels)
-    #labels = pad_sequence(labels, batch_first=True).type(torch.LongTensor)
-    return [names, inputs, labels]
 
 '''
 Run the stage 1 training and save model outputs
@@ -128,11 +113,23 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
 '''
 Evaluate the model on a any input(s)
 '''
-def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, input_dir, output_dir, params_file, possible_params, proxy_type, param):
+def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, params_file, possible_params, proxy_type, param):
 
+    # Constants
+    input_path = os.path.join(c.IMAGE_ROOT_DIR, c.EVAL_PATH, f'{proxy_type}_{param}_input')
+    output_path = os.path.join(c.IMAGE_ROOT_DIR, c.EVAL_PATH, f'{proxy_type}_{param}_output')
+
+    # Creating input and output directories, if they do not already exist
+    if not os.path.exists(input_path):
+        os.mkdir(input_path)
+        print('Directory created at: ' + input_path)
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
+        print('Directory created at: ' + output_path)
+    
     # Set up data loading.
     since = time.time()
-    image_dataset = Darktable_Dataset(root_dir = image_root_dir, stage=1, proxy_type=proxy_type, param=param, input_dir=input_dir, output_dir=output_dir, params_file=params_file)
+    image_dataset = Darktable_Dataset(root_dir = image_root_dir, stage=1, proxy_type=proxy_type, param=param, input_dir=input_path, output_dir=output_path, params_file=params_file)
     eval_loader = torch.utils.data.DataLoader(image_dataset, 
                                                batch_size=batch_size, 
                                                num_workers=1)#num_workers should be 4
@@ -164,3 +161,21 @@ def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, input_dir, output
         proxy_type,
         param
     )
+
+'''
+DEPRECATED
+Custom collate_fn to allow the Dataloaders to create batches out of variable-length images
+(based on my_collate() by jdhao on discuss.pytorch.org)
+'''
+def proxy_collate(batch):
+    names = [item[0] for item in batch]
+    inputs = [item[1] for item in batch]
+    labels = [item[2] for item in batch]
+    #for item in batch:
+        #print(item[1].size())
+    #print('labels')
+    #for item in batch:
+        #print(item[2].size())
+    #labels = torch.LongTensor(labels)
+    #labels = pad_sequence(labels, batch_first=True).type(torch.LongTensor)
+    return [names, inputs, labels]

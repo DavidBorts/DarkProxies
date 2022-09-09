@@ -7,41 +7,34 @@ import numpy.random as random
 # Local files
 import Darktable_constants as c
 import PyDarktable as dt
+from npy_convert import convert
 
 def generate(proxy_type, param, stage, min, max, interactive, num=20):
 
     # Getting stage paths
     stage_path = getattr(c, 'STAGE_' + str(stage) + '_PATH')
-    '''
-    if stage is 1:
-        stage_path = c.STAGE_1_PATH
-    elif stage is 2:
-        stage_path = c.STAGE_2_PATH
-    else:
-        print('ERROR: stage must be either 1 or 2.')
-        quit()
-    '''
 
     # Getting image directory paths
-    input_dir = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + param + '_' + c.INPUT_DIR))
-    output_dir = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + param + '_' + c.OUTPUT_DIR))
+    input_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + param + '_' + c.INPUT_DIR))
+    output_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + param + '_' + c.OUTPUT_DIR))
 
-    # Checking that given input and output directories exist
-    if (not os.path.isdir(input_dir) or not os.path.isdir(output_dir)):
-        print(f'ERROR: {proxy_type}_{param}_input or {proxy_type}_{param}_output directories for stage {stage} do not exist.')
-        print(f'Input directory given: {input_dir}')
-        print(f'Output directory given: {output_dir}')
-        quit()
+    # Creating given input and output directories if they do not already exist
+    if not os.path.exists(input_path):
+        os.mkdir(input_path)
+        print('Directory created at: ' + input_path)
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
+        print('Directory created at: ' + output_path)
 
     # Checking that given input and output directories are empty
-    if (len(os.listdir(input_dir)) > 0 or len(os.listdir(output_dir)) > 0):
+    if (len(os.listdir(input_path)) > 0 or len(os.listdir(output_path)) > 0):
         print(f'ERROR: {proxy_type}: {param} directories already contain data for stage {stage}.')
 
         # Checking if user wants to skip to stage 2 data generation
         if stage == 1 and interactive:
             skip = None
             while skip != 'n' and skip != 'y':
-                skip = input('Do you want to skip to generating data for stage 2? (y/n)')
+                skip = input('Do you want to skip to generating data for stage 2? (y/n)\n')
             if skip == 'n':
                 print('quitting')
                 quit()
@@ -52,7 +45,7 @@ def generate(proxy_type, param, stage, min, max, interactive, num=20):
         if stage == 2 and interactive:
             skip = None
             while skip != 'n' and skip != 'y':
-                skip = input('Do you want to skip to proxy training? (y/n)')
+                skip = input('Do you want to skip to proxy training? (y/n)\n')
             if skip == 'n':
                 print('quitting')
                 quit()
@@ -84,21 +77,21 @@ def generate(proxy_type, param, stage, min, max, interactive, num=20):
         for value in np.linspace(min, max, int(num)):
             
             # Getting path of the input image
-            input_path = os.path.join(input_dir, f'{image}_{proxy_type}_{param}')
-            input_path = (repr(input_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
+            input_file_path = os.path.join(input_path, f'{image}_{proxy_type}_{param}')
+            input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
 
             # Making sure that the same input image is not generated multiple times
             if first_input is None:
-                first_input = input_path # Path of the original input image to be copied later
+                first_input = input_file_path # Path of the original input image to be copied later
                 
                 # Assembling a dictionary of all of the original params for the source image
                 # (used to render proxy input)
                 original_params = dt.get_params_dict(None, None, None, temperature_params, raw_prepare_params)
 
                 # Rendering an unchanged copy of the source image for model input
-                dt.render(src_path, input_path, original_params)
+                dt.render(src_path, input_file_path, original_params)
             else:
-                _ = shutil.copyfile(first_input, input_path) # Copying the first input image to get the others
+                _ = shutil.copyfile(first_input, input_file_path) # Copying the first input image to get the others
 
             # Assembling a dictionary of all of the parameters to apply to the source DNG
             # Temperature and rawprepare params must be maintained in order to produce expected results
@@ -106,27 +99,39 @@ def generate(proxy_type, param, stage, min, max, interactive, num=20):
             vals.append(float(value)) # Adding to params list
 
             # Rendering the output image
-            output_path = os.path.join(output_dir, f'{image}_{proxy_type}_{param}') #f'./stage_1/contrast_input/contrast_{contrast}.tif'
-            output_path = (repr(output_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
-            dt.render(src_path, output_path, params_dict)
+            output_file_path = os.path.join(output_path, f'{image}_{proxy_type}_{param}') #f'./stage_1/contrast_input/contrast_{contrast}.tif'
+            output_file_path = (repr(output_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
+            dt.render(src_path, output_file_path, params_dict)
 
     # Converting param list to numpy array and saving to file
     if stage == 1:
-        vals = np.array(vals)
-        vals = np.expand_dims(vals, axis=0)
-        with open(os.path.join(c.IMAGE_ROOT_DIR, stage_path, f'{proxy_type}_{param}_params.npy'), 'wb') as f:
-            np.save(f, vals)
+        convert(vals, os.path.join(c.IMAGE_ROOT_DIR, stage_path, f'{proxy_type}_{param}_params.npy'))
 
     print(f"Training data generated: stage {stage}")
 
-def generate_eval(proxy_type, param, input_dir, output_dir, params_file):
-
+def generate_eval(proxy_type, param, params_file):
+    
     # Getting path of the params matrix file
-    print('input dir: ' + os.path.dirname(input_dir))
-    params_mat = os.path.join(os.path.dirname(input_dir), f'{proxy_type}_{param}_eval_params.npy')
+    eval_path = os.path.join(c.IMAGE_ROOT_DIR, c.EVAL_PATH)
+    params_mat = os.path.join(eval_path, f'{proxy_type}_{param}_eval_params.npy')
+
+    # Getting paths of input and output directories
+    input_path = os.path.join(eval_path, f'{proxy_type}_{param}_input')
+    output_path = os.path.join(eval_path, f'{proxy_type}_{param}_output')
+
+    # Creating any directories that don't already exist
+    if not os.path.exists(eval_path):
+        os.mkdir(eval_path)
+        print('Directory created at: ' + eval_path)
+    if not os.path.exists(input_path):
+        os.mkdir(input_path)
+        print('Directory created at: ' + input_path)
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)  
+        print('Directory created at: ' + output_path) 
 
     # Checking that given input and output directories are empty
-    if (len(os.listdir(input_dir)) > 0 or len(os.listdir(output_dir)) > 0):
+    if (len(os.listdir(input_path)) > 0 or len(os.listdir(output_path)) > 0):
         print(f'ERROR: {proxy_type}: {param} eval directories already contain data.')
         return params_mat
 
@@ -137,6 +142,7 @@ def generate_eval(proxy_type, param, input_dir, output_dir, params_file):
     dng_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_DNG_PATH)
     src_images = os.listdir(dng_path)
 
+    # Reading through the params .txt file and generating data accordingly
     with open(params_file, 'r') as file:
         values = file.readlines()
 
@@ -154,9 +160,9 @@ def generate_eval(proxy_type, param, input_dir, output_dir, params_file):
                 original_params = dt.get_params_dict(None, None, None, temperature_params, raw_prepare_params)
 
                 # Rendering the input image
-                input_path = os.path.join(input_dir, f'{image}_{proxy_type}_{param}')
-                input_path = (repr(input_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
-                dt.render(src_path, input_path, original_params)
+                input_file_path = os.path.join(input_path, f'{image}_{proxy_type}_{param}')
+                input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
+                dt.render(src_path, input_file_path, original_params)
 
                 # Assembling a dictionary of all of the parameters to apply to the source DNG
                 # Temperature and rawprepare params must be maintained in order to produce expected results
@@ -164,15 +170,12 @@ def generate_eval(proxy_type, param, input_dir, output_dir, params_file):
                 vals.append(float(value)) # Adding to params list
 
                 # Rendering the output image
-                output_path = os.path.join(output_dir, f'{image}_{proxy_type}_{param}') #f'./stage_1/contrast_input/contrast_{contrast}.tif'
-                output_path = (repr(output_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
-                dt.render(src_path, output_path, params_dict)
+                output_file_path = os.path.join(output_path, f'{image}_{proxy_type}_{param}') #f'./stage_1/contrast_input/contrast_{contrast}.tif'
+                output_file_path = (repr(output_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
+                dt.render(src_path, output_file_path, params_dict)
 
     # Converting param list to numpy array and saving to file
-    vals = np.array(vals)
-    vals = np.expand_dims(vals, axis=0)
-    with open(params_mat, 'wb') as f:
-        np.save(f, vals)
+    convert(vals, params_mat)
 
     print("Data for evaluation generated.")
     return params_mat
