@@ -294,8 +294,6 @@ def run_finetune_procedure(
                                         optimizer,
                                         scheduler,
                                         num_iters,
-                                        name,
-                                        dtype,
-                                        param_ranges
+                                        dtype
                                     )
     np.save(os.path.join(param_out_dir, f'{proxy_type}_{param}_optimized_params.npy'), best_params_mat)
