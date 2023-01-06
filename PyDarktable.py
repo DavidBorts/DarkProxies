@@ -616,7 +616,7 @@ def render(src_dng_path, dst_path, pipe_stage_flags):
     print('Running:\n', ' '.join(args), '\n')
     subprocess.run(args)
 
-def get_params_dict(proxy_type, param, value, temperature_params, raw_prepare_params):
+def get_params_dict(proxy_type, param, value, temperature_params, raw_prepare_params, dict=None):
 
     params_dict = {
         'filmicrgb_params': None,
@@ -635,6 +635,10 @@ def get_params_dict(proxy_type, param, value, temperature_params, raw_prepare_pa
     # Used for input images
     if proxy_type is None:
         return params_dict
+
+    # If a dict is provided, use that instead
+    if dict != None:
+        params_dict = dict
 
     # Setting params
     fill_dict = getattr(functions, proxy_type)
