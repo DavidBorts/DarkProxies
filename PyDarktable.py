@@ -11,7 +11,7 @@ import Darktable_constants as c
 
 # Point me to darktable-cli for 3.8.
 #_DARKTABLE_CLI = "/Applications/darktable.app/Contents/MacOS/darktable-cli"
-_DARKTABLE_CLI = c.DARKTABLE_DIR
+_DARKTABLE_CLI = c.DARKTABLE_PATH
 
 _FMT_STR = '''<?xml version="1.0" encoding="UTF-8"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="XMP Core 4.4.0-Exiv2">
