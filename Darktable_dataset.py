@@ -1,7 +1,8 @@
-# Data loader 
-#
-# Stage 1: Loads in image data and concatenates parameters as channels to the image
-# Stage 2: Loads in image data
+''' Data loader for Darktable
+
+Stage 1: Loads in image data and concatenates parameters as channels to the image
+Stages 2 & 3: Loads in image data
+'''
 
 import os
 import torch
@@ -21,8 +22,9 @@ import warnings
 warnings.filterwarnings("ignore")
 
 '''
-Darktable_Dataset. This is the dataset for any Darktable data, and is used for both the 
-training of the proxy model, as well as the fine-tuning of the parameters.
+Darktable_Dataset. This is the dataset for any Darktable data, and is used for the
+training of the proxy model, the fine-tuning of its parameters, and for ISP-tuning
+experiments.
 '''
 class Darktable_Dataset(Dataset):
     '''
@@ -40,10 +42,10 @@ class Darktable_Dataset(Dataset):
         param: parameter type of data
         sweep: Toggles sweep mode of the dataloader for Darktable_sweep.py
     '''
-    def __init__(self, root_dir, stage = 1, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, proxy_type='colorbalancergb', param='contrast', sweep=False):
+    def __init__(self, root_dir, stage = 1, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, proxy_type=None, param=None, sweep=False):
         
-        if not stage == 1 and not stage == 2:
-            raise ValueError("Please enter either 1 or 2 for the stage parameter.")
+        if stage != 1 and stage != 2 and stage != 3:
+            raise ValueError("Please enter either 1, 2, or 3 for the stage parameter.")
             
         self.root_dir = root_dir
         self.stage = stage
@@ -53,6 +55,7 @@ class Darktable_Dataset(Dataset):
         self.param = param
         self.sweep = sweep
         
+        # Configuring input & output directories
         if input_dir is None:
             self.input_image_dir = os.path.join(self.root_dir, self.stage_path, self.proxy_type + '_' + param + '_' + c.INPUT_DIR)
         else:
@@ -61,27 +64,31 @@ class Darktable_Dataset(Dataset):
             self.output_image_dir = os.path.join(self.root_dir, self.stage_path, self.proxy_type + '_' + param + '_' + c.OUTPUT_DIR)
         else:
             self.output_image_dir = output_dir
-            
-        # Sweep mode
-        if sweep:
-            self.output_image_dir = None
         
-        self.image_name_list = os.listdir(self.input_image_dir)
-        self.image_name_list.sort()
-        print('Images in the dataset: ')
-        print(self.image_name_list)
+        # Getting image name list
+        if sweep:
+            # Sweep mode
+            self.image_name_list = os.listdir(self.input_image_dir)
+            print("Sweeping for: " + self.image_name_list)
+        else:
+            # Sorting image list
+            self.image_name_list = os.listdir(self.output_image_dir)
+            self.image_name_list.sort(key=lambda x: (x.split(".")[0], float(x.split("_")[3].split(".tif")[0])))
+            print('Images in the dataset: \n' + self.image_name_list)
 
-        # Getting path to params file
+        # Getting path to params file (stage 1 only)
         if self.stage == 1:
             if params_file is None:
                 self.param_mat = np.load(os.path.join(root_dir, self.stage_path, f'{proxy_type}_{param}_params.npy'))
             else:
                 self.param_mat = np.load(params_file)
-                
+            if self.sweep:
+                self.num_params = len(self.param_mat)
+
+        # Creating samplers
         dataset_size = len(self)
         indices = list(range(dataset_size))
         train_indices, val_indices = self._get_split(val_split, shuffle_seed)
-        # the samplers are created within the class itself.
         self.train_sampler = SubsetRandomSampler(train_indices)
         self.val_sampler = SubsetRandomSampler(val_indices)
         self.sweep_sampler = SubsetRandomSampler(indices)
@@ -98,7 +105,7 @@ class Darktable_Dataset(Dataset):
         split = int(np.floor(val_split * dataset_size))
         return indices[split:], indices[:split]
     
-    def __getitem__(self, index):
+    def __getitem__(self, indexValue):
         '''
         Appends parameter channels to the image tensor. Note that image is already a tensor in this case. 
         '''        
@@ -117,10 +124,21 @@ class Darktable_Dataset(Dataset):
             return torch.cat([image, param_tensor], dim=0)
 
         to_tensor_transform = transforms.Compose([transforms.ToTensor()])
+
+        # Supporting a different indexing format for sweep mode
+        if self.sweep:
+            index, param_num = indexValue
+        else:
+            index = indexValue
         
         image_name = self.image_name_list[index]
-        print('image name: ' + image_name)
-        input_image = Image.open(os.path.join(self.input_image_dir, image_name))
+        if not self.sweep:
+            print('ground truth image name: ' + image_name)
+        input_image_name = image_name.strip(".")[0]
+        print('original image name: ' + input_image_name)
+        input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
+        # print('image name: ' + image_name)
+        # input_image = Image.open(os.path.join(self.input_image_dir, image_name))
         
         if self.transform is not None:
             input_image = self.transform(input_image)
@@ -157,19 +175,77 @@ class Darktable_Dataset(Dataset):
                 input_ndarray = proxy_model_input.detach().cpu().numpy()
                 input_ndarray = np.moveaxis(input_ndarray, 0, -1)
                 input_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, self.proxy_type + '_' + self.param + '_' + c.CROPPED_INPUT_DIR, f'crop_{image_name}')
-                plt.imsave(input_path, input_ndarray, format='png')
+                plt.imsave(input_path, input_ndarray, format=c.CROP_FORMAT)
                 label_ndarray = proxy_model_label.detach().cpu().numpy()
                 label_ndarray = np.moveaxis(label_ndarray, 0, -1)
                 label_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, self.proxy_type + '_'  + self.param + '_' +  c.CROPPED_OUTPUT_DIR, f'crop_{image_name}')
-                plt.imsave(label_path, label_ndarray, format='png')
+                plt.imsave(label_path, label_ndarray, format=c.CROP_FORMAT)
 
             # Appending parameter tensor
             params = self.param_mat[:,index]
+            if self.sweep:
+                params = self.param_mat[:, param_num]
             proxy_model_input = _format_input_with_parameters(proxy_model_input, params)
             
         if self.sweep:
             return image_name, proxy_model_input
         return image_name, proxy_model_input, proxy_model_label
+
+    def save_crops(self):
+
+        to_tensor_transform = transforms.Compose([transforms.ToTensor()])
+
+        for index in range(len(self)):
+        
+            image_name = self.image_name_list[index]
+            if not self.sweep:
+                print('ground truth image name: ' + image_name)
+            input_image_name = image_name.strip(".")[0]
+            print('original image name: ' + input_image_name)
+            input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
+            # print('image name: ' + image_name)
+            # input_image = Image.open(os.path.join(self.input_image_dir, image_name))
+            
+            if self.transform is not None:
+                input_image = self.transform(input_image)
+                
+            proxy_model_input = to_tensor_transform(input_image)
+            proxy_model_input = interpolate(proxy_model_input[None, :, :, :], scale_factor=0.25, mode='bilinear')
+            proxy_model_input = torch.squeeze(proxy_model_input, dim=0)
+            num_channels, width, height = proxy_model_input.size()
+            
+            # Cropping input tensor
+            if width % 2 == 0:
+                mid_width = width / 2
+            else:
+                mid_width = (width - 1) / 2
+            if height % 2 == 0:
+                mid_height = height / 2
+            else:
+                mid_height = (height - 1) / 2
+            proxy_model_input = proxy_model_input[:, int(mid_width - (c.IMG_SIZE / 2)):int(mid_width + (c.IMG_SIZE / 2)), int(mid_height - (c.IMG_SIZE / 2)):int(mid_height + (c.IMG_SIZE / 2))]
+            
+            if not self.sweep:
+                output_image = Image.open(os.path.join(self.output_image_dir, image_name))
+                
+                if self.transform is not None:
+                    output_image = self.transform(output_image)
+                
+                proxy_model_label = to_tensor_transform(output_image)
+                proxy_model_label = interpolate(proxy_model_label[None, :, :, :], scale_factor=0.25, mode='bilinear')
+                proxy_model_label = torch.squeeze(proxy_model_label, dim=0)[:, int(mid_width - (c.IMG_SIZE / 2)):int(mid_width + (c.IMG_SIZE / 2)), int(mid_height - (c.IMG_SIZE / 2)):int(mid_height + (c.IMG_SIZE / 2))]
+            
+            if self.stage == 1:
+                # Saving crops
+                if c.SAVE_CROPS and self.sweep == False:
+                    input_ndarray = proxy_model_input.detach().cpu().numpy()
+                    input_ndarray = np.moveaxis(input_ndarray, 0, -1)
+                    input_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, self.proxy_type + '_' + self.param + '_' + c.CROPPED_INPUT_DIR, f'crop_{image_name}')
+                    plt.imsave(input_path, input_ndarray, format=c.CROP_FORMAT)
+                    label_ndarray = proxy_model_label.detach().cpu().numpy()
+                    label_ndarray = np.moveaxis(label_ndarray, 0, -1)
+                    label_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, self.proxy_type + '_'  + self.param + '_' +  c.CROPPED_OUTPUT_DIR, f'crop_{image_name}')
+                    plt.imsave(label_path, label_ndarray, format=c.CROP_FORMAT)
 
     def __len__(self):
         return len(self.image_name_list)
