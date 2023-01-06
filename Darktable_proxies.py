@@ -3,6 +3,7 @@
 import sys
 import os
 import torch
+from Darktable_dataset import Darktable_Dataset
 
 # Local files
 import Darktable_generate_data as data
@@ -16,7 +17,8 @@ num = int(sys.argv[2])                      # Number of images to generate
 
 # Constants
 image_root_dir = c.IMAGE_ROOT_DIR
-generate_data = c.GENERATE_DATA
+generate_stage_1 = c.GENERATE_STAGE_1
+generate_stage_2 = c.GENERATE_STAGE_2
 interactive = c.INTERACTIVE
 
 # Stage 1 constants
@@ -26,22 +28,32 @@ weight_out_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_'
 
 # Stage 2 constants
 possible_values = getattr(c.POSSIBLE_VALUES(), proxy_type + '_' + param)
-stage_2_batch_size = c.PARAM_TUNING_BATCH_SIZE
 num_iters = c.PARAM_TUNING_NUM_ITER
-param_out_dir = c.PARAM_PATH
+param_out_dir = c.STAGE_2_PARAM_PATH
 
 if __name__ == "__main__":
+
+    min = possible_values[0][0]
+    max = possible_values[0][1]
 
     # Generating input data 
     # (This is done by performing a contrast slider sweep via Darktable's CLI)
     # TODO: this could be moved into generate() to avoid ugly if statements
-    if generate_data:
-        min = possible_values[0][0]
-        max = possible_values[0][1]
-        print("Generating training data: stage 1")
-        data.generate(proxy_type, param, 1, min, max, interactive, num)
-        print("Generating training data: stage 2")
-        data.generate(proxy_type, param, 2, min, max, interactive, num)
+    if generate_stage_1:
+        if c.GENERATE_WITH_CHECKPOINTS:
+            print("Generating training data (w/ checkpoints): stage 1")
+            data.generate_piecewise(proxy_type, param, 1, min, max, num)
+        else:
+            print("Generating training data: stage 1")
+            data.generate(proxy_type, param, 1, min, max, interactive, num)
+    if generate_stage_2:
+        
+        if c.GENERATE_WITH_CHECKPOINTS:
+            print("Generating training data (w/ checkpoints): stage 2")
+            data.generate_piecewise(proxy_type, param, 2, min, max, num)
+        else:
+            print("Generating training data: stage 2")
+            data.generate(proxy_type, param, 2, min, max, interactive, num)
     
     # Stage 1 - proxy training
     print("Begin proxy training (stage 1)")
@@ -66,7 +78,6 @@ if __name__ == "__main__":
         param_out_dir,
         weight_out_dir,#model_weight_file,
         possible_values,
-        stage_2_batch_size,
         num_iters,
         use_gpu,
         proxy_type,
