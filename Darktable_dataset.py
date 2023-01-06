@@ -69,12 +69,14 @@ class Darktable_Dataset(Dataset):
         if sweep:
             # Sweep mode
             self.image_name_list = os.listdir(self.input_image_dir)
-            print("Sweeping for: " + self.image_name_list)
+            print("Sweeping for: ")
+            print(self.image_name_list)
         else:
             # Sorting image list
             self.image_name_list = os.listdir(self.output_image_dir)
             self.image_name_list.sort(key=lambda x: (x.split(".")[0], float(x.split("_")[3].split(".tif")[0])))
-            print('Images in the dataset: \n' + self.image_name_list)
+            print('Images in the dataset:)
+            print(self.image_name_list)
 
         # Getting path to params file (stage 1 only)
         if self.stage == 1:
