@@ -383,7 +383,7 @@ def load_checkpoint(model, model_weight_dir):
     return latest_epoch
 
 '''
-Training routine for the model. For example of inputs, go to Face_train_proxy.py
+Training routine for the model. For example of inputs, go to Darktable_train_proxy.py
 '''
 def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, scheduler, weight_out_dir, num_epochs, start_epoch, use_gpu, proxy_type, param, save_every_epoch = True, save_outputs=True):
     save_output_frequency = c.SAVE_OUTPUT_FREQ
@@ -509,8 +509,8 @@ def eval(model, dataloader, criterion, optimizer, use_gpu, proxy_type, param, sw
     model.eval()   # Set model to evaluate mode
     
     # Lock the weights in the U-Net	
-    for param in model.parameters():	
-        param.requires_grad=False
+    for parameter in model.parameters():	
+        parameter.requires_grad=False
 
     # List of all the image names + losses
     eval_info = []
@@ -523,20 +523,33 @@ def eval(model, dataloader, criterion, optimizer, use_gpu, proxy_type, param, sw
     
     if sweep:
         # sweeping (forward)
-        for names, inputs in dataloader:
-            inputs = inputs.type(dtype)
-            
-            # zero the parameter gradients
-            optimizer.zero_grad()
-            
-            with torch.set_grad_enabled(False):
-                outputs = model(inputs)
+        frame = 0
 
-                # Saving model output
-                outputs_ndarray = outputs[0].detach().cpu().numpy()
-                outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
-                outputs_path = os.path.join(outputs_path, f'{proxy_type}_{param}_sweep_{names[0]}')
-                plt.imsave(outputs_path, outputs_ndarray, format='png')
+        for index in range(len(dataloader)):
+            for param in range(dataloader.num_params):
+                
+                name, input = dataloader[index, param]
+                input = input.type(dtype)
+            
+                frame += 1
+
+                # zero the parameter gradients
+                #TODO: delete this?
+                optimizer.zero_grad()
+                
+                with torch.set_grad_enabled(False):
+                    output = model(input)
+
+                    # Saving model output
+                    outputs_ndarray = output[0].detach().cpu().numpy()
+                    outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
+                    output_path = os.path.join(outputs_path, f'{name[0].split(".")[0]}_{proxy_type}_{param}_sweep_{frame:04}.png')
+                    #print('output path: ' + output_path)
+                    plt.imsave(output_path, outputs_ndarray, format=c.OUTPUT_PREDICTIONS_FORMAT)
+
+        print('Done with sweep.')
+        sys.stdout.flush()
+        return
 
     # evaluating (forward)
     for names, inputs, labels in dataloader:  
@@ -553,8 +566,8 @@ def eval(model, dataloader, criterion, optimizer, use_gpu, proxy_type, param, sw
                     # Saving model output
                     outputs_ndarray = outputs[0].detach().cpu().numpy()
                     outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
-                    outputs_path = os.path.join(c.IMAGE_ROOT_DIR, c.OUTPUT_PREDICTIONS_PATH, f'{proxy_type}_{param}_eval_{names[0]}')
-                    plt.imsave(outputs_path, outputs_ndarray, format='png')
+                    outputs_path = os.path.join(c.IMAGE_ROOT_DIR, c.EVAL_PATH, f'{proxy_type}_{param}_eval_{names[0]}')
+                    plt.imsave(outputs_path, outputs_ndarray, format=c.OUTPUT_PREDICTIONS_FORMAT)
 
                 loss = criterion(outputs, labels)
 
@@ -569,15 +582,11 @@ def eval(model, dataloader, criterion, optimizer, use_gpu, proxy_type, param, sw
                 sys.stdout.flush()
                 i += 1
 
+    print('\tDone with evaluation. Average Loss: {:.4f}'.format(
+    running_loss))
 
-    if sweep:
-        print('\tDone with sweep.')
-    else :
-        print('\tDone with evaluation. Average Loss: {:.4f}'.format(
-        running_loss))
-    
-        # Printing image statistics
-        for info in eval_info:
-            print(info)
+    # Printing image statistics
+    for info in eval_info:
+        print(info)
 
     sys.stdout.flush()
