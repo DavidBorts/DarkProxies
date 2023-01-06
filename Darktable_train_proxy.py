@@ -17,12 +17,9 @@ from Darktable_dataset import Darktable_Dataset
 import Darktable_constants as c
 
 # Constants
-image_root_dir = c.IMAGE_ROOT_DIR
 add_params = True
 skip_connect = True
 clip_output = True
-
-batch_size = c.PROXY_MODEL_BATCH_SIZE
 num_epoch = c.PROXY_MODEL_NUM_EPOCH
 use_checkpoint = True
 learning_rate = 0.0001
@@ -161,21 +158,3 @@ def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, params_file, poss
         proxy_type,
         param
     )
-
-'''
-DEPRECATED
-Custom collate_fn to allow the Dataloaders to create batches out of variable-length images
-(based on my_collate() by jdhao on discuss.pytorch.org)
-'''
-def proxy_collate(batch):
-    names = [item[0] for item in batch]
-    inputs = [item[1] for item in batch]
-    labels = [item[2] for item in batch]
-    #for item in batch:
-        #print(item[1].size())
-    #print('labels')
-    #for item in batch:
-        #print(item[2].size())
-    #labels = torch.LongTensor(labels)
-    #labels = pad_sequence(labels, batch_first=True).type(torch.LongTensor)
-    return [names, inputs, labels]
