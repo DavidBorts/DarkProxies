@@ -137,8 +137,6 @@ class Darktable_Dataset(Dataset):
         input_image_name = image_name.strip(".")[0]
         print('original image name: ' + input_image_name)
         input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
-        # print('image name: ' + image_name)
-        # input_image = Image.open(os.path.join(self.input_image_dir, image_name))
         
         if self.transform is not None:
             input_image = self.transform(input_image)
@@ -191,6 +189,7 @@ class Darktable_Dataset(Dataset):
             return image_name, proxy_model_input
         return image_name, proxy_model_input, proxy_model_label
 
+    # DEPRECATED: this is no longer being used
     def save_crops(self):
 
         to_tensor_transform = transforms.Compose([transforms.ToTensor()])
