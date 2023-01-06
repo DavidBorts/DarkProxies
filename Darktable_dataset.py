@@ -134,7 +134,7 @@ class Darktable_Dataset(Dataset):
         image_name = self.image_name_list[index]
         if not self.sweep:
             print('ground truth image name: ' + image_name)
-        input_image_name = image_name.strip(".")[0]
+        input_image_name = image_name.split(".")[0]
         print('original image name: ' + input_image_name)
         input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
         
@@ -199,7 +199,7 @@ class Darktable_Dataset(Dataset):
             image_name = self.image_name_list[index]
             if not self.sweep:
                 print('ground truth image name: ' + image_name)
-            input_image_name = image_name.strip(".")[0]
+            input_image_name = image_name.split(".")[0]
             print('original image name: ' + input_image_name)
             input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
             # print('image name: ' + image_name)
