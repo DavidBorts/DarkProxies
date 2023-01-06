@@ -1,20 +1,24 @@
-import numpy as np
 import sys
+import numpy as np
+import Darktable_constants as c
+from npy_convert import convert
 
-params_file = sys.argv[1]
-output_file_path = sys.argv[2]
 
+proxy_type, param = sys.argv[1].split('_')
+num = int(sys.argv[2])
+imgNum = int(sys.argv[3])
+output_path = sys.argv[4]
+
+possible_values = getattr(c.POSSIBLE_VALUES(), proxy_type + '_' + param)
+min = possible_values[0][0]
+max = possible_values[0][1]
+
+# List of all slider values
 vals = []
 
-with open(params_file, 'r') as file:
-        values = file.readlines()
+for img in range(imgNum):
+    for value in np.linspace(min, max, int(num)):
+        vals.append(float(value)) # Adding to params list
 
-        for value in values:
-            vals.append(float(value))
-
-# Converting param list to numpy array and saving to file
-vals = np.array(vals)
-vals = np.expand_dims(vals, axis=0)
-with open(output_file_path, 'wb') as f:
-    np.save(f, vals)
-print("Data for evaluation generated.")
+print(vals)
+convert(vals, output_path)
