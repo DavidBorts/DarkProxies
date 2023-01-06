@@ -1,0 +1,6 @@
+sharpen_amount 1
+exposure_exposure 1
+colorbalancergb_contrast 1
+hazeremoval_strength 0
+lowpass_radius 0
+censorize_pixelate 0
