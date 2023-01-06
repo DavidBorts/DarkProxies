@@ -75,7 +75,7 @@ class Darktable_Dataset(Dataset):
             # Sorting image list
             self.image_name_list = os.listdir(self.output_image_dir)
             self.image_name_list.sort(key=lambda x: (x.split(".")[0], float(x.split("_")[3].split(".tif")[0])))
-            print('Images in the dataset:)
+            print('Images in the dataset:')
             print(self.image_name_list)
 
         # Getting path to params file (stage 1 only)
