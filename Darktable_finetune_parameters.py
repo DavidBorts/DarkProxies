@@ -61,9 +61,6 @@ def project_param_values(unprojected_param_values, possible_values, finalize, dt
     
     def _project_onto_continuous(value, range_tuple):
         if value < range_tuple[0]:
-            #print(value)
-            #print('Clamping to:')
-            #print(range_tuple[0])
             value = range_tuple[0]
         if value > range_tuple[1]:
             value = range_tuple[1]
@@ -122,21 +119,17 @@ def finetune_parameters(model, orig_tensor, tm_tensor, input_tensor, proxy_type,
     orig_tensor = orig_tensor.type(dtype)
     tm_tensor= tm_tensor.type(dtype)
 
-    # Fill in the image
-    input_tensor.data[:, 0:c.NUM_IMAGE_CHANNEL, :, :] = orig_tensor[:, 0:c.NUM_IMAGE_CHANNEL, :, :]
-    
-    # Fill in initial guess
-    for param_idx in range(len(best_params)):
-        input_tensor.data[:, c.NUM_IMAGE_CHANNEL+param_idx, :, :] = best_params[param_idx]
-
     # Refining guess num_iters times
     for i in range(num_iters):
 
         scheduler.step()
 
+        # Fill in the image
+        input_tensor.data[:, 0:c.NUM_IMAGE_CHANNEL, :, :] = orig_tensor[:, 0:c.NUM_IMAGE_CHANNEL, :, :]
+        
         # Fill in the guess to all hyper-parameter channels
         for param_idx in range(len(best_params)):
-            best_param = np.float64(best_params[param_idx])
+            best_param = np.array(best_params)[param_idx]
             input_tensor.data[:, c.NUM_IMAGE_CHANNEL+param_idx, :, :] = best_param
                 
         # forward
@@ -176,12 +169,6 @@ def finetune_parameters(model, orig_tensor, tm_tensor, input_tensor, proxy_type,
     if c.CREATE_ANIMATION:       
         print('Animation saved.')
     
-    #trans = transforms.ToPILImage()
-    #outputs.squeeze_(0)
-    #outputs = outputs.cpu().detach()
-    #im_raw = trans(outputs)
-    #im = skimage.img_as_float(im_raw)
-    #skimage.io.imsave(os.path.join('/home/felixy/Projects/differentiable_proxy/python_code/Face/temp/', name), im)
     return best_params
 
 def decide(i, num_iters):
@@ -203,7 +190,6 @@ def run_finetune_procedure(
     param_out_dir,
     weight_out_dir, #model_weight_file,
     possible_values,
-    batch_size,
     num_iters,
     use_gpu,
     proxy_type,
@@ -229,6 +215,7 @@ def run_finetune_procedure(
     # Creating directory to store optimized param guesses, if it does not already exist
     if not os.path.exists(param_out_dir):
         os.mkdir(param_out_dir)
+        print('directory created at: ' + param_out_dir)
 
     # Adjusting for GPU usage
     dtype = torch.FloatTensor
@@ -239,6 +226,8 @@ def run_finetune_procedure(
     print("Preparing dataset" )
     sys.stdout.flush()
     image_dataset = Darktable_Dataset(root_dir = image_root_dir, stage=2, proxy_type=proxy_type, param=param)
+    #if c.SAVE_CROPS:
+    #    image_dataset.save_crops()
     
     # Setting up U-net model
     print("Loading in model") 
@@ -278,7 +267,7 @@ def run_finetune_procedure(
         name, orig_tensor, tm_tensor = image_dataset[index]
         _, width, height = orig_tensor.size() 
 
-        input_tensor = Variable(torch.tensor((), dtype=torch.float).new_ones((batch_size, \
+        input_tensor = Variable(torch.tensor((), dtype=torch.float).new_ones((1, \
                        num_input_channels, width, height)).type(dtype), requires_grad=True)
 
         print("Optimizing Hyperparameters for {} index {}".format(name, str(index)))
@@ -310,38 +299,3 @@ def run_finetune_procedure(
                                         param_ranges
                                     )
     np.save(os.path.join(param_out_dir, f'{proxy_type}_{param}_optimized_params.npy'), best_params_mat)
-
-'''
-(DEPRECATED)
-An alternative method to "find_average_params". In this method, we first average out the hyper-parameter values
-across the batch. Then we take the sum of the differences across the entire channel for each hyper-parameter
-(as opposed to the average) and add that to the previous hyper-parameter value.
-'''
-def param_step(input_tensor, params, dtype, param_ranges):
-    if dtype == torch.cuda.FloatTensor:
-        input_tensor_temp = input_tensor.cpu().clone().detach()[:,3:,:,:]
-    else:
-        input_tensor_temp = input_tensor.clone().detach()[:,3:,:,:]
-    
-    #print(id(input_tensor_temp))
-    #print(id(input_tensor))
-    
-    #print(input_tensor_temp[0])
-    #print(params)
-    #print(input_tensor_temp.size())
-    for param_idx in range(len(params)):
-        input_tensor_temp[:, param_idx, :, :] -= params[param_idx]
-    
-    #print(input_tensor_temp)
-    gradient = input_tensor_temp.mean(0).sum(1).sum(1).numpy()
-    #gradient = input_tensor_temp.mean(0).mean(1).mean(1).numpy()
-    #print(np.shape(gradient))
-    #for param_idx in range(len(params)):
-        #iter_scale = np.absolute(np.log10((param_ranges[param_idx] * 0.5) / c.PARAM_TUNING_NUM_ITER))
-        #print(iter_scale)
-        #gradient[param_idx] = gradient[param_idx] * np.power(10, np.absolute(np.log10(np.absolute(gradient[param_idx]))) - iter_scale)
-    #scaled_gradient = gradient * np.power(10, np.absolute(np.log10(gradient)) - iter_scale) 
-    print("param value = {}".format(params + gradient))
-    #print(params+gradient)
-    #return params + gradient
-    return params + gradient
