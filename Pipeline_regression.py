@@ -252,6 +252,12 @@ def regression_procedure(input_path, label_path, use_gpu):
 
 if __name__ == '__main__':
 
+    # Creating stage 3 directory if it does not already exist
+    stage_3_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH)
+    if not os.path.exists(stage_3_path):
+        os.mkdir(stage_3_path)
+        print('Directory created at: ' + stage_3_path)
+
     # Adjuting for gpu usage
     use_gpu = torch.cuda.is_available()
 

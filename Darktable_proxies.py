@@ -36,6 +36,16 @@ if __name__ == "__main__":
     min = possible_values[0][0]
     max = possible_values[0][1]
 
+    # Creating stage 1 and 2 directories if they do not already exist
+    stage_1_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH)
+    stage_2_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_2_PATH)
+    if not os.path.exists(stage_1_path):
+        os.mkdir(stage_1_path)
+        print('Directory created at: ' + stage_1_path)
+    if not os.path.exists(stage_2_path):
+        os.mkdir(stage_2_path)
+        print('Directory created at: ' + stage_2_path)
+
     # Generating input data 
     # (This is done by performing a contrast slider sweep via Darktable's CLI)
     # TODO: this could be moved into generate() to avoid ugly if statements
