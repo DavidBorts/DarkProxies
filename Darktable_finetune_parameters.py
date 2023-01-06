@@ -155,8 +155,9 @@ def finetune_parameters(model, orig_tensor, tm_tensor, input_tensor, proxy_type,
             input_tensor_temp = input_tensor.cpu().clone().detach()[:,3:,:,:]
         else:
             input_tensor_temp = input_tensor.clone().detach()[:,3:,:,:]
-        best_params = input_tensor_temp.mean(0).mean(1).mean(1).numpy()
-        print('current params: ' + str(best_params))
+        best_params = input_tensor_temp.mean(0).mean(1).mean(1).tolist()
+        print('current params: {}\n'.format(str(best_params)))
+        best_params = project_param_values(best_params, possible_values, finalize=False, dtype=dtype)
                     
         # statistics
         print("\tIter {:d}/{:d}, Current Loss: {:3f}".format(i + 1, num_iters, loss.item()),end='\r')
