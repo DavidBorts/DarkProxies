@@ -1,15 +1,39 @@
 # Neural Proxies for Darktable
 This repository contains all of the code necessary to train and evaluate neural network proxies for many of __Darktable__'s image processing blocks. Ultimately, these neural proxies can be chained together to get a functioning replica of Darktable.
-
-This codebase does so by following these steps:
-1. Generate training data
-2. Train neural proxies for individual Darktable blocks
-    * Evaluate proxy performance before moving on
-3. Chain blocks together into a single pipeline
-    * Evluate pipeline performance 
 <br/>
+This codebase does so by following these steps:
+
+__1.__ Generate training data using Darktable's CLI
+
+__2.__ Train neural proxies for individual Darktable blocks
+
+* Evaluate proxy performance before moving on
+
+__3.__ Chain blocks together into a single pipeline
+
+* Evaluate pipeline performance
+  
 
 ## Getting Started
+
+To use the code in this repository, there are several essential prerequisites.
+
+### Install Darktable
+Before running any code, make sure that you have __Darktable__ installed on your system. This can be done for free at https://www.darktable.org/install/. This repository relies on Darktable's CLI to generate ground truth data for the neural proxies. 
+
+### Customize Script Parameters
+The various parameters and constants used throughout this repository are all stored in ```Darktable_constants.py```. Two of the variables in this file __must__ be set to user specifications before running.
+<br/>
+__1.__ Replace ```DARKTABLE_PATH``` with the correct, absolute path to ```darktable-cli.exe``` on your own system
+
+__2.__ Replace ```IMAGE_ROOT_DIR``` with your desired root directory from which all relative file paths will be constructed. The variable is set to ```.``` by default, which keeps all new files in the same directory as this code, but that need not be the case.
+
+<br/>
+After completing these two steps, the code should run without a hitch!
+
+## A Tour of the Codebase
+
+## How to Run the Code
 
 ## Evalutating Models
 
