@@ -1,8 +1,21 @@
 # Neural Proxies for Darktable
+This repository contains all of the code necessary to train and evaluate neural network proxies for many of __Darktable__'s image processing blocks. Ultimately, these neural proxies can be chained together to get a functioning replica of Darktable.
 
+This codebase does so by following these steps:
+1. Generate training data
+2. Train neural proxies for individual Darktable blocks
+    * Evaluate proxy performance before moving on
+3. Chain blocks together into a single pipeline
+    * Evluate pipeline performance 
 <br/>
 
 ## Getting Started
+
+## Evalutating Models
+
+### Evaluating Individual Proxies
+
+### Evaluating the Entire Pipeline
 
 ## Visualizing Results
 
