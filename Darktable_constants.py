@@ -1,7 +1,6 @@
 # File to store script constants/parameters
 #
-# ( A * indicates that a variable must be updated with user preferences
-# before running any code, while an X indicates that a variable should
+# ( An X indicates that a variable should
 # generally not be tampered with )
 
 # IMPORTANT NOTE: Before running any code, make sure to replace this
@@ -9,10 +8,10 @@
 DARKTABLE_PATH = "C:/Program Files/darktable/bin/darktable-cli.exe" # CHANGE ME!
 
 # Global constants
-INTERACTIVE = True                       # * Toggle interactive prompts between stages 
+IMAGE_ROOT_DIR = '.'                     #   Root directory from which to set all file paths
+INTERACTIVE = True                       #  Toggle interactive prompts between stages 
 NUM_IMAGE_CHANNEL = 3                    # X Number of channels in each image (3 for RGB)
 IMG_SIZE = 736                           # X Dimensions to crop all images to (IMG_SIZE x IMG_SIZE)
-IMAGE_ROOT_DIR = '.'                     # * Root directory from which to set all file paths
 
 # Data generation constants (Stage 0)
 GENERATE_STAGE_1 = True                  #   Toggles new data generation for proxy training (stage 1)
@@ -43,7 +42,7 @@ SWEEP_OUTPUT_DIR = 'sweep_output'        #   Name of directories that store prox
 EVAL_PATH = 'eval/'                      #   Name of directories that store evluations data and results
 
 # Slider regression on trained proxies (Stage 2)
-STAGE_2_PATH = 'stage_2/'                #   Directory that stores all training data and predictions           
+STAGE_2_PATH = 'stage_2/'                #   Directory that stores all training data and predictions
 STAGE_2_PARAM_PATH = 'stage_2/params/'   #   Directory that stores optimized proxy params
 ANIMATIONS_DIR = 'animations/'           #   Directory that stores frames for all animations
 PARAM_TUNING_NUM_ITER = 100              #   Number of regression iterations per image 
