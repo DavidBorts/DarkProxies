@@ -62,8 +62,8 @@ To assemble a functioning clone of Darktable, only two scripts need to be run.
 
 ### Train Proxies with Darktable_proxies.py
 For each Darktable image processing block that needs to be learned, run the ```Darktable_proxies``` script. This will take care of all the data generation, training, and model evaluation/visualization.
-
 <br/>
+
 How to use the script:
 ```
 python Darktable_proxies.py [proxy_type]_[parameter] [# of points to sample for training data]
@@ -76,16 +76,16 @@ Each time it runs, the script will create directories to store model weights fro
 - [proxy_type]_[parameter]_predictions
 
 Ultimately, the only essential files are the model weights. By default, model predictions are saved every 50 training epochs, though this can be adjusted by changing ```SAVE_OUTPUT_FREQ``` in ```Darktable_constants.py```.
-
 <br/>
+
 ####  Proxy Evaluation
 After it has finished training a given proxy, this script will automatically evaluate it. It does so by attempting a simple regression task with the model, where the proxy must iteratively improve its best guess as to what input parameter value produces the given output image. The final parameter guess of the model, as well as model outputs from each iteration of the regression (used to make animations) are saved in newly-created directories:
 - params
 - [proxy_type]_[parameter]_animations
 
 The number of iterations performed for each regression task can be adjusted by changing ```PARAM_TUNING_NUM_ITER``` in ```Darktable_constants.py```.
-
 <br/>
+
 __Note:__ For a complete list of all possible proxy types and parameters, see the table at the top of this document.
 
 ### Assemble the Pipeline with Pipeline_regression.py or Darktable_pipeline.py
