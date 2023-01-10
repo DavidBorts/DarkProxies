@@ -127,9 +127,7 @@ def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, params_file, poss
     # Set up data loading.
     since = time.time()
     image_dataset = Darktable_Dataset(root_dir = image_root_dir, stage=1, proxy_type=proxy_type, param=param, input_dir=input_path, output_dir=output_path, params_file=params_file)
-    eval_loader = torch.utils.data.DataLoader(image_dataset, 
-                                               batch_size=batch_size, 
-                                               num_workers=1)#num_workers should be 4
+    eval_loader = torch.utils.data.DataLoader(image_dataset, batch_size=1, num_workers=1)
     time_elapsed = time.time() - since
     print('Data Loader prepared in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
     sys.stdout.flush()

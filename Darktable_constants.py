@@ -8,7 +8,7 @@
 DARKTABLE_PATH = "C:/Program Files/darktable/bin/darktable-cli.exe" # CHANGE ME!
 
 # Global constants
-IMAGE_ROOT_DIR = '.'                     #   Root directory from which to set all file paths
+IMAGE_ROOT_DIR = '.'                     #   Root directory from which to construct all file paths
 INTERACTIVE = True                       #  Toggle interactive prompts between stages 
 NUM_IMAGE_CHANNEL = 3                    # X Number of channels in each image (3 for RGB)
 IMG_SIZE = 736                           # X Dimensions to crop all images to (IMG_SIZE x IMG_SIZE)
