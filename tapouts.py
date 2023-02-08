@@ -66,6 +66,7 @@ def tmp2tiff(input_file, output_file):
 
     im = loadTMP(os.path.join('/tmp', input_file))
     #print(f"{input_file} has shape: {im.shape}")
+    print('Reading tmp tapout from: ' + input_file)
 
     output_channels = im.shape[-1]
     output_channels = min(output_channels, 3)

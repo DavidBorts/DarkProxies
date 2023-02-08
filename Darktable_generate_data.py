@@ -133,9 +133,11 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
                 
                 # Getting file path of the tapout
                 tapout_path = tapouts[1] + '.tmp'
+                print('tapout path: ' + tapout_path)
 
                 # Deleting final output image
                 os.remove(output_file_path)
+                print('replacing: ' + output_file_path)
 
                 # Read in the tapout and save as a tiff
                 tmp2tiff(tapout_path, output_file_path)
