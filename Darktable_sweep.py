@@ -19,6 +19,7 @@ import torch.optim as optim
 # Local files
 from Models import UNet, load_checkpoint, eval
 from Darktable_dataset import Darktable_Dataset
+from Loss_functions import losses
 import Darktable_constants as c
 import PyDarktable as dt
 from npy_convert import convert
@@ -100,7 +101,8 @@ def model_init(model_out_dir, possible_params):
         unet = nn.DataParallel(unet)
         
     # criterion is the loss function, which can be nn.L1Loss() or nn.MSELoss()
-    criterion = nn.MSELoss()
+    #criterion = nn.MSELoss()
+    criterion = losses[c.WHICH_LOSS[proxy_type][0]]
     optimizer = optim.Adam(unet.parameters(), lr=learning_rate)
     
     print('Model initialized')

@@ -356,6 +356,7 @@ class FilmicRGBParams:
 
 
 # dt_iop_highlights_params_t
+#TODO: Update to reflected updated params in Darktable highlights.c source code
 @dataclass
 class HighlightsParams:
     # In C, they are enums:
@@ -470,6 +471,60 @@ class TemperatureParams:
     def to_hex_string(self):
         return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
 
+'''
+@dataclass
+class ColorinParams:
+    # In the original C code, they are enums:
+    # DT_COLORSPACE_NONE = -1,
+    # DT_COLORSPACE_FILE = 0,
+    # DT_COLORSPACE_SRGB = 1,
+    # DT_COLORSPACE_ADOBERGB = 2,
+    # DT_COLORSPACE_LIN_REC709 = 3,
+    # DT_COLORSPACE_LIN_REC2020 = 4,
+    # DT_COLORSPACE_XYZ = 5,
+    # DT_COLORSPACE_LAB = 6,
+    # DT_COLORSPACE_INFRARED = 7,
+    # DT_COLORSPACE_DISPLAY = 8,
+    # DT_COLORSPACE_EMBEDDED_ICC = 9,
+    # DT_COLORSPACE_EMBEDDED_MATRIX = 10,
+    # DT_COLORSPACE_STANDARD_MATRIX = 11,
+    # DT_COLORSPACE_ENHANCED_MATRIX = 12,
+    # DT_COLORSPACE_VENDOR_MATRIX = 13,
+    # DT_COLORSPACE_ALTERNATE_MATRIX = 14,
+    # DT_COLORSPACE_BRG = 15,
+    # DT_COLORSPACE_EXPORT = 16,
+    # DT_COLORSPACE_SOFTPROOF = 17,
+    # DT_COLORSPACE_WORK = 18,
+    # DT_COLORSPACE_DISPLAY2 = 19,
+    # DT_COLORSPACE_REC709 = 20,
+    # DT_COLORSPACE_PROPHOTO_RGB = 21,
+    # DT_COLORSPACE_PQ_REC2020 = 22,
+    # DT_COLORSPACE_HLG_REC2020 = 23,
+    # DT_COLORSPACE_PQ_P3 = 24,
+    # DT_COLORSPACE_HLG_P3 = 25,
+    # DT_COLORSPACE_LAST = 26
+    type: int = 12 # $DEFAULT: DT_COLORSPACE_ENHANCED_MATRIX
+    char filename[DT_IOP_COLOR_ICC_LEN];
+    # In the original C code, they are enums:
+    #DT_INTENT_PERCEPTUAL = INTENT_PERCEPTUAL,                       // 0
+    #DT_INTENT_RELATIVE_COLORIMETRIC = INTENT_RELATIVE_COLORIMETRIC, // 1
+    #DT_INTENT_SATURATION = INTENT_SATURATION,                       // 2
+    #DT_INTENT_ABSOLUTE_COLORIMETRIC = INTENT_ABSOLUTE_COLORIMETRIC, // 3
+    #DT_INTENT_LAST
+    intent: int = 0 # $DEFAULT: DT_INTENT_PERCEPTUAL
+    # In the original C code, they are enums:
+    #DT_NORMALIZE_OFF,               //$DESCRIPTION: "off"
+    #DT_NORMALIZE_SRGB,              //$DESCRIPTION: "sRGB"
+    #DT_NORMALIZE_ADOBE_RGB,         //$DESCRIPTION: "Adobe RGB (compatible)"
+    #DT_NORMALIZE_LINEAR_REC709_RGB, //$DESCRIPTION: "linear Rec709 RGB"
+    #DT_NORMALIZE_LINEAR_REC2020_RGB //$DESCRIPTION: "linear Rec2020 RGB"
+    normalize: int = 0 # $DEFAULT: DT_NORMALIZE_OFF $DESCRIPTION: "gamut clipping"
+    int blue_mapping;
+    // working color profile
+    dt_colorspaces_color_profile_type_t type_work; // $DEFAULT: DT_COLORSPACE_LIN_REC2020
+     filename_work[DT_IOP_COLOR_ICC_LEN];
+'''
+
 # Return temperature and rawprepare params for input DNG file
 def read_dng_params(dng_file):
     raw_prepare_params = RawPrepareParams()
@@ -489,11 +544,18 @@ def read_dng_params(dng_file):
 
 class functions:
     @staticmethod
-    def colorbalancergb(value, params_dict, param='contrast'):# should be colorbalancergb()
+    def colorbalancergb(value, params_dict, param='contrast'):
         colorbalancergb_params = ColorBalanceRGBParams()
         setattr(colorbalancergb_params, param, float(value))
         #colorbalancergb_params.contrast = float(value)
         params_dict["colorbalancergb_params"] = colorbalancergb_params
+        return params_dict
+    
+    @staticmethod
+    def highlights(value, params_dict, param='clip'):
+        highlights_params = HighlightsParams()
+        setattr(highlights_params, param, float(value))
+        params_dict["highlights_params"] = highlights_params
         return params_dict
     
     @staticmethod
@@ -616,7 +678,7 @@ def render(src_dng_path, dst_path, pipe_stage_flags):
     print('Running:\n', ' '.join(args), '\n')
     subprocess.run(args)
 
-def get_params_dict(proxy_type, param, value, temperature_params, raw_prepare_params, dict=None):
+def get_params_dict(proxy_type, param_name, value, temperature_params, raw_prepare_params, dict=None):
 
     params_dict = {
         'filmicrgb_params': None,
@@ -636,12 +698,20 @@ def get_params_dict(proxy_type, param, value, temperature_params, raw_prepare_pa
     if proxy_type is None:
         return params_dict
 
+    proxy = proxy_type
+    param = param_name
+
+    # Used for colorin & colorout proxies
+    if proxy_type in c.NO_PARAMS:
+        proxy = 'exposure'
+        param = 'exposure'
+
     # If a dict is provided, use that instead
     if dict != None:
         params_dict = dict
 
     # Setting params
-    fill_dict = getattr(functions, proxy_type)
+    fill_dict = getattr(functions, proxy)
     params_dict = fill_dict(value, params_dict, param=param)
 
     return params_dict

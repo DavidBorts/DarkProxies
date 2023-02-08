@@ -1,4 +1,5 @@
-''' Data loader for Darktable
+''' 
+Data loader for Darktable
 
 Stage 1: Loads in image data and concatenates parameters as channels to the image
 Stages 2 & 3: Loads in image data
@@ -109,7 +110,7 @@ class Darktable_Dataset(Dataset):
     
     def __getitem__(self, indexValue):
         '''
-        Appends parameter channels to the image tensor. Note that image is already a tensor in this case. 
+        By default, appends parameter channels to the image tensor. Note that image is already a tensor in this case. 
         '''        
         def _format_input_with_parameters(image, params):
             '''
@@ -133,6 +134,9 @@ class Darktable_Dataset(Dataset):
         else:
             index = indexValue
         
+        # Determining whether or not to append parameter channels
+        append_params = self.proxy_type not in c.NO_PARAMS
+        
         image_name = self.image_name_list[index]
         if not self.sweep:
             print('ground truth image name: ' + image_name)
@@ -146,7 +150,7 @@ class Darktable_Dataset(Dataset):
         proxy_model_input = to_tensor_transform(input_image)
         proxy_model_input = interpolate(proxy_model_input[None, :, :, :], scale_factor=0.25, mode='bilinear')
         proxy_model_input = torch.squeeze(proxy_model_input, dim=0)
-        num_channels, width, height = proxy_model_input.size()
+        _, width, height = proxy_model_input.size()
         
         # Cropping input tensor
         if width % 2 == 0:
@@ -182,10 +186,11 @@ class Darktable_Dataset(Dataset):
                 plt.imsave(label_path, label_ndarray, format=c.CROP_FORMAT)
 
             # Appending parameter tensor
-            params = self.param_mat[:,index]
-            if self.sweep:
-                params = self.param_mat[:, param_num]
-            proxy_model_input = _format_input_with_parameters(proxy_model_input, params)
+            if append_params:
+                params = self.param_mat[:,index]
+                if self.sweep:
+                    params = self.param_mat[:, param_num]
+                proxy_model_input = _format_input_with_parameters(proxy_model_input, params)
             
         if self.sweep:
             return image_name, proxy_model_input

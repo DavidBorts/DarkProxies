@@ -1,15 +1,17 @@
-# File to store script constants/parameters
-#
-# ( An X indicates that a variable should
-# generally not be tampered with )
+'''
+File to store script constants/parameters
 
-# IMPORTANT NOTE: Before running any code, make sure to replace this
-# string with the correct path to darktable-cli.exe
+ ( An X indicates that a variable should
+   generally not be tampered with )
+
+ IMPORTANT NOTE: Before running any code, make sure to replace this
+ string with the correct path to darktable-cli.exe
+ '''
 DARKTABLE_PATH = "C:/Program Files/darktable/bin/darktable-cli.exe" # CHANGE ME!
 
 # Global constants
 IMAGE_ROOT_DIR = '.'                     #   Root directory from which to construct all file paths
-INTERACTIVE = True                       #  Toggle interactive prompts between stages 
+INTERACTIVE = True                       #   Toggle interactive prompts between stages
 NUM_IMAGE_CHANNEL = 3                    # X Number of channels in each image (3 for RGB)
 IMG_SIZE = 736                           # X Dimensions to crop all images to (IMG_SIZE x IMG_SIZE)
 
@@ -45,12 +47,12 @@ EVAL_PATH = 'eval/'                      #   Name of directories that store evlu
 STAGE_2_PATH = 'stage_2/'                #   Directory that stores all training data and predictions
 STAGE_2_PARAM_PATH = 'stage_2/params/'   #   Directory that stores optimized proxy params
 ANIMATIONS_DIR = 'animations/'           #   Directory that stores frames for all animations
-PARAM_TUNING_NUM_ITER = 100              #   Number of regression iterations per image 
+PARAM_TUNING_NUM_ITER = 100              #   Number of regression iterations per image
 CREATE_ANIMATION = True                  #   If True, saves frames from regression to use for videos
 ANIMATIONS_FORMAT = 'tiff'               #   Format to save frames as (Default: png)
 
 # Assembling the trained proxies into a differentiable ISP (Stage 3)
-STAGE_3_PATH = 'stage_3/'                #   Directory that stores all training data and predictions 
+STAGE_3_PATH = 'stage_3/'                #   Directory that stores all training data and predictions
 STAGE_3_INPUT_DIR = 'input/'             #   Directory that stores all training data
 STAGE_3_OUTPUT_DIR = 'output/'           #   Directory that stores all ground truth data
 STAGE_3_PARAM_DIR = 'params/'            #   Directory that stores optimized proxy params
@@ -60,7 +62,31 @@ PIPELINE_OUTPUT_FORMAT = 'tiff'          #   Format to save pipeline outputs as 
 PIPELINE_CREATE_ANIMATION = True         #   If True, saves frames from regression to use for videos
 PIPE_REGRESSION_ANIMATION_FORMAT = 'png' #   Format to save frames as (Default: png)
 
+'''
+Dictionary to store which Darktable blocks will require which loss functions to train
+
+Format: [stage_1, stage_2]
+'''
+WHICH_LOSS = {
+    'highlights': ['MSE', 'L1'],
+    'demosaic': ['MSE', 'L1'],
+    'denoise': ['MSE', 'L1'],
+    'hazeremoval': ['MSE', 'L1'],
+    'exposure': ['MSE', 'L1'],
+    'colorin': ['MSE', 'L1'],
+    'censorize': ['MSE', 'L1'],
+    'lowpass': ['MSE', 'L1'],
+    'sharpen': ['Spatial', 'Spatial'],
+    'colorbalancergb': ['MSE', 'L1'],
+    'colorout': ['MSE', 'L1']
+}
+
+# DO NOT MODIFY ANYTHING BELOW THIS LINE!!!
+################################################################################################################################
+
 # Class to store the ranges of various Darktable paramters
+# TODO: Add support for highlights
+# TODO: Rework to support multiple paramters per proxy
 class POSSIBLE_VALUES:
     colorbalancergb_contrast =  [(-0.9, 0.9)]
     sharpen_amount = [(0.0, 10.0)]
@@ -70,3 +96,50 @@ class POSSIBLE_VALUES:
     lowpass_radius = [(0.1, 500.0)]
     censorize_pixelate = [(0.0, 500.0)]
     censorize_noise = [(0.0, 1.0)]
+    demosaic = [(None, None)] # Temporary Hack. TODO: remove me!
+
+'''
+Dictionary to store which Darktable blocks will require
+which intermediary tapouts from the Darktable pipeline as
+part of their training data
+
+Each block name has a correponding list of length 2, in
+the following format: [input tapout, ground truth tapout]
+'''
+TAPOUTS = {
+
+    # Highlights needs to be trained on images that have
+    # not yet been demosaiced
+    'highlights': ['highlights_bayer_in', 'highlights_bayer_out'],
+
+    # Demosaicing needs to be trained on images that have
+    # not had any Darktable operations performed on them
+    # TODO: replace with ['highlights_bayer_out', 'colorin_in'] ??
+    'demosaic': ['temperature_out', 'colorin_in'],
+
+    # Denoise through colorin all need to be trained on
+    # images that have not yet had their colorspaces
+    # tranformed by the colorin block
+    # TODO: ADD TAPOUT SUPPORT FOR DENOISE, HAZEREMOVAL,
+    # CENSORIZE, & LOWPASS
+    'denoise': ['demosaic_out', 'denoise_out'],
+    'hazeremoval': ['demosaic_out', 'hazeremoval_out'],
+    'exposure': ['demosaic_out', 'exposure_out'],
+    'colorin': ['colorin_in', 'colorin_out'],
+
+    # All blocks after colorin and before colorout
+    # require no tapouts for training
+    'censorize': None,
+    'lowpass': None,
+    'sharpen': None,
+    'colorbalancergb': None,
+
+    # Colorout needs to be trained on images that
+    # have not yet been processed for output by the
+    # colorout block
+    # TODO: Do we need 'colorout_out'??
+    'colorout': ['colorout_in', 'colorout_out']
+}
+
+# List of Darktable blocks that do not require input parameters
+NO_PARAMS = ['colorin','colorout', 'demosaic']

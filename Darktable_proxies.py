@@ -27,9 +27,21 @@ num_epoch = c.PROXY_MODEL_NUM_EPOCH
 weight_out_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_' + param + '_' + c.MODEL_WEIGHTS_PATH)
 
 # Stage 2 constants
-possible_values = getattr(c.POSSIBLE_VALUES(), proxy_type + '_' + param)
 num_iters = c.PARAM_TUNING_NUM_ITER
 param_out_dir = c.STAGE_2_PARAM_PATH
+
+# Adjusting for varying training requirement across different proxies
+append_params = proxy_type not in c.NO_PARAMS
+possible_values = None
+if append_params: 
+    possible_values = getattr(c.POSSIBLE_VALUES(), proxy_type + '_' + param)
+else:
+    #TODO: replace with highlights or temperature to support demosaic?
+    possible_values = getattr(c.POSSIBLE_VALUES(), 'exposure_exposure')
+
+    # Temporary hack: not sweeping for demosaic
+    if proxy_type == 'demosaic':
+        possible_values = getattr(c.POSSIBLE_VALUES(), 'demosaic')
 
 if __name__ == "__main__":
 
@@ -47,7 +59,7 @@ if __name__ == "__main__":
         print('Directory created at: ' + stage_2_path)
 
     # Generating input data 
-    # (This is done by performing a contrast slider sweep via Darktable's CLI)
+    # (This is done by performing a parameter sweep via Darktable's CLI)
     # TODO: this could be moved into generate() to avoid ugly if statements
     if generate_stage_1:
         if c.GENERATE_WITH_CHECKPOINTS:
@@ -57,7 +69,6 @@ if __name__ == "__main__":
             print("Generating training data: stage 1")
             data.generate(proxy_type, param, 1, min, max, interactive, num)
     if generate_stage_2:
-        
         if c.GENERATE_WITH_CHECKPOINTS:
             print("Generating training data (w/ checkpoints): stage 2")
             data.generate_piecewise(proxy_type, param, 2, min, max, num)
@@ -76,6 +87,7 @@ if __name__ == "__main__":
         possible_values, 
         proxy_type,
         param,
+        append_params,
         interactive
     )
 

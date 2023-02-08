@@ -14,6 +14,7 @@ from torch.nn.utils.rnn import pad_sequence
 # Local files
 from Models import UNet, train_model, load_checkpoint, eval
 from Darktable_dataset import Darktable_Dataset
+from Loss_functions import losses
 import Darktable_constants as c
 
 # Constants
@@ -29,7 +30,7 @@ step_size = 7
 '''
 Run the stage 1 training and save model outputs
 '''
-def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, param, interactive):
+def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, param, append_params, interactive):
     
     # Checking if user wants to train a proxy
     train = None
@@ -70,12 +71,15 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
         'val': len(image_dataset.val_sampler)
     }
     
-    # Set up model.
-    unet = UNet(num_input_channels=c.NUM_IMAGE_CHANNEL + len(possible_params),
-                num_output_channels=c.NUM_IMAGE_CHANNEL, skip_connect=skip_connect, add_params=add_params, clip_output=clip_output)
+    # Set up model
+    num_channels = c.NUM_IMAGE_CHANNEL
+    if append_params:
+        num_channels += len(possible_params)
+    unet = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
+                skip_connect=skip_connect, add_params=append_params, clip_output=clip_output)
     if use_checkpoint:
         start_epoch = load_checkpoint(unet, model_out_dir) #weight_out_dir
-        lr = learning_rate * (gamma ** (start_epoch//step_size))
+        #lr = learning_rate * (gamma ** (start_epoch//step_size))
     else:
         start_epoch = 0 
     if use_gpu:
@@ -85,7 +89,8 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
         
     # Set up training regime.
     # criterion is the loss function, which can be nn.L1Loss() or nn.MSELoss()
-    criterion = nn.MSELoss()
+    #criterion = nn.MSELoss()
+    criterion = losses[c.WHICH_LOSS[proxy_type][0]]
     optimizer = optim.Adam(unet.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
     
@@ -110,6 +115,7 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
 '''
 Evaluate the model on a any input(s)
 '''
+# TODO: add suppport for colorin & colorout
 def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, params_file, possible_params, proxy_type, param):
 
     # Constants
@@ -144,7 +150,8 @@ def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, params_file, poss
         
     # Set up training regime.
     # criterion is the loss function, which can be nn.L1Loss() or nn.MSELoss()
-    criterion = nn.MSELoss()
+    #criterion = nn.MSELoss()
+    criterion = losses[c.WHICH_LOSS[proxy_type]]
     optimizer = optim.Adam(unet.parameters(), lr=learning_rate)
 
     eval(
