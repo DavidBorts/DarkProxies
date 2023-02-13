@@ -92,6 +92,10 @@ if __name__ == "__main__":
     )
 
     # Stage 2 - parameter finetuning
+    if append_params:
+        print(f'{proxy_type} has no input parameters and therefore cannot be used for stage 2.')
+        print('Skipping stage 2.')
+        quit()
     print("Begin finetune parameters (stage 2)")
     sys.stdout.flush()
     use_gpu = torch.cuda.is_available()

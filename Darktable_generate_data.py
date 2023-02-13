@@ -54,7 +54,6 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
             else:
                 return
     
-    
     # List of all slider values
     vals = []
 
@@ -87,7 +86,7 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
         for value in np.linspace(min, max, int(num)):
             
             # Making sure that the same input image is not generated multiple times
-            if first_input is None:
+            if first_input is None and tapouts is None:
 
                 # Getting path of the input image
                 input_file_path = os.path.join(input_path, image.split('.')[0])
@@ -102,45 +101,36 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
                 # Rendering an unchanged copy of the source image for model input
                 dt.render(src_path, input_file_path, original_params)
 
-                # If the given proxy is colorin, colorout, or any proxy that appears before colorin,
-                # The rendered image needs to be replaced with an intermediary tapout from
-                # the Darktable CLI (This is because colorin converts to a different
-                # colorspace, which would leave the rendered image in a different colorspace
-                # from what the given proxy requires as input)
-                if tapouts is not None:
-                    
-                    # Getting file path of the tapout
-                    tapout_path = tapouts[0] + '.tmp'
-
-                    # Deleting final output image
-                    os.remove(input_file_path)
-
-                    # Read in the tapout and save as a tiff
-                    tmp2tiff(tapout_path, input_file_path)
-
             # Assembling a dictionary of all of the parameters to apply to the source DNG
             # Temperature and rawprepare params must be maintained in order to produce expected results
             params_dict = dt.get_params_dict(proxy_type, param, value, temperature_params, raw_prepare_params)
             vals.append(float(value)) # Adding to params list
 
             # Rendering the output image
-            output_file_path = os.path.join(output_path, f'{image}_{proxy_type}_{param}') #f'./stage_1/contrast_input/contrast_{contrast}.tif'
+            output_file_path = os.path.join(output_path, f'{image}_{proxy_type}_{param}')
             output_file_path = (repr(output_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
             dt.render(src_path, output_file_path, params_dict)
 
-            # Checking if ground truth image needs to be replaced with tapout
+            # Checking if input & ground truth images need to be replaced with tapouts
             if tapouts is not None:
                 
                 # Getting file path of the tapout
-                tapout_path = tapouts[1] + '.tmp'
-                print('tapout path: ' + tapout_path)
+                input_tapout_path = tapouts[0] + '.tmp'
+                gt_tapout_path = tapouts[1] + '.tmp'
+                print('input tapout path: ' + input_tapout_path)
+                print('ground truth tapout path: ' + gt_tapout_path)
+
+                # Getting path of the input image
+                input_file_path = os.path.join(input_path, image.split('.')[0])
+                input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif'
 
                 # Deleting final output image
                 os.remove(output_file_path)
                 print('replacing: ' + output_file_path)
 
-                # Read in the tapout and save as a tiff
-                tmp2tiff(tapout_path, output_file_path)
+                # Read in the tapouts and save them as tiffs
+                tmp2tiff(input_tapout_path, input_file_path)
+                tmp2tiff(gt_tapout_path, output_file_path)
 
     # Converting param list to numpy array and saving to file
     convert(vals, os.path.join(c.IMAGE_ROOT_DIR, stage_path, f'{proxy_type}_{param}_params.npy'))
@@ -208,7 +198,7 @@ def generate_piecewise(proxy_type, param, stage, min, max, num):
             skip_output = False
 
             # Making sure that the same input image is not generated multiple times
-            if first_input is None:
+            if first_input is None and tapouts is None:
 
                 # Getting path of the input image and confirming that it does not yet exist
                 input_file_path = os.path.join(input_path, image.split('.')[0])
@@ -228,29 +218,13 @@ def generate_piecewise(proxy_type, param, stage, min, max, num):
                 if not skip_input:
                     dt.render(src_path, input_file_path, original_params)
 
-                    # If the given proxy is colorin, or any proxy that appears before colorin,
-                    # The rendered image needs to be replaced with an intermediary tapout from
-                    # the Darktable CLI (This is because colorin converts to a different
-                    # colorspace, which would leave the rendered image in a different colorspace
-                    # from what the given proxy requires as input)
-                    if tapouts is not None:
-                        
-                        # Getting file path of the tapout
-                        tapout_path = tapouts[0] + '.tmp'
-
-                        # Deleting final output image
-                        os.remove(input_file_path)
-
-                        # Read in the tapout and save as a tiff
-                        tmp2tiff(tapout_path, input_file_path)
-
             # Assembling a dictionary of all of the parameters to apply to the source DNG
             # Temperature and rawprepare params must be maintained in order to produce expected results
             params_dict = dt.get_params_dict(proxy_type, param, value, temperature_params, raw_prepare_params)
             vals.append(float(value)) # Adding to params list
 
             # Rendering the output image and confirming that it does not yet exist
-            output_file_path = os.path.join(output_path, f'{image}_{proxy_type}_{param}') #f'./stage_1/contrast_input/contrast_{contrast}.tif'
+            output_file_path = os.path.join(output_path, f'{image}_{proxy_type}_{param}')
             output_file_path = (repr(output_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
             if os.path.exists(output_file_path):
                     print(f'{output_file_path} already exists. Skipping.')
@@ -262,13 +236,22 @@ def generate_piecewise(proxy_type, param, stage, min, max, num):
                 if tapouts is not None:
                     
                     # Getting file path of the tapout
-                    tapout_path = tapouts[1] + '.tmp'
+                    input_tapout_path = tapouts[0] + '.tmp'
+                    gt_tapout_path = tapouts[1] + '.tmp'
+                    print('input tapout path: ' + input_tapout_path)
+                    print('ground truth tapout path: ' + gt_tapout_path)
+
+                    # Getting path of the input image
+                    input_file_path = os.path.join(input_path, image.split('.')[0])
+                    input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif'
 
                     # Deleting final output image
                     os.remove(output_file_path)
+                    print('replacing: ' + output_file_path)
 
-                    # Read in the tapout and save as a tiff
-                    tmp2tiff(tapout_path, output_file_path)
+                    # Read in the tapouts and save them as tiffs
+                    tmp2tiff(input_tapout_path, input_file_path)
+                    tmp2tiff(gt_tapout_path, output_file_path)
 
         # Converting param list to numpy array and saving to checkpoint file (once for each source image)
         convert(vals, os.path.join(params_path, f'{image}_{proxy_type}_{param}.npy'))

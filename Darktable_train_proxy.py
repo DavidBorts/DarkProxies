@@ -49,11 +49,11 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
 
     # Set up data loading.
     since = time.time()
-    image_dataset = Darktable_Dataset(root_dir = image_root_dir, stage=1, proxy_type=proxy_type, param=param)
+    image_dataset = Darktable_Dataset(root_dir = image_root_dir, stage=1, proxy_type=proxy_type, param=param, vary_input=append_params)
     train_loader = torch.utils.data.DataLoader(image_dataset, 
                                                batch_size=batch_size, 
                                                sampler=image_dataset.train_sampler,
-                                               num_workers=1)#num_workers should be 4
+                                               num_workers=1)
     val_loader = torch.utils.data.DataLoader(image_dataset, 
                                              batch_size=batch_size,
                                              sampler=image_dataset.val_sampler,
@@ -79,7 +79,6 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
                 skip_connect=skip_connect, add_params=append_params, clip_output=clip_output)
     if use_checkpoint:
         start_epoch = load_checkpoint(unet, model_out_dir) #weight_out_dir
-        #lr = learning_rate * (gamma ** (start_epoch//step_size))
     else:
         start_epoch = 0 
     if use_gpu:

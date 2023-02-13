@@ -43,7 +43,7 @@ class Darktable_Dataset(Dataset):
         param: parameter type of data
         sweep: Toggles sweep mode of the dataloader for Darktable_sweep.py
     '''
-    def __init__(self, root_dir, stage = 1, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, proxy_type=None, param=None, sweep=False):
+    def __init__(self, root_dir, stage = 1, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, proxy_type=None, param=None, sweep=False, vary_input=False):
         
         if stage != 1 and stage != 2 and stage != 3:
             raise ValueError("Please enter either 1, 2, or 3 for the stage parameter.")
@@ -55,6 +55,7 @@ class Darktable_Dataset(Dataset):
         self.proxy_type = proxy_type
         self.param = param
         self.sweep = sweep
+        self.vary_input = vary_input
         
         # Configuring input & output directories
         if input_dir is None:
@@ -116,7 +117,7 @@ class Darktable_Dataset(Dataset):
             '''
             Concatentate image and parameter tensors.
             '''
-            num_channels, width, height = image.size()
+            _, width, height = image.size()
             
             param_tensor = torch.tensor((), dtype=torch.float).new_ones((len(params), width, height)).type(torch.FloatTensor)
             channel_index = 0
@@ -141,7 +142,9 @@ class Darktable_Dataset(Dataset):
         if not self.sweep:
             print('ground truth image name: ' + image_name)
         input_image_name = image_name.split(".")[0] + '.tif'
-        print('original image name: ' + input_image_name)
+        if self.vary_input:
+            input_image_name = image_name
+        print('input image name: ' + input_image_name)
         input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
         
         if self.transform is not None:
@@ -195,63 +198,6 @@ class Darktable_Dataset(Dataset):
         if self.sweep:
             return image_name, proxy_model_input
         return image_name, proxy_model_input, proxy_model_label
-
-    # DEPRECATED: this is no longer being used
-    def save_crops(self):
-
-        to_tensor_transform = transforms.Compose([transforms.ToTensor()])
-
-        for index in range(len(self)):
-        
-            image_name = self.image_name_list[index]
-            if not self.sweep:
-                print('ground truth image name: ' + image_name)
-            input_image_name = image_name.split(".")[0]
-            print('original image name: ' + input_image_name)
-            input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
-            # print('image name: ' + image_name)
-            # input_image = Image.open(os.path.join(self.input_image_dir, image_name))
-            
-            if self.transform is not None:
-                input_image = self.transform(input_image)
-                
-            proxy_model_input = to_tensor_transform(input_image)
-            proxy_model_input = interpolate(proxy_model_input[None, :, :, :], scale_factor=0.25, mode='bilinear')
-            proxy_model_input = torch.squeeze(proxy_model_input, dim=0)
-            num_channels, width, height = proxy_model_input.size()
-            
-            # Cropping input tensor
-            if width % 2 == 0:
-                mid_width = width / 2
-            else:
-                mid_width = (width - 1) / 2
-            if height % 2 == 0:
-                mid_height = height / 2
-            else:
-                mid_height = (height - 1) / 2
-            proxy_model_input = proxy_model_input[:, int(mid_width - (c.IMG_SIZE / 2)):int(mid_width + (c.IMG_SIZE / 2)), int(mid_height - (c.IMG_SIZE / 2)):int(mid_height + (c.IMG_SIZE / 2))]
-            
-            if not self.sweep:
-                output_image = Image.open(os.path.join(self.output_image_dir, image_name))
-                
-                if self.transform is not None:
-                    output_image = self.transform(output_image)
-                
-                proxy_model_label = to_tensor_transform(output_image)
-                proxy_model_label = interpolate(proxy_model_label[None, :, :, :], scale_factor=0.25, mode='bilinear')
-                proxy_model_label = torch.squeeze(proxy_model_label, dim=0)[:, int(mid_width - (c.IMG_SIZE / 2)):int(mid_width + (c.IMG_SIZE / 2)), int(mid_height - (c.IMG_SIZE / 2)):int(mid_height + (c.IMG_SIZE / 2))]
-            
-            if self.stage == 1:
-                # Saving crops
-                if c.SAVE_CROPS and self.sweep == False:
-                    input_ndarray = proxy_model_input.detach().cpu().numpy()
-                    input_ndarray = np.moveaxis(input_ndarray, 0, -1)
-                    input_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, self.proxy_type + '_' + self.param + '_' + c.CROPPED_INPUT_DIR, f'crop_{image_name}')
-                    plt.imsave(input_path, input_ndarray, format=c.CROP_FORMAT)
-                    label_ndarray = proxy_model_label.detach().cpu().numpy()
-                    label_ndarray = np.moveaxis(label_ndarray, 0, -1)
-                    label_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, self.proxy_type + '_'  + self.param + '_' +  c.CROPPED_OUTPUT_DIR, f'crop_{image_name}')
-                    plt.imsave(label_path, label_ndarray, format=c.CROP_FORMAT)
 
     def __len__(self):
         return len(self.image_name_list)
