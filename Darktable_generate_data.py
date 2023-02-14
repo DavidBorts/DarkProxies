@@ -60,6 +60,12 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
     # Information about tapout requirement for the given proxy
     tapouts = c.TAPOUTS[proxy_type]
 
+    # Which parameter spaces to sample
+    proxy_type_gt = proxy_type
+    param_gt = param
+    if tapouts is not None:
+        proxy_type_gt, param_gt = c.SAMPLER_BLOCKS[proxy_type].split('_')
+
     # Iterating over each source DNG file
     if stage == 1:
         dng_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_DNG_PATH)
@@ -103,7 +109,7 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
 
             # Assembling a dictionary of all of the parameters to apply to the source DNG
             # Temperature and rawprepare params must be maintained in order to produce expected results
-            params_dict = dt.get_params_dict(proxy_type, param, value, temperature_params, raw_prepare_params)
+            params_dict = dt.get_params_dict(proxy_type_gt, param_gt, value, temperature_params, raw_prepare_params)
             vals.append(float(value)) # Adding to params list
 
             # Rendering the output image

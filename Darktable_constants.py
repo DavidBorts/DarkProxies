@@ -143,3 +143,11 @@ TAPOUTS = {
 
 # List of Darktable blocks that do not require input parameters
 NO_PARAMS = ['colorin','colorout', 'demosaic']
+
+# Dict of which blocks to sample parameters from for parameter-less
+# blocks like colorin and colorout
+SAMPLER_BLOCKS = {
+    'colorin': 'exposure_exposure',
+    'colorout': 'colorbalancergb_contrast',
+    'demosaic': None# TODO: update me
+}

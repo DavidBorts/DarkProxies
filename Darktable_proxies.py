@@ -37,7 +37,11 @@ if append_params:
     possible_values = getattr(c.POSSIBLE_VALUES(), proxy_type + '_' + param)
 else:
     #TODO: replace with highlights or temperature to support demosaic?
-    possible_values = getattr(c.POSSIBLE_VALUES(), 'exposure_exposure')
+    if proxy_type == 'colorin':
+        possible_values = getattr(c.POSSIBLE_VALUES(), 'exposure_exposure')
+
+    if proxy_type == 'colorout':
+        possible_values = getattr(c.POSSIBLE_VALUES(), 'colorbalancergb_contrast')
 
     # Temporary hack: not sweeping for demosaic
     if proxy_type == 'demosaic':
