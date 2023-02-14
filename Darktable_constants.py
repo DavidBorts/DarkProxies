@@ -138,7 +138,7 @@ TAPOUTS = {
     # have not yet been processed for output by the
     # colorout block
     # TODO: Do we need 'colorout_out'??
-    'colorout': ['colorout_in', 'colorout_out']
+    'colorout': ['colorbalancergb_out', 'colorout_out']
 }
 
 # List of Darktable blocks that do not require input parameters
