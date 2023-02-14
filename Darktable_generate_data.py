@@ -110,6 +110,8 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
             # Assembling a dictionary of all of the parameters to apply to the source DNG
             # Temperature and rawprepare params must be maintained in order to produce expected results
             params_dict = dt.get_params_dict(proxy_type_gt, param_gt, value, temperature_params, raw_prepare_params)
+            if proxy_type == "colorin":
+                params_dict = dt.get_params_dict('colorbalancergb', 'contrast', float(0.0), None, None, dict=params_dict)
             vals.append(float(value)) # Adding to params list
 
             # Rendering the output image
