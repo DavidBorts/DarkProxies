@@ -701,11 +701,6 @@ def get_params_dict(proxy_type, param_name, value, temperature_params, raw_prepa
     proxy = proxy_type
     param = param_name
 
-    # Used for colorin & colorout proxies
-    if proxy_type in c.NO_PARAMS:
-        proxy = 'exposure'
-        param = 'exposure'
-
     # If a dict is provided, use that instead
     if dict != None:
         params_dict = dict

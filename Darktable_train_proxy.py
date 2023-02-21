@@ -49,7 +49,11 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
 
     # Set up data loading.
     since = time.time()
-    image_dataset = Darktable_Dataset(root_dir = image_root_dir, stage=1, proxy_type=proxy_type, param=param, vary_input=append_params)
+    image_dataset = Darktable_Dataset(root_dir = image_root_dir, 
+                                      stage=1, 
+                                      proxy_type=proxy_type, 
+                                      param=param, 
+                                      vary_input=append_params)
     train_loader = torch.utils.data.DataLoader(image_dataset, 
                                                batch_size=batch_size, 
                                                sampler=image_dataset.train_sampler,
