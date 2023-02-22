@@ -2,7 +2,7 @@
 
 import os
 import numpy as np
-import numpy.random as random
+#import numpy.random as random
 
 # Local files
 import Darktable_constants as c
@@ -60,22 +60,31 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
     # Information about tapout requirement for the given proxy
     tapouts = c.TAPOUTS[proxy_type]
 
-    # Which parameter spaces to sample
+    # Which parameter spaces to sample 
+    # (by default, proxies with input parameters sample their own 
+    # paramater spaces. Howvever, for proxies without input paramaters,
+    # the parameter space of a different processing block, called a 
+    # "sampler block" in this codebase, is sampled instead to augment 
+    # training data. This effects which rendering parameters are 
+    # passed to darktable-cli)
     proxy_type_gt = proxy_type
     param_gt = param
     if tapouts is not None:
         proxy_type_gt, param_gt = c.SAMPLER_BLOCKS[proxy_type].split('_')
 
-    # Iterating over each source DNG file
+    # Getting DNG images
     if stage == 1:
         dng_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_DNG_PATH)
     else:
         dng_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_2_DNG_PATH)
     src_images = sorted(os.listdir(dng_path))
+
+    # Temporary hack: not sweeping parameter spaces for demosaic
     if min is None or max is None:
         generate_single(proxy_type, dng_path, src_images, tapouts)
         print(f"Training data generated: stage {stage}")
         return
+
     for image in src_images:
 
         # Getting path of individual source DNG file
@@ -110,7 +119,7 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
             # Assembling a dictionary of all of the parameters to apply to the source DNG
             # Temperature and rawprepare params must be maintained in order to produce expected results
             params_dict = dt.get_params_dict(proxy_type_gt, param_gt, value, temperature_params, raw_prepare_params)
-            if proxy_type == "colorin":
+            if proxy_type == "colorin" or proxy_type == "colorout":
                 params_dict = dt.get_params_dict('colorbalancergb', 'contrast', float(0.0), None, None, dict=params_dict)
             vals.append(float(value)) # Adding to params list
 
