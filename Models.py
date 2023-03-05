@@ -9,17 +9,17 @@ import sys
 import time
 import torch
 import torch.nn as nn
-import torch.optim as optim
+import torch.nn.functional as f
 import torchvision.models as models
 
 from collections import OrderedDict
-from torch.optim import lr_scheduler
 
 import matplotlib.pyplot as plt
 import numpy as np
 import Darktable_constants as c
 
 DEFAULT_UNET_CHANNEL_LIST = [32, 64, 128, 256, 512] # Same as in 'Learning to see in the Dark'
+DEFAULT_DEMOSAICNET_CHANNEL_LIST = [32, 64, 128, 256, 512] # Same as in 'Learning to see in the Dark'
 DEFAULT_FCNET_CHANNEL_LIST = [32, 64, 128, 256, 256, 128, 64, 32, 1]
 
 def fc_relu(in_channels, out_channels):
@@ -65,6 +65,17 @@ def double_conv(in_channels, out_channels):
         nn.ReLU(inplace=True),
         nn.Conv2d(out_channels, out_channels, 3, padding=1),
         nn.ReLU(inplace=True)
+    )
+
+'''
+Basic building block of the DemosaicNet
+'''
+def double_conv_leaky(in_channels, out_channels):
+    return nn.Sequential(
+        nn.Conv2d(in_channels, out_channels, 3, padding=1),
+        nn.LeakyReLU(inplace=True, negative_slope=0.2),
+        nn.Conv2d(out_channels, out_channels, 3, padding=1),
+        nn.LeakyReLU(inplace=True, negative_slope=0.2)
     )
 
 '''
@@ -313,6 +324,105 @@ class ChenNet(nn.Module):
         
         return out
 
+class demosaicNet(nn.Module):
+
+    def __init__(self, num_input_channels, num_output_channels, skip_connect=True, clip_output=True, channel_list=DEFAULT_DEMOSAICNET_CHANNEL_LIST):
+        super().__init__()
+        if not len(channel_list) == 5:
+            raise ValueError('channel_list argument should be a list of integers of size 5.')
+        self.num_input_channels = num_input_channels
+        self.num_output_channels = num_output_channels
+        self.skip_connect = skip_connect
+        self.clip_output = clip_output
+
+        in_channel_list = channel_list
+        
+        if self.skip_connect:
+            print('Adding skip connection from input to output.')
+        if self.clip_output:
+            print('Clipping output of model.')
+            
+        # Down
+        self.conv_down_1 = double_conv_leaky(self.num_input_channels, channel_list[0])              # num_input_channels -> 32
+        self.maxpool_1 = nn.MaxPool2d(2)
+        self.conv_down_2 = double_conv_leaky(in_channel_list[0], channel_list[1])                      # 32 (52)  -> 64
+        self.maxpool_2 = nn.MaxPool2d(2)
+        self.conv_down_3 = double_conv_leaky(in_channel_list[1], channel_list[2])                      # 64 (84) -> 128
+        self.maxpool_3 = nn.MaxPool2d(2)
+        self.conv_down_4 = double_conv_leaky(in_channel_list[2], channel_list[3])                      # 128 (148) -> 256
+        self.maxpool_4 = nn.MaxPool2d(2)
+        
+        # Bridge
+        self.bridge = double_conv_leaky(in_channel_list[3], channel_list[4])                           # 256 (276) -> 512
+        
+        # Up: Currently, we do not append hyperparameters on the upsampling portion.
+        # Can use this for upsample: self.upsample_4 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.upsample_4 = nn.ConvTranspose2d(channel_list[4], channel_list[3], 2, stride=2)   # 512 -> 256
+        self.conv_up_4 = double_conv_leaky(channel_list[4], channel_list[3])                     # 256 + 256 (+ 20) -> 256
+
+        self.upsample_3 = nn.ConvTranspose2d(channel_list[3], channel_list[2], 2, stride=2)   # 256 -> 128
+        self.conv_up_3 = double_conv_leaky(channel_list[3], channel_list[2])                     # 128 + 128 (+ 20) -> 128
+
+        self.upsample_2 = nn.ConvTranspose2d(channel_list[2], channel_list[1], 2, stride=2)   # 128 -> 64
+        self.conv_up_2 = double_conv_leaky(channel_list[2], channel_list[1])                     # 64 + 64 (+ 20) -> 64
+
+        self.upsample_1 = nn.ConvTranspose2d(channel_list[1], channel_list[0], 2, stride=2)   # 64  -> 32
+        self.conv_up_1 = double_conv_leaky(channel_list[1], channel_list[0])                     # 32 + 32 (+ 20) -> 32
+
+        # Final
+        # Note that in 'Learning to see in the Dark' the authors use the Tensorflow 'SAME' padding to ensure
+        # that output dimensions are maintained. However, here we need to determine the padding ourselves, which
+        # is why the final convolution does not have any padding.
+        self.conv_final = nn.Conv2d(channel_list[0], self.num_output_channels, 1, padding=0)  # 32  -> num_output_channels 
+
+    def forward(self, x):
+
+        # Down
+        conv1  = self.conv_down_1(x)
+        pool1  = self.maxpool_1(conv1)
+
+        conv2  = self.conv_down_2(pool1)
+        pool2  = self.maxpool_2(conv2)       
+
+        conv3  = self.conv_down_3(pool2)
+        pool3  = self.maxpool_3(conv3)
+        
+        conv4  = self.conv_down_4(pool3)
+        pool4  = self.maxpool_4(conv4)       
+
+        # Bridge
+        conv5  = self.bridge(pool4)
+        
+        # Up
+        up6    = self.upsample_4(conv5)
+
+        merge6 = torch.cat([conv4, up6], dim=1)
+        conv6  = self.conv_up_4(merge6)
+        
+        up7    = self.upsample_3(conv6)
+        merge7 = torch.cat([conv3, up7], dim=1)
+        conv7  = self.conv_up_3(merge7)
+        
+        up8    = self.upsample_2(conv7)
+        merge8 = torch.cat([conv2, up8], dim=1)
+        conv8  = self.conv_up_2(merge8)
+        
+        up9    = self.upsample_1(conv8)
+        merge9 = torch.cat([conv1, up9], dim=1)
+        conv9  = self.conv_up_1(merge9)
+        
+        # Final
+        out    = self.conv_final(conv9)
+        if self.skip_connect:
+            out =  out + x[:,0:self.num_output_channels,:,:] # Skip connection from input to output
+        
+        if self.clip_output:
+            return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
+        
+        # Unpacking channels into 3-channel RGB image
+        out = f.pixel_shuffle(out, 2)
+        
+        return out
 
 class PerceptualLoss():
     def __init__(self, loss, use_gpu):
