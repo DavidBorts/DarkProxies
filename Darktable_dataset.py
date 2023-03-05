@@ -17,6 +17,7 @@ from torchvision import transforms
 
 # Local files
 import Darktable_constants as c
+from utils.extract_RAW import get_cfa
 
 # Ignore warnings
 import warnings
@@ -43,7 +44,7 @@ class Darktable_Dataset(Dataset):
         param: parameter type of data
         sweep: Toggles sweep mode of the dataloader for Darktable_sweep.py
     '''
-    def __init__(self, root_dir, stage = 1, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, proxy_type=None, param=None, sweep=False, vary_input=False):
+    def __init__(self, root_dir, stage, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, proxy_type=None, param=None, sweep=False, vary_input=False):
         
         if stage != 1 and stage != 2 and stage != 3:
             raise ValueError("Please enter either 1, 2, or 3 for the stage parameter.")
@@ -126,6 +127,53 @@ class Darktable_Dataset(Dataset):
                     torch.tensor((), dtype=torch.float).new_full((width, height), parameter)
                 channel_index += 1
             return torch.cat([image, param_tensor], dim=0)
+        
+        def pack_input_demosaic(image, cfa):
+
+            mosaic = np.expand_dims(image, axis=2)
+            H = np.shape(mosaic)[0]
+            W = np.shape(mosaic)[1]
+
+            # Checking for 2x2 Bayer pattern
+            if len(cfa) != 4:
+                print("Provided CFA: " + cfa)
+                raise ValueError("Only 2 X 2 Bayer patterns are currently supported.")
+
+            # Checking for pattern with 2 green tiles
+            if cfa.upper().count('G') != 2:
+                print("Provided CFA: " + cfa)
+                raise ValueError("Only CFA patterns with 2 green tiles are currently supported.")
+
+            # Distinguishing G's in CFA
+            g_indices = [index for index, char in enumerate(cfa.upper()) if char == 'G']
+            cfa[g_indices[0]] = 'G1'
+            cfa[g_indices[1]] = 'G2'
+
+            # Getting color channels
+            TL = mosaic[0:H:2, 0:W:2, :]
+            TR = mosaic[0:H:2, 1:W:2, :]
+            BL = mosaic[1:H:2, 0:W:2, :]
+            BR = mosaic[1:H:2, 1:W:2, :]
+            channels = [TL, TR, BL, BR]
+
+            # Assigning channels to R, G, & B
+            COLORS = ['R', 'G1', 'B', 'G2']
+            for i in range(len(cfa)):
+                color = cfa[i].upper()
+
+                # Checking for RGB-only CFA
+                if color not in COLORS:
+                    print("Provided CFA: " + cfa)
+                    raise ValueError("Only RGB-based CFAs are currently supported.")
+                
+                # Re-mapping each channel to the correct location, based on the Bayer pattern
+                idx = COLORS.index(color)
+                if idx != i:
+                    channels[idx], channels[i] = channels[i], channels[idx]
+
+            # Packing the channels together as RGBG
+            # (axes rearranged to be C x H x W)
+            return np.moveaxis(np.concatenate(channels, axis=2), -1, 0)
 
         to_tensor_transform = transforms.Compose([transforms.ToTensor()])
 
@@ -149,6 +197,12 @@ class Darktable_Dataset(Dataset):
         
         if self.transform is not None:
             input_image = self.transform(input_image)
+
+        if self.proxy_type == "demosiac":
+            dng_name = input_image_name.split('_')[0]
+            dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)
+            cfa = get_cfa(dng_path)
+            input_image = pack_input_demosaic(np.array(input_image), cfa)
             
         proxy_model_input = to_tensor_transform(input_image)
         proxy_model_input = interpolate(proxy_model_input[None, :, :, :], scale_factor=0.25, mode='bilinear')
@@ -197,6 +251,7 @@ class Darktable_Dataset(Dataset):
             
         if self.sweep:
             return image_name, proxy_model_input
+
         return image_name, proxy_model_input, proxy_model_label
 
     def __len__(self):
