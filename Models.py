@@ -324,7 +324,7 @@ class ChenNet(nn.Module):
         
         return out
 
-class demosaicNet(nn.Module):
+class DemosaicNet(nn.Module):
 
     def __init__(self, num_input_channels, num_output_channels, skip_connect=True, clip_output=True, channel_list=DEFAULT_DEMOSAICNET_CHANNEL_LIST):
         super().__init__()

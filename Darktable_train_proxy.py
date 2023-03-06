@@ -12,7 +12,7 @@ from torch.optim import lr_scheduler
 from torch.nn.utils.rnn import pad_sequence
 
 # Local files
-from Models import UNet, train_model, load_checkpoint, eval
+from Models import UNet, DemosaicNet, train_model, load_checkpoint, eval
 from Darktable_dataset import Darktable_Dataset
 from Loss_functions import losses
 import Darktable_constants as c
@@ -79,27 +79,31 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
     num_channels = c.NUM_IMAGE_CHANNEL
     if append_params:
         num_channels += len(possible_params)
-    unet = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
+    model = None
+    if proxy_type == "demosaic":
+        model = DemosaicNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL,
+                            skip_connect=skip_connect, clip_output=clip_output)
+    model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
                 skip_connect=skip_connect, add_params=append_params, clip_output=clip_output)
     if use_checkpoint:
-        start_epoch = load_checkpoint(unet, model_out_dir) #weight_out_dir
+        start_epoch = load_checkpoint(model, model_out_dir) #weight_out_dir
     else:
         start_epoch = 0 
     if use_gpu:
-        unet.cuda()
+        model.cuda()
     if torch.cuda.device_count() > 1:
-        unet = nn.DataParallel(unet)
+        model = nn.DataParallel(model)
         
     # Set up training regime.
     # criterion is the loss function, which can be nn.L1Loss() or nn.MSELoss()
     #criterion = nn.MSELoss()
     criterion = losses[c.WHICH_LOSS[proxy_type][0]]
-    optimizer = optim.Adam(unet.parameters(), lr=learning_rate)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
     
     # Train the model.
     train_model(
-        unet, 
+        model, 
         dataloaders, 
         dataset_sizes, 
         criterion, 
@@ -118,7 +122,8 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
 '''
 Evaluate the model on a any input(s)
 '''
-# TODO: add suppport for colorin & colorout
+# TODO: add suppport for colorin & colorout (+ demosaic)
+# TODO: move this to eval file?
 def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, params_file, possible_params, proxy_type, param):
 
     # Constants
