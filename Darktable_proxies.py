@@ -96,7 +96,7 @@ if __name__ == "__main__":
     )
 
     # Stage 2 - parameter finetuning
-    if append_params:
+    if not append_params:
         print(f'{proxy_type} has no input parameters and therefore cannot be used for stage 2.')
         print('Skipping stage 2.')
         quit()
