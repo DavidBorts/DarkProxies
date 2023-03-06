@@ -85,13 +85,15 @@ class Darktable_Dataset(Dataset):
             print(self.image_name_list)
 
         # Getting path to params file (stage 1 only)
-        if self.stage == 1:
+        if self.stage == 1 and proxy_type != "demosaic":#TODO: temporary hack - delete me!!
             if params_file is None:
                 self.param_mat = np.load(os.path.join(root_dir, self.stage_path, f'{proxy_type}_{param}_params.npy'))
             else:
                 self.param_mat = np.load(params_file)
             if self.sweep:
                 self.num_params = len(self.param_mat)
+        else:
+            params_file = None
 
         # Creating samplers
         dataset_size = len(self)
