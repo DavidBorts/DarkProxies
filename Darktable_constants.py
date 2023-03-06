@@ -115,7 +115,7 @@ TAPOUTS = {
     # Demosaicing needs to be trained on images that have
     # not had any Darktable operations performed on them
     # TODO: replace with ['highlights_bayer_out', 'colorin_in'] ??
-    'demosaic': ['temperature_out', 'colorin_in'],
+    'demosaic': ['temperature_bayer_out', 'colorin_in'],
 
     # Denoise through colorin all need to be trained on
     # images that have not yet had their colorspaces
@@ -125,7 +125,7 @@ TAPOUTS = {
     'denoise': ['demosaic_out', 'denoise_out'],
     'hazeremoval': ['demosaic_out', 'hazeremoval_out'],
     'exposure': ['demosaic_out', 'exposure_out'],
-    'colorin': ['colorin_in', 'colorin_out'],
+    'colorin': ['colorin_in', 'colorbalancergb_out'],
 
     # All blocks after colorin and before colorout
     # require no tapouts for training
@@ -149,5 +149,5 @@ NO_PARAMS = ['colorin','colorout', 'demosaic']
 SAMPLER_BLOCKS = {
     'colorin': 'exposure_exposure',
     'colorout': 'colorbalancergb_contrast',
-    'demosaic': None# TODO: update me
+    'demosaic': None
 }

@@ -60,16 +60,17 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
     # Information about tapout requirement for the given proxy
     tapouts = c.TAPOUTS[proxy_type]
 
-    # Which parameter spaces to sample 
-    # (by default, proxies with input parameters sample their own 
+    # Which parameter spaces to sample
+    # (by default, proxies with input parameters sample their own
     # paramater spaces. Howvever, for proxies without input paramaters,
-    # the parameter space of a different processing block, called a 
-    # "sampler block" in this codebase, is sampled instead to augment 
-    # training data. This effects which rendering parameters are 
+    # the parameter space of a different processing block, called a
+    # "sampler block" in this codebase, is sampled instead to augment
+    # training data. This effects which rendering parameters are
     # passed to darktable-cli)
     proxy_type_gt = proxy_type
     param_gt = param
-    if tapouts is not None:
+    #if tapouts is not None:
+    if tapouts is not None and proxy_type != "demosaic":#TODO: temporary hack, remove me!!
         proxy_type_gt, param_gt = c.SAMPLER_BLOCKS[proxy_type].split('_')
 
     # Getting DNG images
@@ -81,7 +82,7 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
 
     # Temporary hack: not sweeping parameter spaces for demosaic
     if min is None or max is None:
-        generate_single(proxy_type, dng_path, src_images, tapouts)
+        generate_single(proxy_type, dng_path, src_images, input_path, output_path, tapouts)
         print(f"Training data generated: stage {stage}")
         return
 

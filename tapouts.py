@@ -76,8 +76,11 @@ def tmp2tiff(input_file, output_file):
 
     # Clipping image
     im = im[0, :, :, :output_channels]
-    print(np.maximum(im))
-    im = (im>>16).astype(np.float16) # Does this work??
+    print('dtype: ' + str(im.dtype))
+    print("max tapout value: " + str(np.amax(im)))
+    #im = (im>>16).astype(np.float16) # Does this work??
+    im = im.astype(np.float16)
+    print("new max tapout value:" + str(np.amax(im)))
 
     #print(f'Writing: {output_file}')
     tifffile.imwrite(output_file, im)
