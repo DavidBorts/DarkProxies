@@ -10,6 +10,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
+import imageio
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.functional import interpolate
@@ -198,7 +199,8 @@ class Darktable_Dataset(Dataset):
         if self.vary_input:
             input_image_name = image_name
         print('input image name: ' + input_image_name)
-        input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
+        input_image = imageio.imread(os.path.join(self.input_image_dir, input_image_name))
+        #input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
         
         if self.transform is not None:
             input_image = self.transform(input_image)
@@ -226,7 +228,8 @@ class Darktable_Dataset(Dataset):
         proxy_model_input = proxy_model_input[:, int(mid_width - (c.IMG_SIZE / 2)):int(mid_width + (c.IMG_SIZE / 2)), int(mid_height - (c.IMG_SIZE / 2)):int(mid_height + (c.IMG_SIZE / 2))]
         
         if not self.sweep:
-            output_image = Image.open(os.path.join(self.output_image_dir, image_name))
+            output_image = imageio.imread(os.path.join(self.output_image_dir, image_name))
+            #output_image = Image.open(os.path.join(self.output_image_dir, image_name))
             
             if self.transform is not None:
                 output_image = self.transform(output_image)
