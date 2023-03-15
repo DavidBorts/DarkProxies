@@ -152,8 +152,16 @@ class Darktable_Dataset(Dataset):
 
             # Distinguishing G's in CFA
             g_indices = [index for index, char in enumerate(cfa.upper()) if char == 'G']
-            cfa[g_indices[0]] = 'G1'
-            cfa[g_indices[1]] = 'G2'
+            cfa_new = ""
+            for idx, c in enumerate(cfa):
+                if idx == g_indices[0]:
+                    cfa_new += '1'
+                elif idx == g_indices[1]:
+                    cfa_new += '2'
+                else:
+                    cfa_new += c
+            #cfa[g_indices[0]] = 'G1'
+            #cfa[g_indices[1]] = 'G2'
 
             # Getting color channels
             TL = mosaic[0:H:2, 0:W:2, :]
@@ -164,8 +172,8 @@ class Darktable_Dataset(Dataset):
 
             # Assigning channels to R, G, & B
             COLORS = ['R', 'G1', 'B', 'G2']
-            for i in range(len(cfa)):
-                color = cfa[i].upper()
+            for i in range(len(cfa_new)):
+                color = cfa_new[i].upper()
 
                 # Checking for RGB-only CFA
                 if color not in COLORS:
@@ -200,22 +208,21 @@ class Darktable_Dataset(Dataset):
             input_image_name = image_name
         print('input image name: ' + input_image_name)
         input_image = imageio.imread(os.path.join(self.input_image_dir, input_image_name))
-        #print("shape in float16" + str(np.shape(input_image)))
-        input_image = input_image.astype(np.float32)
-        #print("shape in float32" + str(np.shape(input_image)))
+        #input_image = input_image.astype(np.float32)
         #input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
         
         if self.transform is not None:
             input_image = self.transform(input_image)
 
-        if self.proxy_type == "demosiac":
-            dng_name = input_image_name.split('_')[0]
+        if self.proxy_type == "demosaic":
+            dng_name = input_image_name.split('_')[0].split('.')[0] + '.dng'
             dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)
             cfa = get_cfa(dng_path)
             input_image = pack_input_demosaic(np.array(input_image), cfa)
             
         proxy_model_input = to_tensor_transform(input_image)
-        proxy_model_input = interpolate(proxy_model_input[None, :, :, :], scale_factor=0.25, mode='bilinear')
+        if self.proxy_type != "demosaic":
+            proxy_model_input = interpolate(proxy_model_input[None, :, :, :], scale_factor=0.25, mode='bilinear')
         proxy_model_input = torch.squeeze(proxy_model_input, dim=0)
         _, width, height = proxy_model_input.size()
         
@@ -232,7 +239,7 @@ class Darktable_Dataset(Dataset):
         
         if not self.sweep:
             output_image = imageio.imread(os.path.join(self.output_image_dir, image_name))
-            output_image = output_image.astype(np.float32)
+            #output_image = output_image.astype(np.float32)
             #output_image = Image.open(os.path.join(self.output_image_dir, image_name))
             
             if self.transform is not None:
