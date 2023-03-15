@@ -171,7 +171,7 @@ class Darktable_Dataset(Dataset):
             channels = [TL, TR, BL, BR]
 
             # Assigning channels to R, G, & B
-            COLORS = ['R', 'G1', 'B', 'G2']
+            COLORS = ['R', '1', 'B', '2']
             for i in range(len(cfa_new)):
                 color = cfa_new[i].upper()
 
@@ -216,9 +216,11 @@ class Darktable_Dataset(Dataset):
 
         if self.proxy_type == "demosaic":
             dng_name = input_image_name.split('_')[0].split('.')[0] + '.dng'
+            print("dng_path: " + str(dng_path))
             dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)
             cfa = get_cfa(dng_path)
             input_image = pack_input_demosaic(np.array(input_image), cfa)
+            input_image = np.squeeze(input_image)
             
         proxy_model_input = to_tensor_transform(input_image)
         if self.proxy_type != "demosaic":
@@ -246,7 +248,8 @@ class Darktable_Dataset(Dataset):
                 output_image = self.transform(output_image)
             
             proxy_model_label = to_tensor_transform(output_image)
-            proxy_model_label = interpolate(proxy_model_label[None, :, :, :], scale_factor=0.25, mode='bilinear')
+            if self.proxy_type != "demosaic":
+                proxy_model_label = interpolate(proxy_model_label[None, :, :, :], scale_factor=0.25, mode='bilinear')
             proxy_model_label = torch.squeeze(proxy_model_label, dim=0)[:, int(mid_width - (c.IMG_SIZE / 2)):int(mid_width + (c.IMG_SIZE / 2)), int(mid_height - (c.IMG_SIZE / 2)):int(mid_height + (c.IMG_SIZE / 2))]
         
         if self.stage == 1:
