@@ -378,6 +378,7 @@ class DemosaicNet(nn.Module):
     def forward(self, x):
 
         # Down
+        #print("forward(x) size: " + str(x.size()))
         conv1  = self.conv_down_1(x)
         pool1  = self.maxpool_1(conv1)
 

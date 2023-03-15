@@ -78,7 +78,7 @@ class Darktable_Dataset(Dataset):
         else:
             # Sorting image list
             self.image_name_list = os.listdir(self.output_image_dir)
-            if self.proxy_type == "demosiac":#TODO: temporary hack - delete me!
+            if self.proxy_type == "demosaic":#TODO: temporary hack - delete me!
                 self.image_name_list.sort()
             else:
                 self.image_name_list.sort(key=lambda x: (x.split(".")[0], float(x.split("_")[3].split(".tif")[0])))
@@ -200,6 +200,9 @@ class Darktable_Dataset(Dataset):
             input_image_name = image_name
         print('input image name: ' + input_image_name)
         input_image = imageio.imread(os.path.join(self.input_image_dir, input_image_name))
+        #print("shape in float16" + str(np.shape(input_image)))
+        input_image = input_image.astype(np.float32)
+        #print("shape in float32" + str(np.shape(input_image)))
         #input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
         
         if self.transform is not None:
@@ -229,6 +232,7 @@ class Darktable_Dataset(Dataset):
         
         if not self.sweep:
             output_image = imageio.imread(os.path.join(self.output_image_dir, image_name))
+            output_image = output_image.astype(np.float32)
             #output_image = Image.open(os.path.join(self.output_image_dir, image_name))
             
             if self.transform is not None:
