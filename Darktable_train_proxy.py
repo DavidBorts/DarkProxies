@@ -78,7 +78,7 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
     # Set up model
     num_channels = c.NUM_IMAGE_CHANNEL
     if proxy_type == "demosaic":
-        num_channels = 1
+        num_channels = 4
     if append_params:
         num_channels += len(possible_params)
     model = None
