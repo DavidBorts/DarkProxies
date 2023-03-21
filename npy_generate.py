@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-import Darktable_constants as c
+import Constants as c
 from npy_convert import convert
 
 

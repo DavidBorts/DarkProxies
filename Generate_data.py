@@ -5,7 +5,7 @@ import numpy as np
 #import numpy.random as random
 
 # Local files
-import Darktable_constants as c
+import Constants as c
 import PyDarktable as dt
 from tapouts import tmp2tiff
 from npy_convert import convert, merge

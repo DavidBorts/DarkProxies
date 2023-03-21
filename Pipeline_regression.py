@@ -2,19 +2,15 @@ import sys
 sys.path.append('../')
 import numpy as np
 import os
-import math
 import matplotlib.pyplot as plt
-import random
 import torch
 import torch.nn as nn 
 import torch.optim as optim
-from collections import OrderedDict
 from torch.optim import lr_scheduler
 from torch.autograd import Variable
-from torchvision import transforms
 
 # Local files
-import Darktable_constants as c
+import Constants as c
 from Models import UNet
 from Dataset import Darktable_Dataset
 from Proxy_pipeline import ProxyPipeline

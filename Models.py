@@ -16,7 +16,7 @@ from collections import OrderedDict
 
 import matplotlib.pyplot as plt
 import numpy as np
-import Darktable_constants as c
+import Constants as c
 
 DEFAULT_UNET_CHANNEL_LIST = [32, 64, 128, 256, 512] # Same as in 'Learning to see in the Dark'
 DEFAULT_DEMOSAICNET_CHANNEL_LIST = [32, 64, 128, 256, 512] # Same as in 'Learning to see in the Dark'

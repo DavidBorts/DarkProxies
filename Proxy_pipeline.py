@@ -48,7 +48,7 @@ import os
 import sys
 
 # Local files
-import Darktable_constants as c
+import Constants as c
 from Dataset import Darktable_Dataset
 from Generate_data import generate_pipeline
 from Models import UNet, generic_load

@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 import rawpy
 from dataclasses import dataclass, field, fields
-import Darktable_constants as c
+import Constants as c
 
 # Point me to darktable-cli for 3.8.
 #_DARKTABLE_CLI = "/Applications/darktable.app/Contents/MacOS/darktable-cli"

@@ -6,7 +6,7 @@ import torch
 
 # Local files
 import Generate_data as data
-import Darktable_constants as c
+import Constants as c
 import Train_proxy
 import Parameter_regression
 

@@ -5,7 +5,7 @@
 # 
 # Sample ffmpeg command: ffmpeg -r 25 -f image2 -s 1920x1080 -i [image name]_[proxy type]_[parameter]_sweep_%04d.png -vcodec libx264 -crf 15  -pix_fmt yuv420p [VIDEO NAME].mp4
 #
-# How to use: python Darktable_sweep.py [proxy type]_[parameter] [path to .DNG image to use as input] [integer number of values to sweep over]
+# How to use: python Sweep.py [proxy type]_[parameter] [path to .DNG image to use as input] [integer number of values to sweep over]
 #TODO: Support multiple params per proxy
 
 import sys
@@ -20,7 +20,7 @@ import torch.optim as optim
 from Models import UNet, load_checkpoint, eval
 from Dataset import Darktable_Dataset
 from Loss_functions import losses
-import Darktable_constants as c
+import Constants as c
 import PyDarktable as dt
 from npy_convert import convert
 
