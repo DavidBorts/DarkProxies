@@ -50,7 +50,7 @@ import sys
 # Local files
 import Darktable_constants as c
 from Dataset import Darktable_Dataset
-from Darktable_generate_data import generate_pipeline
+from Generate_data import generate_pipeline
 from Models import UNet, generic_load
 
 class ProxyPipeline:

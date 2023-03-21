@@ -494,7 +494,7 @@ def load_checkpoint(model, model_weight_dir):
     return latest_epoch
 
 '''
-Training routine for the model. For example of inputs, go to Darktable_train_proxy.py
+Training routine for the model. For example of inputs, go to Train_proxy.py
 '''
 def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, scheduler, weight_out_dir, num_epochs, start_epoch, use_gpu, proxy_type, param, save_every_epoch = True, save_outputs=True):
     save_output_frequency = c.SAVE_OUTPUT_FREQ

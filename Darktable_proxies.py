@@ -6,10 +6,10 @@ import torch
 from Dataset import Darktable_Dataset
 
 # Local files
-import Darktable_generate_data as data
+import Generate_data as data
 import Darktable_constants as c
-import Darktable_train_proxy
-import Darktable_finetune_parameters
+import Train_proxy
+import Parameter_regression
 
 # Command-line args
 proxy_type, param = sys.argv[1].split('_')  # Type of proxy to train [module, param]
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     # Stage 1 - proxy training
     print("Begin proxy training (stage 1)")
     use_gpu = torch.cuda.is_available() 
-    Darktable_train_proxy.run_training_procedure(
+    Train_proxy.run_training_procedure(
         image_root_dir, 
         weight_out_dir, 
         stage_1_batch_size, 
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     print("Begin finetune parameters (stage 2)")
     sys.stdout.flush()
     use_gpu = torch.cuda.is_available()
-    Darktable_finetune_parameters.run_finetune_procedure(
+    Parameter_regression.run_finetune_procedure(
         image_root_dir, 
         param_out_dir,
         weight_out_dir,#model_weight_file,

@@ -10,8 +10,8 @@ import sys
 import torch
 
 # Local files
-from Darktable_generate_data import generate_eval
-from Darktable_train_proxy import run_eval_procedure
+from Generate_data import generate_eval
+from Train_proxy import run_eval_procedure
 import Darktable_constants as c
 
 # Command-line arguments

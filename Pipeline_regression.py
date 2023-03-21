@@ -18,8 +18,8 @@ import Darktable_constants as c
 from Models import UNet
 from Dataset import Darktable_Dataset
 from Proxy_pipeline import ProxyPipeline
-from Darktable_generate_data import generate_pipeline
-from Darktable_finetune_parameters import initial_guess, decide, project_param_values
+from Generate_data import generate_pipeline
+from Parameter_regression import initial_guess, decide, project_param_values
 
 # Constants
 image_root_dir = c.IMAGE_ROOT_DIR
