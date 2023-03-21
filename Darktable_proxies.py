@@ -3,7 +3,6 @@
 import sys
 import os
 import torch
-from Dataset import Darktable_Dataset
 
 # Local files
 import Generate_data as data
