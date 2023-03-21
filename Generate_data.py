@@ -7,7 +7,7 @@ import numpy as np
 # Local files
 import Constants as c
 import PyDarktable as dt
-from tapouts import tmp2tiff
+from Tapouts import tmp2tiff
 from npy_convert import convert, merge
 
 def generate(proxy_type, param, stage, min, max, interactive, num):
