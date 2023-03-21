@@ -16,7 +16,7 @@ from torch.autograd import Variable
 from torchvision import transforms
 
 # Local files
-import Darktable_constants as c
+import Constants as c
 from Models import UNet
 from Dataset import Darktable_Dataset
 from Loss_functions import losses
