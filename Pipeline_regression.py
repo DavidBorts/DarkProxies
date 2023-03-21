@@ -16,8 +16,8 @@ from torchvision import transforms
 # Local files
 import Darktable_constants as c
 from Models import UNet
-from Darktable_dataset import Darktable_Dataset
-from Darktable_pipeline import proxyPipeline
+from Dataset import Darktable_Dataset
+from Proxy_pipeline import ProxyPipeline
 from Darktable_generate_data import generate_pipeline
 from Darktable_finetune_parameters import initial_guess, decide, project_param_values
 
@@ -175,7 +175,7 @@ def regression_procedure(input_path, label_path, use_gpu):
 
     
     # Differentiable ISP
-    isp = proxyPipeline(proxy_order, use_gpu)
+    isp = ProxyPipeline(proxy_order, use_gpu)
 
     # Creating any directories that do nto already exist
     if not os.path.exists(param_out_dir):

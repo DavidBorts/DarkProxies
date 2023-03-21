@@ -11,6 +11,7 @@ def get_cfa(raw_file_path):
     cfa = "".join([chr(raw.color_desc[i]) for i in raw.raw_pattern.flatten()])
     return cfa
 
+# Helper script to print out the CFAs of all RAW images in a given directory
 if __name__ == "__main__":
     dng_dir = sys.argv[1]
 

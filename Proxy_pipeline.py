@@ -38,7 +38,7 @@ Example pipeline_config.txt file:**
                             censorize_pixelate 0
 **(to include only sharpen and contrast in the pipeline)
 
-Example script usage: python ./Darktable_pipeline.py [param_file] [dng_path] [input_path] [output_path] [label_path]
+Example script usage: python ./Proxy_pipeline.py [param_file] [dng_path] [input_path] [output_path] [label_path]
 '''
 
 import torch
@@ -49,11 +49,11 @@ import sys
 
 # Local files
 import Darktable_constants as c
-from Darktable_dataset import Darktable_Dataset
+from Dataset import Darktable_Dataset
 from Darktable_generate_data import generate_pipeline
 from Models import UNet, generic_load
 
-class proxyPipeline:
+class ProxyPipeline:
     def __init__(self, proxies_list, use_gpu):
         
         self.num_proxies = len(proxies_list)
@@ -146,7 +146,7 @@ def evaluate(param_file, input_path, label_path, output_path, use_gpu):
 
 
     # Differentiable ISP
-    isp = proxyPipeline(proxy_order, use_gpu)
+    isp = ProxyPipeline(proxy_order, use_gpu)
 
     # Setting up dataset
     print("Preparing dataset" )
