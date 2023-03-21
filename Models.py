@@ -521,6 +521,10 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
         sys.stdout.flush()
         # Each epoch has a training and validation phase
         for phase in ['train', 'val']:
+
+            if dataset_sizes[phase] == 0:
+                continue
+
             if phase == 'train':
                 scheduler.step()
                 model.train()  # Set model to training mode
