@@ -11,13 +11,13 @@ DARKTABLE_PATH = "/home/dborts/programs/darktable/build/bin/darktable-cli" # CHA
 
 # Global constants
 IMAGE_ROOT_DIR = '.'                     #   Root directory from which to construct all file paths
-INTERACTIVE = True                       #   Toggle interactive prompts between stages
+INTERACTIVE = False                      #   Toggle interactive prompts between stages
 NUM_IMAGE_CHANNEL = 3                    # X Number of channels in each image (3 for RGB)
 IMG_SIZE = 736                           # X Dimensions to crop all images to (IMG_SIZE x IMG_SIZE)
 
 # Data generation constants (Stage 0)
-GENERATE_STAGE_1 = True                  #   Toggles new data generation for proxy training (stage 1)
-GENERATE_STAGE_2 = False                 #   Toggles new data generation for slider regression (stage 2)
+GENERATE_STAGE_1 = True                 #   Toggles new data generation for proxy training (stage 1)
+GENERATE_STAGE_2 = True                 #   Toggles new data generation for slider regression (stage 2)
 GENERATE_WITH_CHECKPOINTS = False        #   If True, progress will be tracked in case of interruption
 INPUT_DIR = 'input/'                     #   Name of directories that store training data
 OUTPUT_DIR = 'output/'                   #   Name of directories that store ground truth data
@@ -30,13 +30,13 @@ STAGE_3_DNG_PATH = 'images/stage_3/'     # X Path to folder with all DNG files f
 # Training the proxies (Stage 1)
 STAGE_1_PATH = 'stage_1/'                #   Directory that stores all training data, model weights, and predictions
 PROXY_MODEL_BATCH_SIZE = 1               #   Batch size for proxy training
-PROXY_MODEL_NUM_EPOCH = 500              #   Number of epochs for which to train
+PROXY_MODEL_NUM_EPOCH = 500             #   Number of epochs for which to train
 MODEL_WEIGHTS_PATH = 'model_weights/'    #   Name of directories where model weights are stored
 SAVE_OUTPUT_FREQ = 50                    #   Frequency at which to save model predictions (in terms of epochs)
 OUTPUT_PREDICTIONS_PATH = 'predictions/' #   Name of directories where model predictions are stored
 OUTPUT_PREDICTIONS_FORMAT = 'tiff'       #   Format to save model predictions as
 SAVE_CROPS = False                       #   If True, cropped versions of all training data are saved
-CROP_FORMAT = 'png'                      #   Format to save crops as (Default: png)
+CROP_FORMAT = 'tiff'                     #   Format to save crops as (Default: png)
 CROPPED_INPUT_DIR = 'input_crop/'        #   Directory at which to save cropped training data
 CROPPED_OUTPUT_DIR = 'output_crop/'      #   Directory at which to save ground truth data
 SWEEP_INPUT_DIR = 'sweep_input'          #   Name of directories that store data for the Darktable_sweep.py script

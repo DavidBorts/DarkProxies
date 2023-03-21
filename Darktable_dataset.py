@@ -204,8 +204,10 @@ class Darktable_Dataset(Dataset):
         if not self.sweep:
             print('ground truth image name: ' + image_name)
         input_image_name = image_name.split(".")[0] + '.tif'
-        if self.vary_input:
+        if self.vary_input: # colorin/colorout/demosaic
             input_image_name = image_name
+            if self.proxy_type == "demosaic": # TODO: Temporary hack - delete me!
+                input_image_name = image_name.split('.')[0] + '.tif'
         print('input image name: ' + input_image_name)
         input_image = imageio.imread(os.path.join(self.input_image_dir, input_image_name))
         #input_image = input_image.astype(np.float32)
@@ -216,8 +218,8 @@ class Darktable_Dataset(Dataset):
 
         if self.proxy_type == "demosaic":
             dng_name = input_image_name.split('_')[0].split('.')[0] + '.dng'
-            print("dng_path: " + str(dng_path))
             dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)
+            print('dng_path: ' + str(dng_path))
             cfa = get_cfa(dng_path)
             input_image = pack_input_demosaic(np.array(input_image), cfa)
             input_image = np.squeeze(input_image)
@@ -226,6 +228,7 @@ class Darktable_Dataset(Dataset):
         if self.proxy_type != "demosaic":
             proxy_model_input = interpolate(proxy_model_input[None, :, :, :], scale_factor=0.25, mode='bilinear')
         proxy_model_input = torch.squeeze(proxy_model_input, dim=0)
+        print(proxy_model_input[proxy_model_input > 1.0])
         _, width, height = proxy_model_input.size()
         
         # Cropping input tensor
@@ -256,12 +259,24 @@ class Darktable_Dataset(Dataset):
             # Saving crops
             if c.SAVE_CROPS and self.sweep == False:
                 input_ndarray = proxy_model_input.detach().cpu().numpy()
-                input_ndarray = np.moveaxis(input_ndarray, 0, -1)
-                input_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, self.proxy_type + '_' + self.param + '_' + c.CROPPED_INPUT_DIR, f'crop_{image_name}')
+                input_ndarray = np.moveaxis(input_ndarray, 0, -1).copy(order='C')
+                crop_input_dir = self.proxy_type + '_' + self.param + '_' + c.CROPPED_INPUT_DIR
+                crop_input_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, crop_input_dir)
+                if not os.path.exists(crop_input_path):
+                    os.mkdir(crop_input_path)
+                    print('directory created at: ' + crop_input_path)
+                input_path = os.path.join(crop_input_path, f'crop_{image_name}')
+                print(input_ndarray[input_ndarray > 1.0])
+                print(input_ndarray[input_ndarray < 0.0])
                 plt.imsave(input_path, input_ndarray, format=c.CROP_FORMAT)
                 label_ndarray = proxy_model_label.detach().cpu().numpy()
-                label_ndarray = np.moveaxis(label_ndarray, 0, -1)
-                label_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, self.proxy_type + '_'  + self.param + '_' +  c.CROPPED_OUTPUT_DIR, f'crop_{image_name}')
+                label_ndarray = np.moveaxis(label_ndarray, 0, -1).copy(order='C')
+                crop_label_dir = self.proxy_type + '_' + self.param + '_' + c.CROPPED_OUTPUT_DIR
+                crop_label_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, crop_label_dir)
+                if not os.path.exists(crop_label_path):
+                    os.mkdir(crop_label_path)
+                    print('directory created at: ' + crop_label_path)
+                label_path = os.path.join(crop_label_path, f'crop_{image_name}')
                 plt.imsave(label_path, label_ndarray, format=c.CROP_FORMAT)
 
             # Appending parameter tensor

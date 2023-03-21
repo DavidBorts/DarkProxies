@@ -47,13 +47,17 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
 
     print('Begin proxy training (stage 1)')
 
+    if not os.path.exists(model_out_dir):
+        os.mkdir(model_out_dir)
+        print('directory created at: ' + model_out_dir)
+
     # Set up data loading.
     since = time.time()
     image_dataset = Darktable_Dataset(root_dir = image_root_dir, 
                                       stage=1, 
                                       proxy_type=proxy_type, 
                                       param=param, 
-                                      vary_input=append_params)
+                                      vary_input=not append_params)
     train_loader = torch.utils.data.DataLoader(image_dataset, 
                                                batch_size=batch_size, 
                                                sampler=image_dataset.train_sampler,
@@ -99,7 +103,7 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
     # Set up training regime.
     # criterion is the loss function, which can be nn.L1Loss() or nn.MSELoss()
     #criterion = nn.MSELoss()
-    criterion = losses[c.WHICH_LOSS[proxy_type][0]]
+    criterion = losses[c.WHICH_LOSS[proxy_type][0]]()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
     
@@ -161,7 +165,7 @@ def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, params_file, poss
     # Set up training regime.
     # criterion is the loss function, which can be nn.L1Loss() or nn.MSELoss()
     #criterion = nn.MSELoss()
-    criterion = losses[c.WHICH_LOSS[proxy_type]]
+    criterion = losses[c.WHICH_LOSS[proxy_type]]()
     optimizer = optim.Adam(unet.parameters(), lr=learning_rate)
 
     eval(
