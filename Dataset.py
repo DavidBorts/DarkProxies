@@ -111,7 +111,7 @@ class Darktable_Dataset(Dataset):
         dataset_size = len(self)
         indices = list(range(dataset_size))
         if dataset_size == 1:
-            return indices, None
+            return indices, []
         if not shuffle_seed is None:
             np.random.seed(shuffle_seed)
         np.random.shuffle(indices)
