@@ -81,24 +81,28 @@ if __name__ == "__main__":
             data.generate(proxy_type, param, 2, min, max, interactive, num)
     
     # Stage 1 - proxy training
-    print("Begin proxy training (stage 1)")
-    use_gpu = torch.cuda.is_available() 
-    Train_proxy.run_training_procedure(
-        image_root_dir, 
-        weight_out_dir, 
-        stage_1_batch_size, 
-        num_epoch, use_gpu, 
-        possible_values, 
-        proxy_type,
-        param,
-        append_params,
-        interactive
-    )
+    if c.TRAIN_PROXY:
+        print("Begin proxy training (stage 1)")
+        use_gpu = torch.cuda.is_available() 
+        Train_proxy.run_training_procedure(
+            image_root_dir, 
+            weight_out_dir, 
+            stage_1_batch_size, 
+            num_epoch, use_gpu, 
+            possible_values, 
+            proxy_type,
+            param,
+            append_params,
+            interactive
+        )
 
     # Stage 2 - parameter finetuning
     if not append_params:
         print(f'{proxy_type} has no input parameters and therefore cannot be used for stage 2.')
         print('Skipping stage 2.')
+        quit()
+    if not c.REGRESS_PROXY:
+        print("Done.")
         quit()
     print("Begin finetune parameters (stage 2)")
     sys.stdout.flush()
