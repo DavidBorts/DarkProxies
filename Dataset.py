@@ -109,9 +109,9 @@ class Darktable_Dataset(Dataset):
         Returns the data indices, randomly split with seed shuffle_seed and ratio val_split.
         '''
         dataset_size = len(self)
+        indices = list(range(dataset_size))
         if dataset_size == 1:
             return indices, None
-        indices = list(range(dataset_size))
         if not shuffle_seed is None:
             np.random.seed(shuffle_seed)
         np.random.shuffle(indices)
