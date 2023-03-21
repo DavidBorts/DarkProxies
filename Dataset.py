@@ -17,7 +17,7 @@ from torch.nn.functional import interpolate
 from torchvision import transforms
 
 # Local files
-import Darktable_constants as c
+import Constants as c
 from utils.extract_RAW import get_cfa
 
 # Ignore warnings
