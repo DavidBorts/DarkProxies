@@ -414,8 +414,8 @@ class DemosaicNet(nn.Module):
         
         # Final
         out    = self.conv_final(conv9)
-        if self.skip_connect:
-            out =  out + x[:,0:self.num_output_channels,:,:] # Skip connection from input to output
+        #if self.skip_connect:
+            #out =  out + x[:,0:self.num_output_channels,:,:] # Skip connection from input to output
         
         if self.clip_output:
             return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
