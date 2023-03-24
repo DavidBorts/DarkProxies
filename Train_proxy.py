@@ -85,7 +85,7 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
         num_channels += len(possible_params)
     model = None
     if proxy_type == "demosaic":
-        model = DemosaicNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL,
+        model = DemosaicNet(num_input_channels=num_channels, num_output_channels=12,
                             skip_connect=skip_connect, clip_output=clip_output)
     model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
                 skip_connect=skip_connect, add_params=append_params, clip_output=clip_output)
