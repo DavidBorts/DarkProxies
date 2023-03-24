@@ -234,15 +234,20 @@ class Darktable_Dataset(Dataset):
         _, width, height = proxy_model_input.size()
         
         # Cropping input tensor
-        if width % 2 == 0:
-            mid_width = width / 2
-        else:
-            mid_width = (width - 1) / 2
-        if height % 2 == 0:
-            mid_height = height / 2
-        else:
-            mid_height = (height - 1) / 2
-        proxy_model_input = proxy_model_input[:, int(mid_width - (c.IMG_SIZE / 2)):int(mid_width + (c.IMG_SIZE / 2)), int(mid_height - (c.IMG_SIZE / 2)):int(mid_height + (c.IMG_SIZE / 2))]
+        if c.IMG_SIZE % 4 != 0:
+            raise ValueError("IMG_SIZE in Constants.py must be a multiple of 4 (default is 736).")
+        mid_width = width // 2
+        width_low = int(mid_width - (c.IMG_SIZE / 2))
+        while width_low % 4 != 0: # Ensuring that image crops are along mosaic boundaries
+            width_low -= 1
+        width_high = width_low + c.IMG_SIZE
+        mid_height = height // 2
+        height_low = int(mid_height - (c.IMG_SIZE / 2))
+        while height_low % 4 != 0:
+            height_low -= 1
+        height_high = height_low + c.IMG_SIZE
+
+        proxy_model_input = proxy_model_input[:, width_low:width_high, height_low:height_high]
         
         if not self.sweep:
             output_image = imageio.imread(os.path.join(self.output_image_dir, image_name))
