@@ -21,9 +21,9 @@ skip_connect = True
 clip_output = True
 num_epoch = c.PROXY_MODEL_NUM_EPOCH
 use_checkpoint = True
-learning_rate = 0.0001
-gamma = 0.00001 # was 0.1
-step_size = 100 # was 7
+learning_rate = 0.0001 # was 0.0001
+gamma = 0.9 # was 0.1
+step_size = 50 # was 7
 
 '''
 Run the stage 1 training and save model outputs
