@@ -297,7 +297,7 @@ def generate_single(proxy_type, dng_path, src_images, input_path, output_path, t
         src_path = os.path.join(dng_path, image)
 
         # Extracting necessary params from the source image
-        raw_prepare_params, temperature_params = dt.read_dng_params(src_path)
+        raw_prepare_params, _ = dt.read_dng_params(src_path)
 
         # Getting path of the input image
         input_file_path = os.path.join(input_path, image.split('.')[0])
@@ -305,7 +305,7 @@ def generate_single(proxy_type, dng_path, src_images, input_path, output_path, t
         
         # Assembling a dictionary of all of the original params for the source image
         # (used to render proxy input)
-        original_params = dt.get_params_dict(None, None, None, None, raw_prepare_params)
+        original_params = dt.get_params_dict(None, None, None, dt.TemperatureParams(), raw_prepare_params)
 
         # Rendering an unchanged copy of the source image for model input
         dt.render(src_path, input_file_path, original_params)
