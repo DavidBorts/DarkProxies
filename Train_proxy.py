@@ -10,7 +10,7 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 
 # Local files
-from Models import UNet, DemosaicNet, train_model, load_checkpoint, eval
+from Models import UNet, ChenNet, DemosaicNet, train_model, load_checkpoint, eval
 from Dataset import Darktable_Dataset
 from Loss_functions import losses
 import Constants as c
@@ -85,8 +85,9 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
         num_channels += len(possible_params)
     model = None
     if proxy_type == "demosaic":
-        model = DemosaicNet(num_input_channels=num_channels, num_output_channels=12,
-                            skip_connect=skip_connect, clip_output=clip_output)
+        #model = DemosaicNet(num_input_channels=num_channels, num_output_channels=12,
+                            #skip_connect=skip_connect, clip_output=clip_output)
+        model = ChenNet(0, clip_output=clip_output, add_params=False)
     model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
                 skip_connect=skip_connect, add_params=append_params, clip_output=clip_output)
     if use_checkpoint:
