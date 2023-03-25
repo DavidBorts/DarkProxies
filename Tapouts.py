@@ -79,7 +79,7 @@ def tmp2tiff(input_file, output_file):
     print('dtype: ' + str(im.dtype))
     print("max tapout value: " + str(np.amax(im)))
     #im = (im>>16).astype(np.float16) # Does this work??
-    im = im.astype(np.float16)
+    #im = im.astype(np.float16) # works!
     print("new max tapout value:" + str(np.amax(im)))
 
     #print(f'Writing: {output_file}')
