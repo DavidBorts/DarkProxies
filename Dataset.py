@@ -228,7 +228,7 @@ class Darktable_Dataset(Dataset):
             input_image = np.squeeze(input_image)
             
         proxy_model_input = to_tensor_transform(input_image)
-        if self.proxy_type != "demosaic":
+        if c.TAPOUTS[self.proxy_type] is None:
             proxy_model_input = interpolate(proxy_model_input[None, :, :, :], scale_factor=0.25, mode='bilinear')
         proxy_model_input = torch.squeeze(proxy_model_input, dim=0)
         print(proxy_model_input[proxy_model_input > 1.0])
