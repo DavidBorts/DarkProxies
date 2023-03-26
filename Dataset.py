@@ -207,7 +207,8 @@ class Darktable_Dataset(Dataset):
             print('ground truth image name: ' + image_name)
         input_image_name = image_name.split(".")[0] + '.tif'
         if self.vary_input: # colorin/colorout/demosaic
-            input_image_name = image_name
+            #input_image_name = image_name
+            input_image_name = image_name.split(".")[0] + '_' + str(image_name.split('_')[3]) # Temporary hack - rename colorin data and delete me!
             if self.proxy_type == "demosaic": # TODO: Temporary hack - delete me!
                 input_image_name = image_name.split('.')[0] + '.tif'
         print('input image name: ' + input_image_name)

@@ -2,7 +2,6 @@
 
 import os
 import numpy as np
-#import numpy.random as random
 
 # Local files
 import Constants as c
@@ -102,6 +101,7 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
         for value in np.linspace(min, max, int(num)):
             
             # Making sure that the same input image is not generated multiple times
+            # (for proxies with input params)
             if first_input is None and tapouts is None:
 
                 # Getting path of the input image
@@ -120,7 +120,7 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
             # Assembling a dictionary of all of the parameters to apply to the source DNG
             # Temperature and rawprepare params must be maintained in order to produce expected results
             params_dict = dt.get_params_dict(proxy_type_gt, param_gt, value, temperature_params, raw_prepare_params)
-            if proxy_type == "colorin" or proxy_type == "colorout":
+            if proxy_type in c.NO_PARAMS: # Adding "null block" to pipeline
                 params_dict = dt.get_params_dict('colorbalancergb', 'contrast', float(0.0), None, None, dict=params_dict)
             vals.append(float(value)) # Adding to params list
 
@@ -139,7 +139,7 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
                 print('ground truth tapout path: ' + gt_tapout_path)
 
                 # Getting path of the input image
-                input_file_path = os.path.join(input_path, image.split('.')[0])
+                input_file_path = os.path.join(input_path, f'{image}_{proxy_type}_{param}')
                 input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif'
 
                 # Deleting final output image
@@ -151,7 +151,9 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
                 tmp2tiff(gt_tapout_path, output_file_path)
 
     # Converting param list to numpy array and saving to file
-    convert(vals, os.path.join(c.IMAGE_ROOT_DIR, stage_path, f'{proxy_type}_{param}_params.npy'))
+    # (only necessary for proxies that don't have input parameters)
+    if tapouts is None:
+        convert(vals, os.path.join(c.IMAGE_ROOT_DIR, stage_path, f'{proxy_type}_{param}_params.npy'))
 
     print(f"Training data generated: stage {stage}")
 
