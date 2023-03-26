@@ -86,7 +86,7 @@ class Darktable_Dataset(Dataset):
             print(self.image_name_list)
 
         # Getting path to params file (stage 1 only)
-        if self.stage == 1 and proxy_type != "demosaic":#TODO: temporary hack - delete me!!
+        if self.stage == 1 and proxy_type not in c.NO_PARAMS:
             if params_file is None:
                 self.param_mat = np.load(os.path.join(root_dir, self.stage_path, f'{proxy_type}_{param}_params.npy'))
             else:
