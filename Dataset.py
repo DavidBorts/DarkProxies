@@ -249,6 +249,10 @@ class Darktable_Dataset(Dataset):
         height_high = height_low + c.IMG_SIZE
 
         proxy_model_input = proxy_model_input[:, width_low:width_high, height_low:height_high]
+        print("width low: " + str(width_low))
+        print("width high: " + str(width_high))
+        print("height low: " + str(height_low))
+        print("height high: " + str(height_high))
         
         if not self.sweep:
             output_image = imageio.imread(os.path.join(self.output_image_dir, image_name))
