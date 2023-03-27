@@ -1,3 +1,5 @@
+# Little helper to print out the *entire* contents of a .npy file
+
 import numpy as np
 import sys
 

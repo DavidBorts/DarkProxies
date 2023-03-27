@@ -1,8 +1,8 @@
 '''
 Utility script to crop any .tif image such that it meets
-the dimensions laid out in Darktable_constants.py\
+the dimensions specified in Darktable_constants.py
 
-How to use: python ./utils/crop_tif.py [PATH TO .TIF FILE]  [PATH TO DIRECTORY AT WHICH TO SAVE CROPPED IMAGE]
+How to use: python ./utils/crop_tif.py [PATH TO .TIF FILE] [PATH TO DIRECTORY AT WHICH TO SAVE CROPPED IMAGE]
 '''
 
 import os

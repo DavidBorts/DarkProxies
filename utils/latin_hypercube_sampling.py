@@ -3,16 +3,16 @@ import numpy as np
 
 def lhs(possible_values, num):
     '''
-    Latent Hypercube Sampling
+    Latin Hypercube Sampling
 
     inputs:
     [possible_values]: list of tuples of size 2, each containing the min
-                    and max values of the corresponding parameter
+                       and max values of the corresponding parameter
     [num]: number of samples to take per parameter
 
     returns:
     [samples]: ndarray of shape [len(possible_values), num], where each
-            column is a sampled parameter vector
+               column is a sampled parameter vector
     '''
 
     dim = len(possible_values)
