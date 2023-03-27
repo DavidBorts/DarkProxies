@@ -231,7 +231,7 @@ class Darktable_Dataset(Dataset):
         if c.TAPOUTS[self.proxy_type] is None:
             proxy_model_input = interpolate(proxy_model_input[None, :, :, :], scale_factor=0.25, mode='bilinear')
         proxy_model_input = torch.squeeze(proxy_model_input, dim=0)
-        print(proxy_model_input[proxy_model_input > 1.0])
+        #print(proxy_model_input[proxy_model_input > 1.0])
         _, width, height = proxy_model_input.size()
         
         # Cropping input tensor
