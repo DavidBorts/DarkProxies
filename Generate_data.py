@@ -42,7 +42,7 @@ class ParamSampler():
         self.proxy_type = proxy_type
         self.param = param
         self.possible_values = possible_values
-        self.num = num
+        self.num = int(num)
 
         if self.param is None:
             self.list = lhs(self.possible_values, self.num)
