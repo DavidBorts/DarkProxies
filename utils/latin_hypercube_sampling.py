@@ -23,10 +23,10 @@ def lhs(possible_values, num):
     # List of lists to store sampled values
     values = []
 
-    for values in possible_values:
+    for vals in possible_values:
 
-        min = values[0]
-        max = values[1]
+        min = vals[0]
+        max = vals[1]
         bin_size = (max-min)/float(num)
 
         # Binning the param
