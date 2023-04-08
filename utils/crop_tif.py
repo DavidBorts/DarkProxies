@@ -4,6 +4,7 @@ the dimensions specified in Darktable_constants.py
 
 How to use: python ./utils/crop_tif.py [PATH TO .TIF FILE] [PATH TO DIRECTORY AT WHICH TO SAVE CROPPED IMAGE]
 '''
+# TODO: update to support Demosaic
 
 import os
 import sys

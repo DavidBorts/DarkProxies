@@ -14,11 +14,11 @@ def get_cfa(raw_file_path):
     Get RAW image color filter array (CFA)
 
     inputs:
-    [raw_file_path]: string path to RAW file
+        [raw_file_path]: string path to RAW file
 
     returns:
-    [cfa]: string, corresponding to the image's CFA in raster order
-           len(cfa) = 4
+        [cfa]: string, corresponding to the image's CFA in raster order
+               len(cfa) = 4
     '''
     raw = rawpy.imread(raw_file_path)
 
