@@ -136,10 +136,10 @@ def generate(proxy_type, param, stage, possible_values, interactive, num):
     sampler = ParamSampler(proxy_type_gt, param_gt, possible_values, num)
     if param_gt is None:
         samples_concatenated = np.concatenate([sampler.list.copy() for _ in range(len(src_images))], axis=1)
-        convert(samples_concatenated, os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, f'{proxy_type}_params.npy'), ndarray=True)
+        convert(samples_concatenated, os.path.join(c.IMAGE_ROOT_DIR, stage_path, f'{proxy_type}_params.npy'), ndarray=True)
     else:
         samples_concatenated = np.concatenate([sampler.list.copy() for _ in range(len(src_images))])
-        convert(samples_concatenated, os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, f'{proxy_type}_{param}_params.npy'), ndarray=True)
+        convert(samples_concatenated, os.path.join(c.IMAGE_ROOT_DIR, stage_path, f'{proxy_type}_{param}_params.npy'), ndarray=True)
     print("Params file saved.")
 
     for image in src_images:
