@@ -1,7 +1,7 @@
-# Stage 1 code
+# Various functions to train proxies (stage 1)
 
 import sys
-sys.path.append('../')
+sys.path.append('../') # TODO: is this necessary?
 import os
 import time
 import torch
@@ -16,29 +16,44 @@ from Loss_functions import losses
 import Constants as c
 
 # Constants
-add_params = True
+# TODO: move these into Constants.py
 skip_connect = True
 clip_output = True
 num_epoch = c.PROXY_MODEL_NUM_EPOCH
 use_checkpoint = True
 learning_rate = 0.0001 # was 0.0001
 gamma = 0.1 # was 0.1
-step_size = 100 # was 7
+step_size = 1000 # was 7
 
-'''
-Run the stage 1 training and save model outputs
-'''
-def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, param, append_params, interactive):
+def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, param, append_params, interactive):
+    '''
+    Sets up the dataset, Dataloader, model, and training regime, then begins training.
+
+    inputs:
+        [model_out_dir]: Path to directory at which to save model weights
+        [batch_size]: Training batch size
+        [num_epochs]: Number of epochs for which to train
+        [use_gpu]: (Boolean) whether or not GPU is available
+        [possible_params]: (list of tuples of floats) ranges of each input parameter
+        [proxy_type]: Name of the block to learn
+        [param]: if None, train proxy on full parameter space, else train only on param
+        [append_params]: (Boolean) whether or not the given proxy has input parameters
+        [interactive] (Boolean) is job interactive?
+    '''
+
+    # Constants
+    image_root_dir = c.IMAGE_ROOT_DIR
     
     # Checking if user wants to train a proxy
     train = None
-    while train != 'y' and train != 'n' and interactive:
+    while train not in ['y', 'n', 'Y', 'N'] and interactive:
         train = input('Continue to training? (y/n)\n')
-    if train == 'n':
+    if train in ['n', 'N']:
         skip = None
-        while skip != 'y' and skip != 'n':
+        while skip not in ['y', 'n', 'Y', 'N']:
             skip = input('Skip to model finetuning? (y/n)\n')
-        if skip == 'n':
+        if skip in ['n', 'N']:
+            print('quitting.')
             quit()
         else:
             return
@@ -77,7 +92,7 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
         'val': len(image_dataset.val_sampler)
     }
     
-    # Set up model
+    # Setting up model
     num_channels = c.NUM_IMAGE_CHANNEL
     if proxy_type == "demosaic":
         num_channels = 4
@@ -88,21 +103,27 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
         #model = DemosaicNet(num_input_channels=num_channels, num_output_channels=12,
                             #skip_connect=skip_connect, clip_output=clip_output)
         model = ChenNet(0, clip_output=clip_output, add_params=False)
-    model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
+    else:
+        model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
                 skip_connect=skip_connect, add_params=append_params, clip_output=clip_output)
     if use_checkpoint:
         start_epoch = load_checkpoint(model, model_out_dir) #weight_out_dir
     else:
         start_epoch = 0 
+
+    # GPU & DataParallel configuration
     if use_gpu:
         model.cuda()
     if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
         
-    # Set up training regime.
-    # criterion is the loss function, which can be nn.L1Loss() or nn.MSELoss()
-    #criterion = nn.MSELoss()
-    criterion = losses[c.WHICH_LOSS[proxy_type][0]]()
+    # Setting up training regime.
+    # (criterion is the loss function, as set in Constants.py)
+    criterion = None	
+    if c.WHICH_LOSS[proxy_type][0] == "Perceptual":	
+        criterion = losses[c.WHICH_LOSS[proxy_type][0]](nn.MSELoss(), use_gpu)	
+    else:	
+        criterion = losses[c.WHICH_LOSS[proxy_type][0]]()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
     
@@ -122,14 +143,18 @@ def run_training_procedure(image_root_dir, model_out_dir, batch_size, num_epochs
         param
     )
     
-    print(f'{proxy_type}: {param} proxy training completed.')
+    if param is not None:
+        print(f'{proxy_type}: {param} proxy training completed.')
+    else:
+        print(f'{proxy_type} proxy training completed.')
 
 '''
 Evaluate the model on a any input(s)
 '''
 # TODO: add suppport for colorin & colorout (+ demosaic)
 # TODO: move this to eval file?
-def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, params_file, possible_params, proxy_type, param):
+# TODO: bring up to speed woth run_training_procedure
+def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, params_file, possible_params, proxy_type, param, append_params):
 
     # Constants
     input_path = os.path.join(c.IMAGE_ROOT_DIR, c.EVAL_PATH, f'{proxy_type}_{param}_input')
@@ -153,7 +178,7 @@ def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, params_file, poss
     
     # Set up model.
     unet = UNet(num_input_channels=c.NUM_IMAGE_CHANNEL + len(possible_params),
-                num_output_channels=c.NUM_IMAGE_CHANNEL, skip_connect=skip_connect, add_params=add_params, clip_output=clip_output)
+                num_output_channels=c.NUM_IMAGE_CHANNEL, skip_connect=skip_connect, add_params=append_params, clip_output=clip_output)
     if use_checkpoint:
         start_epoch = load_checkpoint(unet, model_out_dir) #weight_out_dir
     if use_gpu:

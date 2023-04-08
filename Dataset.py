@@ -9,8 +9,9 @@ import os
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image
 import imageio
+import tifffile	
+from PIL import Image, ImageOps
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.functional import interpolate
@@ -24,28 +25,29 @@ from utils.extract_RAW import get_cfa
 import warnings
 warnings.filterwarnings("ignore")
 
-'''
-Darktable_Dataset. This is the dataset for any Darktable data, and is used for the
-training of the proxy model, the fine-tuning of its parameters, and for ISP-tuning
-experiments.
-'''
 class Darktable_Dataset(Dataset):
     '''
-    Initialize the object.
-    Inputs:
-        root_dir: root_directory of the images.
-        stage: Specifies whether we are training proxy (stage_1), or finetuning hyperparameters (stage_2)
-        val_split: fraction of variables to put into validation set.
-        shuffle_seed: Random seed that determines the train/val split.
-        input_dir: path to the directory of input images
-        otuput_dir: path to the directory of the output images
-        params_file: path to the .npy file with parameter values
-        transform: Transforms to be applied onto PIL Image.
-        proxy_type: proxy type of data
-        param: parameter type of data
-        sweep: Toggles sweep mode of the dataloader for Darktable_sweep.py
+    Darktable_Dataset. This is the dataset for any Darktable data, and is used for the
+    training of the proxy model, the fine-tuning of its parameters, and for ISP-tuning
+    experiments.
     '''
-    def __init__(self, root_dir, stage, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, proxy_type=None, param=None, sweep=False, vary_input=False):
+    def __init__(self, root_dir, stage, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, proxy_type=None, param=None, sweep=False, sampler=False):
+        '''
+        Initialize the object.
+        Inputs:
+            [root_dir]: root_directory of the images.
+            [stage]: Specifies whether we are training proxy (stage_1), 
+                     or finetuning hyperparameters (stage_2)
+            [val_split]: fraction of variables to put into validation set.
+            [shuffle_seed]: Random seed that determines the train/val split.
+            [input_dir]: path to the directory of input images
+            [otuput_dir]: path to the directory of the output images
+            [params_file]: path to the .npy file with parameter values
+            [transform]: Transforms to be applied onto PIL Image.
+            [proxy_type]: proxy type of data
+            [param]: parameter type of data
+            [sweep]: Toggles sweep mode of the dataloader for Darktable_sweep.py
+        '''
         
         if stage != 1 and stage != 2 and stage != 3:
             raise ValueError("Please enter either 1, 2, or 3 for the stage parameter.")
@@ -57,15 +59,21 @@ class Darktable_Dataset(Dataset):
         self.proxy_type = proxy_type
         self.param = param
         self.sweep = sweep
-        self.vary_input = vary_input
+        self.sampler = sampler
         
         # Configuring input & output directories
         if input_dir is None:
-            self.input_image_dir = os.path.join(self.root_dir, self.stage_path, self.proxy_type + '_' + param + '_' + c.INPUT_DIR)
+            if self.param is not None:
+                self.input_image_dir = os.path.join(self.root_dir, self.stage_path, self.proxy_type + '_' + param + '_' + c.INPUT_DIR)
+            else:
+                self.input_image_dir = os.path.join(self.root_dir, self.stage_path, self.proxy_type + '_' + c.INPUT_DIR)
         else:
             self.input_image_dir = input_dir
         if output_dir is None:
-            self.output_image_dir = os.path.join(self.root_dir, self.stage_path, self.proxy_type + '_' + param + '_' + c.OUTPUT_DIR)
+            if self.param is not None:
+                self.output_image_dir = os.path.join(self.root_dir, self.stage_path, self.proxy_type + '_' + param + '_' + c.OUTPUT_DIR)
+            else:
+                self.output_image_dir = os.path.join(self.root_dir, self.stage_path, self.proxy_type + '_' + c.OUTPUT_DIR)
         else:
             self.output_image_dir = output_dir
         
@@ -88,13 +96,16 @@ class Darktable_Dataset(Dataset):
         # Getting path to params file (stage 1 only)
         if self.stage == 1 and proxy_type not in c.NO_PARAMS:
             if params_file is None:
-                self.param_mat = np.load(os.path.join(root_dir, self.stage_path, f'{proxy_type}_{param}_params.npy'))
+                if self.param is not None:
+                    self.param_mat = np.load(os.path.join(root_dir, self.stage_path, f'{proxy_type}_{param}_params.npy'))
+                else:
+                    self.param_mat = np.load(os.path.join(root_dir, self.stage_path, f'{proxy_type}_params.npy'))
             else:
                 self.param_mat = np.load(params_file)
             if self.sweep:
                 self.num_params = len(self.param_mat)
         else:
-            params_file = None
+            self.param_mat = None
 
         # Creating samplers
         dataset_size = len(self)
@@ -137,10 +148,12 @@ class Darktable_Dataset(Dataset):
             return torch.cat([image, param_tensor], dim=0)
         
         def pack_input_demosaic(image, cfa):
+            '''
+            Packs image tensor into a smaller 4-channel image. For neural demosaicing.
+            '''
 
-            mosaic = np.expand_dims(image, axis=2)
-            H = np.shape(mosaic)[0]
-            W = np.shape(mosaic)[1]
+            mosaic = torch.unsqueeze(image, 2)	
+            H, W, _ = mosaic.size()
 
             # Checking for 2x2 Bayer pattern
             if len(cfa) != 4:
@@ -189,7 +202,7 @@ class Darktable_Dataset(Dataset):
 
             # Packing the channels together as RGBG
             # (axes rearranged to be C x H x W)
-            return np.moveaxis(np.concatenate(channels, axis=2), -1, 0)
+            return torch.moveaxis(torch.cat(channels, dim=2), -1, 0)
 
         to_tensor_transform = transforms.Compose([transforms.ToTensor()])
 
@@ -206,33 +219,42 @@ class Darktable_Dataset(Dataset):
         if not self.sweep:
             print('ground truth image name: ' + image_name)
         input_image_name = image_name.split(".")[0] + '.tif'
-        if self.vary_input: # colorin/colorout/demosaic
-            #input_image_name = image_name
-            input_image_name = image_name.split(".")[0] + '_' + str(image_name.split('_')[3]) # Temporary hack - rename colorin data and delete me!
+        if self.sampler: # colorin/colorout/demosaic
+            input_image_name = image_name
+            #input_image_name = image_name.split(".")[0] + '_' + str(image_name.split('_')[3]) # Temporary hack - rename colorin data and delete me!
             if self.proxy_type == "demosaic": # TODO: Temporary hack - delete me!
                 input_image_name = image_name.split('.')[0] + '.tif'
         print('input image name: ' + input_image_name)
-        input_image = imageio.imread(os.path.join(self.input_image_dir, input_image_name))
-        #input_image = input_image.astype(np.float32)
-        #input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
+        #input_image = imageio.imread(os.path.join(self.input_image_dir, input_image_name))	
+        #input_image = tifffile.imread(os.path.join(self.input_image_dir, input_image_name))	
+        input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))	
+        input_image = ImageOps.exif_transpose(input_image)	
+        #print("input image shape:")	
+        #print(input_image.shape)
+        #input_image = input_image.astype(np.float32) #TODO: do we need this??
         
         if self.transform is not None:
+            print("Performing additional image transform.")
             input_image = self.transform(input_image)
 
         if self.proxy_type == "demosaic":
-            dng_name = input_image_name.split('_')[0].split('.')[0] + '.dng'
-            dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)
-            print('dng_path: ' + str(dng_path))
-            cfa = get_cfa(dng_path)
-            input_image = pack_input_demosaic(np.array(input_image), cfa)
-            input_image = np.squeeze(input_image)
+            #pre_pack_input = np.squeeze(np.array(input_image).copy(), axis=2)	
+            pre_pack_input = to_tensor_transform(input_image)	
+            pre_pack_input = torch.squeeze(pre_pack_input, dim=0)	
+            #pre_pack_input = (pre_pack_input * 255).astype(np.uint8)	
+            #print("pre pack shape: ")	
+            #print(np.shape(pre_pack_input))
             
         proxy_model_input = to_tensor_transform(input_image)
         if c.TAPOUTS[self.proxy_type] is None:
+            print('Downsampling input tensor.')
             proxy_model_input = interpolate(proxy_model_input[None, :, :, :], scale_factor=0.25, mode='bilinear')
         proxy_model_input = torch.squeeze(proxy_model_input, dim=0)
-        #print(proxy_model_input[proxy_model_input > 1.0])
-        _, width, height = proxy_model_input.size()
+        
+        if len(proxy_model_input.size()) == 3:	
+            _, width, height = proxy_model_input.size()	
+        else:	
+            width, height = proxy_model_input.size()
         
         # Cropping input tensor
         if c.IMG_SIZE % 4 != 0:
@@ -248,12 +270,23 @@ class Darktable_Dataset(Dataset):
             height_low -= 1
         height_high = height_low + c.IMG_SIZE
 
-        proxy_model_input = proxy_model_input[:, width_low:width_high, height_low:height_high]
+        if len(proxy_model_input.size()) == 3:	
+            proxy_model_input = proxy_model_input[:, width_low:width_high, height_low:height_high]	
+        else:	
+            proxy_model_input = proxy_model_input[width_low:width_high, height_low:height_high]
+        
+        if self.proxy_type == 'demosaic':	
+            dng_name = input_image_name.split('_')[0].split('.')[0] + '.dng'	
+            dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)	
+            #print('dng path: ' + str(dng_path))	
+            cfa = get_cfa(dng_path)	
+            proxy_model_input = np.squeeze(pack_input_demosaic(proxy_model_input, cfa))	
+            #print('proxy_model_input shape after packing: ' + str(proxy_model_input.shape))
         
         if not self.sweep:
-            output_image = imageio.imread(os.path.join(self.output_image_dir, image_name))
-            #output_image = output_image.astype(np.float32)
-            #output_image = Image.open(os.path.join(self.output_image_dir, image_name))
+            output_image = imageio.imread(os.path.join(self.output_image_dir, image_name))	
+            #output_image = output_image.astype(np.float32) #TODO: do we need this??	
+            # output_image = Image.open(os.path.join(self.output_image_dir, image_name), mode='r', formats=None) FIXME: NOT WORKING!!
             
             if self.transform is not None:
                 output_image = self.transform(output_image)
@@ -261,35 +294,57 @@ class Darktable_Dataset(Dataset):
             proxy_model_label = to_tensor_transform(output_image)
             if c.TAPOUTS[self.proxy_type] is None:
                 proxy_model_label = interpolate(proxy_model_label[None, :, :, :], scale_factor=0.25, mode='bilinear')
-            proxy_model_label = torch.squeeze(proxy_model_label, dim=0)[:, int(mid_width - (c.IMG_SIZE / 2)):int(mid_width + (c.IMG_SIZE / 2)), int(mid_height - (c.IMG_SIZE / 2)):int(mid_height + (c.IMG_SIZE / 2))]
+            proxy_model_label = proxy_model_label[:, width_low:width_high, height_low:height_high]
         
         if self.stage == 1:
             # Saving crops
             if c.SAVE_CROPS and self.sweep == False:
-                input_ndarray = proxy_model_input.detach().cpu().numpy()
+
+                if self.proxy_type != "demosaic":	
+                    input_ndarray = proxy_model_input.detach().cpu().numpy()	
+                else:	
+                    input_ndarray = pre_pack_input.detach().cpu().numpy()
                 input_ndarray = np.moveaxis(input_ndarray, 0, -1).copy(order='C')
-                crop_input_dir = self.proxy_type + '_' + self.param + '_' + c.CROPPED_INPUT_DIR
+
+                if self.param is not None:
+                    crop_input_dir = self.proxy_type + '_' + self.param + '_' + c.CROPPED_INPUT_DIR
+                else:
+                    crop_input_dir = self.proxy_type + '_' + c.CROPPED_INPUT_DIR
                 crop_input_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, crop_input_dir)
+
                 if not os.path.exists(crop_input_path):
                     os.mkdir(crop_input_path)
                     print('directory created at: ' + crop_input_path)
+                    
                 input_path = os.path.join(crop_input_path, f'crop_{image_name}')
-                print(input_ndarray[input_ndarray > 1.0])
-                print(input_ndarray[input_ndarray < 0.0])
-                plt.imsave(input_path, input_ndarray, format=c.CROP_FORMAT)
+                if self.proxy_type == "demosaic":	
+                    #Image.fromarray(input_ndarray).save(input_path, c.CROP_FORMAT)	
+                    #imageio.imwrite(input_path, input_ndarray, format=c.CROP_FORMAT)	
+                    tifffile.imwrite(input_path, input_ndarray)	
+                else:	
+                    plt.imsave(input_path, input_ndarray, format=c.CROP_FORMAT)
+                print('crop saved: input')
+
                 label_ndarray = proxy_model_label.detach().cpu().numpy()
                 label_ndarray = np.moveaxis(label_ndarray, 0, -1).copy(order='C')
-                crop_label_dir = self.proxy_type + '_' + self.param + '_' + c.CROPPED_OUTPUT_DIR
+                if self.param is not None:
+                    crop_label_dir = self.proxy_type + '_' + self.param + '_' + c.CROPPED_OUTPUT_DIR
+                else:
+                    crop_label_dir = self.proxy_type + '_' + c.CROPPED_OUTPUT_DIR
                 crop_label_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, crop_label_dir)
+
                 if not os.path.exists(crop_label_path):
                     os.mkdir(crop_label_path)
                     print('directory created at: ' + crop_label_path)
+
                 label_path = os.path.join(crop_label_path, f'crop_{image_name}')
                 plt.imsave(label_path, label_ndarray, format=c.CROP_FORMAT)
+                print('crop saved: ground truth')
 
             # Appending parameter tensor
             if append_params:
                 params = self.param_mat[:,index]
+                #params = float(params) # TODO: is this necessary? does it work??
                 if self.sweep:
                     params = self.param_mat[:, param_num]
                 proxy_model_input = _format_input_with_parameters(proxy_model_input, params)

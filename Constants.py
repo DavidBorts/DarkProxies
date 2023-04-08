@@ -4,8 +4,8 @@ File to store script constants/parameters
  ( An X indicates that a variable should
    generally not be tampered with )
 
- IMPORTANT NOTE: Before running any code, make sure to replace this
- string with the correct path to darktable-cli.exe
+ IMPORTANT NOTE: Before running any code, make sure to replace the
+ following string with the correct path to darktable-cli.exe
  '''
 DARKTABLE_PATH = "/home/dborts/programs/darktable/build/bin/darktable-cli" # CHANGE ME!
 
@@ -16,8 +16,8 @@ NUM_IMAGE_CHANNEL = 3                    # X Number of channels in each image (3
 IMG_SIZE = 736                           # X Dimensions to crop all images to (IMG_SIZE x IMG_SIZE)
 
 # Data generation constants (Stage 0)
-GENERATE_STAGE_1 = True                 #   Toggles new data generation for proxy training (stage 1)
-GENERATE_STAGE_2 = True                 #   Toggles new data generation for slider regression (stage 2)
+GENERATE_STAGE_1 = True                  #   Toggles new data generation for proxy training (stage 1)
+GENERATE_STAGE_2 = False                 #   Toggles new data generation for slider regression (stage 2)
 GENERATE_WITH_CHECKPOINTS = False        #   If True, progress will be tracked in case of interruption
 INPUT_DIR = 'input/'                     #   Name of directories that store training data
 OUTPUT_DIR = 'output/'                   #   Name of directories that store ground truth data
@@ -31,9 +31,9 @@ STAGE_3_DNG_PATH = 'images/stage_3/'     # X Path to folder with all DNG files f
 TRAIN_PROXY = True                       #   Toggles proxy training
 STAGE_1_PATH = 'stage_1/'                #   Directory that stores all training data, model weights, and predictions
 PROXY_MODEL_BATCH_SIZE = 1               #   Batch size for proxy training
-PROXY_MODEL_NUM_EPOCH = 500             #   Number of epochs for which to train
+PROXY_MODEL_NUM_EPOCH = 500              #   Number of epochs for which to train
 MODEL_WEIGHTS_PATH = 'model_weights/'    #   Name of directories where model weights are stored
-SAVE_OUTPUT_FREQ = 50                    #   Frequency at which to save model predictions (in terms of epochs)
+SAVE_OUTPUT_FREQ = 10                    #   Frequency at which to save model predictions (in terms of epochs)
 OUTPUT_PREDICTIONS_PATH = 'predictions/' #   Name of directories where model predictions are stored
 OUTPUT_PREDICTIONS_FORMAT = 'tiff'       #   Format to save model predictions as
 SAVE_CROPS = False                       #   If True, cropped versions of all training data are saved
@@ -48,6 +48,7 @@ EVAL_PATH = 'eval/'                      #   Name of directories that store evlu
 REGRESS_PROXY = True                     #   Toggles proxy regression
 STAGE_2_PATH = 'stage_2/'                #   Directory that stores all training data and predictions
 STAGE_2_PARAM_PATH = 'stage_2/params/'   #   Directory that stores optimized proxy params
+STAGE_2_NUM_IMAGES = 10                  #   Number of images to generate per DNG file for parameter regression
 ANIMATIONS_DIR = 'animations/'           #   Directory that stores frames for all animations
 PARAM_TUNING_NUM_ITER = 100              #   Number of regression iterations per image
 CREATE_ANIMATION = True                  #   If True, saves frames from regression to use for videos
@@ -64,11 +65,6 @@ PIPELINE_OUTPUT_FORMAT = 'tiff'          #   Format to save pipeline outputs as 
 PIPELINE_CREATE_ANIMATION = True         #   If True, saves frames from regression to use for videos
 PIPE_REGRESSION_ANIMATION_FORMAT = 'png' #   Format to save frames as (Default: png)
 
-'''
-Dictionary to store which Darktable blocks will require which loss functions to train
-
-Format: [stage_1, stage_2]
-'''
 WHICH_LOSS = {
     'highlights': ['MSE', 'L1'],
     'demosaic': ['MSE', 'L1'],
@@ -82,32 +78,52 @@ WHICH_LOSS = {
     'colorbalancergb': ['MSE', 'L1'],
     'colorout': ['MSE', 'L1']
 }
+'''
+Dictionary to store which Darktable blocks will require which loss functions to train
+
+Format: [stage_1, stage_2]
+'''
 
 # DO NOT MODIFY ANYTHING BELOW THIS LINE!!!
 ################################################################################################################################
 
-# Class to store the ranges of various Darktable paramters
 # TODO: Add support for highlights
-# TODO: Rework to support multiple paramters per proxy
-class POSSIBLE_VALUES:
-    colorbalancergb_contrast =  [(-0.9, 0.9)]
-    sharpen_amount = [(0.0, 10.0)]
-    exposure_exposure = [(-2.0, 4.0)]
-    hazeremoval_strength = [(-1.0, 1.0)]
-    denoiseprofile_strength = [(0.001, 1000.0)]
-    lowpass_radius = [(0.1, 500.0)]
-    censorize_pixelate = [(0.0, 500.0)]
-    censorize_noise = [(0.0, 1.0)]
-    demosaic = [(None, None)] # Temporary Hack. TODO: remove me!
-
+POSSIBLE_VALUES = {
+    'colorbalancergb': [(-1.0, 1.0), (0.0, 1.0), (-0.9, 0.9)],
+    'sharpen': [(0.0, 99.0), (0.0, 2.0), (0.0, 100.0)],# FIXME: amount was 0.0 - 10.0 ??
+    'exposure': [(-1.0, 1.0), (-2.0, 4.0), (0.0, 100.0), 
+                 (-18.0, 18.0)],# FIXME: exposure is actually -18.0 - 18.0??
+    'hazeremoval': [(-1.0, 1.0), (0.0, 1.0)],
+    'denoiseprofile': [(0.0, 12.0), (1.0, 30.0), (0.001, 1000.0), 
+                       (0.0, 1.8), (-1000.0, 100.0), (0.0, 20.0), 
+                       (0.0, 10.0), (0.001, 1000.0)],
+    'lowpass': [(0.1, 500.0), (-3.0, 3.0), (-3.0, 3.0), (-3.0, 3.0)]
+}
 '''
-Dictionary to store which Darktable blocks will require
-which intermediary tapouts from the Darktable pipeline as
-part of their training data
-
-Each block name has a correponding list of length 2, in
-the following format: [input tapout, ground truth tapout]
+Dictionary to store the range of possible values for every
+parameter of all supported Darktable blocks
 '''
+
+PARAM_NAMES= {
+    'colorbalancergb': ['vibrance', 'grey_fulcrum', 'contrast'],
+    'sharpen': ['radius', 'amount', 'threshold'],
+    'exposure': ['black', 'exposure', 'deflicker_percentile', 
+                 'deflicker_target_level'],
+    'hazeremoval': ['strength', 'distance'],
+    'denoiseprofile': ['radius', 'nbhood', 'strength', 'shadows', 
+                       'bias', 'scattering', 'central_pixel_weight', 
+                       'overshooting'],
+    'lowpass': ['radius', 'contrast', 'brightness', 'saturation']
+}
+'''
+Dictionary to store which parameter name maps to which index
+in POSSIBLE_VALUES for each proxy type
+
+NOTE: each list only includes the params supported by this codebase,
+and not necessarily every param in the module (some are deprecated or
+not otherwise useful to learn)
+'''
+ 
 TAPOUTS = {
 
     # Highlights needs to be trained on images that have
@@ -116,7 +132,7 @@ TAPOUTS = {
 
     # Demosaicing needs to be trained on images that have
     # not had any Darktable operations performed on them
-    # TODO: replace with ['highlights_bayer_out', 'colorin_in'] ??
+    # TODO: potentially replace with ['highlights_bayer_out', 'colorin_in'] ??
     'demosaic': ['temperature_bayer_out', 'colorin_in'],
 
     # Denoise through colorin all need to be trained on
@@ -142,14 +158,26 @@ TAPOUTS = {
     # TODO: Do we need 'colorout_out'??
     'colorout': ['colorbalancergb_out', 'colorout_out']
 }
+'''
+Dictionary to store which Darktable blocks will require
+which intermediary tapouts from the Darktable pipeline as
+part of their training data
 
-# List of Darktable blocks that do not require input parameters
+Each block name has a correponding list of length 2, in
+the following format: [input tapout, ground truth tapout]
+'''
+
 NO_PARAMS = ['colorin','colorout', 'demosaic']
+'''
+List of Darktable blocks that do not require input parameters
+'''
 
-# Dict of which blocks to sample parameters from for parameter-less
-# blocks like colorin and colorout
 SAMPLER_BLOCKS = {
     'colorin': 'exposure_exposure',
     'colorout': 'colorbalancergb_contrast',
     'demosaic': None
 }
+'''
+Dict of which blocks to sample parameters from for parameter-less
+blocks like colorin and colorout
+'''

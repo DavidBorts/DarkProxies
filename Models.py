@@ -511,9 +511,13 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
         os.mkdir(weight_out_dir)
     
     # Creating directory to store model predictions
-    predictions_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_' + param + '_'  + c.OUTPUT_PREDICTIONS_PATH)
+    if param is not None:
+        predictions_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_' + param + '_'  + c.OUTPUT_PREDICTIONS_PATH)
+    else:
+        predictions_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_'  + c.OUTPUT_PREDICTIONS_PATH)
     if not os.path.exists(predictions_path):
         os.mkdir(predictions_path)
+        print('New directory created at: ' + predictions_path)
         
     for epoch in range(start_epoch, num_epochs):
         print('Epoch {}/{}'.format(epoch+1, num_epochs))
@@ -557,7 +561,10 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                     if save_outputs and (epoch % save_output_frequency) == 0:
                         outputs_ndarray = outputs[0].detach().cpu().numpy()
                         outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
-                        outputs_path = os.path.join(predictions_path, f'{proxy_type}_{param}_pred_epoch-{epoch}_{names[0]}')
+                        if param is not None:
+                            outputs_path = os.path.join(predictions_path, f'{proxy_type}_{param}_pred_epoch-{epoch}_{names[0]}')
+                        else:
+                            outputs_path = os.path.join(predictions_path, f'{proxy_type}_pred_epoch-{epoch}_{names[0]}')
                         plt.imsave(outputs_path, outputs_ndarray, format='png')
 
                     
@@ -599,7 +606,10 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                 best_loss = epoch_loss
                 best_model_wts = copy.deepcopy(model.state_dict())
                 print('Saved model')
-                torch.save(best_model_wts, os.path.join(weight_out_dir, proxy_type + '_' + param + '_' + '{:03d}.pkl'.format(epoch)))
+                if param is not None:
+                    torch.save(best_model_wts, os.path.join(weight_out_dir, proxy_type + '_' + '{:03d}.pkl'.format(epoch)))
+                else:
+                    torch.save(best_model_wts, os.path.join(weight_out_dir, proxy_type + '_' + '{:03d}.pkl'.format(epoch)))
         print()
 
     time_elapsed = time.time() - since
@@ -609,6 +619,7 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
 '''
 Evaluate the model on a any input(s)
 '''
+#TODO: bring up to speed with train()
 def eval(model, dataloader, criterion, optimizer, use_gpu, proxy_type, param, sweep=False, outputs_path=None):
     dtype = torch.FloatTensor
     if use_gpu:

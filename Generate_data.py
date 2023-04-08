@@ -8,15 +8,19 @@ import Constants as c
 import PyDarktable as dt
 from Tapouts import tmp2tiff
 from npy_convert import convert, merge
+from utils.latin_hypercube_sampling import lhs
 
-def generate(proxy_type, param, stage, min, max, interactive, num):
+def generate(proxy_type, param, stage, possible_values, interactive, num):
 
     # Getting stage paths
     stage_path = getattr(c, 'STAGE_' + str(stage) + '_PATH')
 
     # Getting image directory paths
-    input_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + param + '_' + c.INPUT_DIR))
-    output_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + param + '_' + c.OUTPUT_DIR))
+    input_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + c.INPUT_DIR))
+    output_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + c.OUTPUT_DIR))
+    if param is not None:
+        input_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + param + '_' + c.INPUT_DIR))
+        output_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + param + '_' + c.OUTPUT_DIR))
 
     # Creating given input and output directories if they do not already exist
     if not os.path.exists(input_path):
@@ -25,7 +29,6 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
     if not os.path.exists(output_path):
         os.mkdir(output_path)
         print('Directory created at: ' + output_path)
-
     
     # Checking that given input and output directories are empty
     if ((len(os.listdir(input_path)) > 0 or len(os.listdir(output_path)) > 0) and c.CHECK_DIRS):
@@ -62,10 +65,10 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
     # Which parameter spaces to sample
     # (by default, proxies with input parameters sample their own
     # paramater spaces. Howvever, for proxies without input paramaters,
-    # the parameter space of a different processing block, called a
-    # "sampler block" in this codebase, is sampled instead to augment
-    # training data. This effects which rendering parameters are
-    # passed to darktable-cli)
+    # the parameter space of a different processing block, called a 
+    # "sampler block" in this codebase, is sampled instead to augment 
+    # training data. This effects which rendering parameters are passed
+    # to darktable-cli)
     proxy_type_gt = proxy_type
     param_gt = param
     #if tapouts is not None:
@@ -80,7 +83,7 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
     src_images = sorted(os.listdir(dng_path))
 
     # Temporary hack: not sweeping parameter spaces for demosaic
-    if min is None or max is None:
+    if possible_values[0][0] is None or possible_values[0][1] is None:
         generate_single(proxy_type, dng_path, src_images, input_path, output_path, tapouts)
         print(f"Training data generated: stage {stage}")
         return
@@ -97,62 +100,102 @@ def generate(proxy_type, param, stage, min, max, interactive, num):
         raw_prepare_params, temperature_params = dt.read_dng_params(src_path)
 
         # Parameter value sweep
-        # Alternate approach -> for value in random.uniform(min, max, int(num)):
-        for value in np.linspace(min, max, int(num)):
-            
-            # Making sure that the same input image is not generated multiple times
-            # (for proxies with input params)
-            if first_input is None and tapouts is None:
+        if param is None: # TODO: should this be param_gt??
 
-                # Getting path of the input image
-                input_file_path = os.path.join(input_path, image.split('.')[0])
-                input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
+            # If the given proxy has multiple parameters, use
+            # Latin Hypercube Sampling (LHS)
+            samples = lhs(possible_values, num)
+            convert(samples, os.path.join(c.IMAGE_ROOT_DIR, stage_path, f'{proxy_type}_params.npy'), ndarray=True)
 
-                first_input = input_file_path
+            for n in range(num):
+
+                values = np.squeeze(samples[:, n])
+
+                # Making sure that the same input image is not generated multiple times
+                # (for proxies with input params)
+                if first_input is None and tapouts is None:
+
+                    # Getting path of the input image
+                    input_file_path = os.path.join(input_path, image.split('.')[0])
+                    input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
+
+                    first_input = input_file_path
+                    
+                    # Assembling a dictionary of all of the original params for the source image
+                    # (used to render proxy input)
+                    original_params = dt.get_params_dict(None, None, None, temperature_params, raw_prepare_params)
+
+                    # Rendering an unchanged copy of the source image for model input
+                    dt.render(src_path, input_file_path, original_params)
                 
-                # Assembling a dictionary of all of the original params for the source image
-                # (used to render proxy input)
-                original_params = dt.get_params_dict(None, None, None, temperature_params, raw_prepare_params)
+                # Assembling a dictionary of all of the parameters to apply to the source DNG
+                # Temperature and rawprepare params must be maintained in order to produce expected results
+                params_dict = dt.get_params_dict(proxy_type_gt, c.PARAM_NAMES[proxy_type_gt], values, temperature_params, raw_prepare_params)
 
-                # Rendering an unchanged copy of the source image for model input
-                dt.render(src_path, input_file_path, original_params)
-
-            # Assembling a dictionary of all of the parameters to apply to the source DNG
-            # Temperature and rawprepare params must be maintained in order to produce expected results
-            params_dict = dt.get_params_dict(proxy_type_gt, param_gt, value, temperature_params, raw_prepare_params)
-            if proxy_type in c.NO_PARAMS: # Adding "null block" to pipeline
-                params_dict = dt.get_params_dict('colorbalancergb', 'contrast', float(0.0), None, None, dict=params_dict)
-            vals.append(float(value)) # Adding to params list
-
-            # Rendering the output image
-            output_file_path = os.path.join(output_path, f'{image}_{proxy_type}_{param}')
-            output_file_path = (repr(output_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
-            dt.render(src_path, output_file_path, params_dict)
-
-            # Checking if input & ground truth images need to be replaced with tapouts
-            if tapouts is not None:
+                # Rendering the output image
+                output_file_path = os.path.join(output_path, f'{image}_{proxy_type}')
+                output_file_path = (repr(output_file_path).replace('\\\\', '/')).strip("'") # Dealing with Darktable CLI pickiness
+                for val in values:
+                    output_file_path += f'_{val}'
+                output_file_path += '.tif'
+                dt.render(src_path, output_file_path, params_dict)
+        else:
+            # Alternate approach -> for value in random.uniform(min, max, int(num)):
+            for value in np.linspace(min, max, int(num)):
                 
-                # Getting file path of the tapout
-                input_tapout_path = tapouts[0] + '.tmp'
-                gt_tapout_path = tapouts[1] + '.tmp'
-                print('input tapout path: ' + input_tapout_path)
-                print('ground truth tapout path: ' + gt_tapout_path)
+                # Making sure that the same input image is not generated multiple times
+                # (for proxies with input params)
+                if first_input is None and tapouts is None:
 
-                # Getting path of the input image
-                input_file_path = os.path.join(input_path, f'{image}_{proxy_type}_{param}')
-                input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif'
+                    # Getting path of the input image
+                    input_file_path = os.path.join(input_path, image.split('.')[0])
+                    input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
 
-                # Deleting final output image
-                os.remove(output_file_path)
-                print('replacing: ' + output_file_path)
+                    first_input = input_file_path
+                    
+                    # Assembling a dictionary of all of the original params for the source image
+                    # (used to render proxy input)
+                    original_params = dt.get_params_dict(None, None, None, temperature_params, raw_prepare_params)
 
-                # Read in the tapouts and save them as tiffs
-                tmp2tiff(input_tapout_path, input_file_path)
-                tmp2tiff(gt_tapout_path, output_file_path)
+                    # Rendering an unchanged copy of the source image for model input
+                    dt.render(src_path, input_file_path, original_params)
+
+                # Assembling a dictionary of all of the parameters to apply to the source DNG
+                # Temperature and rawprepare params must be maintained in order to produce expected results
+                params_dict = dt.get_params_dict(proxy_type_gt, [param_gt], [value], temperature_params, raw_prepare_params)
+                if proxy_type in c.NO_PARAMS: # Adding "null block" to pipeline
+                    params_dict = dt.get_params_dict('colorbalancergb', ['contrast'], [float(0.0)], None, None, dict=params_dict)
+                vals.append(float(value)) # Adding to params list
+
+                # Rendering the output image
+                output_file_path = os.path.join(output_path, f'{image}_{proxy_type}_{param}')
+                output_file_path = (repr(output_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
+                dt.render(src_path, output_file_path, params_dict)
+
+                # Checking if input & ground truth images need to be replaced with tapouts
+                if tapouts is not None:
+                    
+                    # Getting file path of the tapout
+                    input_tapout_path = tapouts[0] + '.tmp'
+                    gt_tapout_path = tapouts[1] + '.tmp'
+                    print('input tapout path: ' + input_tapout_path)
+                    print('ground truth tapout path: ' + gt_tapout_path)
+
+                    # Getting path of the input image
+                    input_file_path = os.path.join(input_path, f'{image}_{proxy_type}_{param}')
+                    input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif'
+
+                    # Deleting final output image
+                    os.remove(output_file_path)
+                    print('replacing: ' + output_file_path)
+
+                    # Read in the tapouts and save them as tiffs
+                    tmp2tiff(input_tapout_path, input_file_path)
+                    tmp2tiff(gt_tapout_path, output_file_path)
 
     # Converting param list to numpy array and saving to file
     # (only necessary for proxies that don't have input parameters)
-    if tapouts is None:
+    if tapouts is None and param is not None:
         convert(vals, os.path.join(c.IMAGE_ROOT_DIR, stage_path, f'{proxy_type}_{param}_params.npy'))
 
     print(f"Training data generated: stage {stage}")
@@ -333,7 +376,7 @@ def generate_single(proxy_type, dng_path, src_images, input_path, output_path, t
             os.remove(output_file_path)
 
             # Read in the tapout and save as a tiff
-            tmp2tiff(tapout_path_input, input_file_path)
+            tmp2tiff(tapout_path_input, input_file_path, color='minisblack')
             tmp2tiff(tapout_path_gt, output_file_path)
 
 
@@ -525,3 +568,203 @@ def generate_pipeline(param_file, input_path, label_path, dng_path=None):
                 tmp2tiff(tapout_path, label_file_path)
 
     print('Pipeline images generated.')
+
+class ParamSamplerIterator():
+    def __init__(self, sampler, param, list):
+        self.sampler = sampler
+        self.param = param
+        self.list = list
+        self.num = len(sampler)
+        self.idx = 0
+    
+    def __next__(self):
+
+        vals = None
+        if self.idx < self.num:
+
+            if self.param is None:
+                vals = np.squeeze(self.list[:, self.idx])
+            else:
+                return self.list[self.idx]
+
+            self.idx += 1
+            return vals
+        raise StopIteration
+
+class ParamSampler():
+    '''
+    Iterable wrapper class to sample the parameter space of any 
+    proxy, no matter its dimensionality
+    '''
+    
+    def __init__(self, proxy_type, param, possible_values, num):
+        self.proxy_type = proxy_type
+        self.param = param
+        self.possible_values = possible_values
+        self.num = num
+
+        if self.param is None:
+            self.list = lhs(self.possible_values, self.num)
+        else:
+            self.list = np.linspace(self.possible_values[0][0], self.possible_values[0][1], self.num)
+
+    def __iter__(self):
+        return ParamSamplerIterator(self, self.param, self.list)
+    
+    def __len__(self):
+        return self.num
+
+# TODO: Write corresponding generate_finetune_piecewise(), or simply add a piecewise flag
+def generate_finetune(proxy_type, param, finetune, param_finetune, possible_values, possible_values_finetune, num):
+    '''
+    Generate data on which to finetune a given proxy on the 
+    outputs of upstream image processing blocks. (This is 
+    to prevent distortionate effects during pipeline-wide
+    regression, by increasing the domain of images that
+    each proxy is trained on).
+
+    Inputs:
+        [proxy_type]: Which proxy to finetune
+        [param]: if None, train proxy on full parameter space, else train only on [param]
+        [finetune]: Which (upstream) proxy to finetune on
+        [param_finetune]: if None, finetune proxy on fulle parameter space of [finetune],
+                        else finetune only on [param_finetune]
+        [possible_values]: (list of tuples of floats) ranges of each input parameter 
+                            for [proxy_type]
+        [possible_values_finetune]: (list of tuples of floats) ranges of each input 
+                                    parameter for [finetune]
+        [interactive]: (Boolean) Toggles interactive mode
+        [num]: (int) Number of datapoints to sample from input space
+                    (given that both [proxy_type] and [finetune] have input spaces to
+                    sweep, num**2 images will be generated)
+    '''
+
+    # Demosaic and colorin do not need to be finetuned
+    # TODO: allow colorin to be finetuned once highlights is implemented
+    if proxy_type == "demosaic" or proxy_type == "colorin":
+        print(f"{proxy_type} proxy does not need to be finetuned, as it is at the beginning of the pipleine.")
+        print("Quitting.")
+        quit()
+
+    # Getting image directory paths
+    input_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, (proxy_type + '_' + c.INPUT_DIR))
+    output_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, (proxy_type + '_' + c.OUTPUT_DIR))
+    if param is not None:
+        input_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, (proxy_type + '_' + param + '_' + c.INPUT_DIR))
+        output_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, (proxy_type + '_' + param + '_' + c.OUTPUT_DIR))
+
+    # Creating given input and output directories if they do not already exist
+    if not os.path.exists(input_path):
+        os.mkdir(input_path)
+        print('Directory created at: ' + input_path)
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
+        print('Directory created at: ' + output_path)
+    
+    # Checking that given input and output directories are empty
+    if ((len(os.listdir(input_path)) > 0 or len(os.listdir(output_path)) > 0) and c.CHECK_DIRS):
+        # TODO: check if {param} can accept None
+        print(f'ERROR: {proxy_type}: {param} directories already contain data for stage 3.')
+        print("Quitting.")
+        quit()
+
+    # Information about tapout requirements for the given proxy
+    tapouts = c.TAPOUTS[proxy_type]
+
+    # Getting DNG images
+    dng_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_DNG_PATH)
+    src_images = sorted(os.listdir(dng_path))
+
+    # If the given proxy has multiple parameters enabled, 
+    # use Latin Hypercube Sampling (LHS)
+    # TODO: use the same LHS samples for all images?
+    sampler = ParamSampler(proxy_type, param, possible_values, num)
+    if param is None:
+        samples_concatenated = np.concatenate([sampler.list.copy() for _ in range(num*len(src_images))], axis=1)
+        convert(samples_concatenated, os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, f'{proxy_type}_params.npy'), ndarray=True)
+    else:
+        samples_concatenated = np.concatenate([sampler.list.copy() for _ in range(num*len(src_images))])
+        convert(samples_concatenated, os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, f'{proxy_type}_{param}_params.npy'), ndarray=True)
+    print("Params file saved.")
+
+    # If the given finetuning block has multiple parameters
+    # emabled, use Latin Hypercube Sampling (LHS)
+    sampler_finetune = ParamSampler(finetune, param_finetune, possible_values_finetune, num)
+
+    for image in src_images:
+
+        # Getting path of individual source DNG file
+        src_path = os.path.join(dng_path, image)
+        
+        # Keeping track of the first input images generated
+        first_input = np.zeros(len(sampler_finetune))
+
+        # Extracting necessary params from the source image
+        raw_prepare_params, temperature_params = dt.read_dng_params(src_path)
+
+        # Fintetune block value sweep
+        for n, values_finetune in enumerate(sampler_finetune):
+
+            if first_input[n] == 0 and tapouts is None:
+            # No need to render input images separately when tapouts are being used
+
+                first_input[n] = 1
+
+                # Getting path of the input image
+                input_file_path = os.path.join(input_path, image.split('.')[0])
+                input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") # Dealing with Darktable CLI pickiness
+                for val in values_finetune:
+                    input_file_path += '_' + str(val) #TODO: will this format correctly?
+                input_file_path += '.tif'
+
+                # Assembling a dictionary of all of the original params for the source image
+                # (used to render proxy input)
+                original_params = dt.get_params_dict(finetune, c.PARAM_NAMES[finetune], values_finetune, temperature_params, raw_prepare_params)
+
+                # Rendering input image
+                dt.render(src_path, input_file_path, original_params)
+
+            # Proxy block value sweep
+            for values in sampler:
+        
+                # Getting path of the ground truth image
+                gt_file_path = os.path.join(output_path, f'{image}_{proxy_type}')
+                gt_file_path = (repr(gt_file_path).replace('\\\\', '/')).strip("'") # Dealing with Darktable CLI pickiness
+                for val in values_finetune:
+                    gt_file_path += '_' + str(val)
+                gt_file_path += '_to'
+                for val in values:
+                    gt_file_path += '_' + str(val)
+                gt_file_path += '.tif'
+
+                # Assembling a dictionary of all of the parameters to apply to the source DNG
+                # (Temperature and rawprepare params must be maintained in order to produce expected results)
+                params_dict = dt.get_params_dict(proxy_type, c.PARAM_NAMES[proxy_type], values, temperature_params, raw_prepare_params)
+
+                # Rendering the output image
+                dt.render(src_path, gt_file_path, params_dict)   
+
+                # Checking if input & ground truth images need to be replaced with tapouts
+                if tapouts is not None:
+                    
+                    # Getting file path of the tapout
+                    input_tapout_path = tapouts[0] + '.tmp'
+                    gt_tapout_path = tapouts[1] + '.tmp'
+                    #print('input tapout path: ' + input_tapout_path)
+                    #print('ground truth tapout path: ' + gt_tapout_path)
+
+                    # Getting path of the input image
+                    input_file_path = os.path.join(input_path, image.split('.')[0])
+                    input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") # Dealing with Darktable CLI pickiness
+                    for val in values_finetune:
+                        input_file_path += '_' + str(val) #TODO: will this format correctly?
+                    input_file_path += '.tif'
+
+                    # Deleting final output image
+                    os.remove(gt_file_path)
+                    print('replacing: ' + gt_file_path)
+
+                    # Read in the tapouts and save them as tiffs
+                    tmp2tiff(input_tapout_path, input_file_path)
+                    tmp2tiff(gt_tapout_path, gt_file_path)
+    print("Finetuning data generated.")

@@ -8,11 +8,13 @@ def write(ndarray, output_file_path):
     with open(output_file_path, 'wb') as f:
         np.save(f, ndarray)
 
-def convert(vals, output_file_path):
+def convert(vals, output_file_path, ndarray=False):
 
     # Converting param list to numpy array
-    vals = np.array(vals)
-    vals = np.expand_dims(vals, axis=0)
+    if not ndarray:
+        vals = np.array(vals)
+    if len(np.shape(vals)) < 2:
+        vals = np.expand_dims(vals, axis=0)
 
     # Writing to .npy file
     write(vals, output_file_path)

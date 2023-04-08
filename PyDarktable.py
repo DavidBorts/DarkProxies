@@ -296,10 +296,10 @@ class ExposureParams:
     # DEFLICKER = 1  "automatic"
     mode: int = 0
 
-    black: float = 0.0
-    exposure: float = 0.0
-    deflicker_percentile: float = 50.0
-    deflicker_target_level: float = -4.0
+    black: float = 0.0 # $MIN: -1.0 $MAX: 1.0 $DEFAULT: 0.0 $DESCRIPTION: "black level correction"
+    exposure: float = 0.0 #  $MIN: -18.0 $MAX: 18.0 $DEFAULT: 0.0
+    deflicker_percentile: float = 50.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 50.0 $DESCRIPTION: "percentile"
+    deflicker_target_level: float = -4.0 # $MIN: -18.0 $MAX: 18.0 $DEFAULT: -4.0 $DESCRIPTION: "target level"
 
     compensate_exposure_bias: bool = False
 
@@ -378,9 +378,9 @@ class HighlightsParams:
 
 @dataclass
 class SharpenParams:
-    radius: float = 8.0
-    amount: float = 0.5
-    threshold: float = 0.5
+    radius: float = 8.0 # $MIN: 0.0 $MAX: 99.0 $DEFAULT: 2.0
+    amount: float = 0.5 # $MIN: 0.0 $MAX: 2.0 $DEFAULT: 0.5
+    threshold: float = 0.5 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 0.5
 
     def to_hex_string(self):
         return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
@@ -544,64 +544,82 @@ def read_dng_params(dng_file):
 
 class functions:
     @staticmethod
-    def colorbalancergb(value, params_dict, param='contrast'):
+    def colorbalancergb(params_dict, params, values):
         colorbalancergb_params = ColorBalanceRGBParams()
-        setattr(colorbalancergb_params, param, float(value))
-        #colorbalancergb_params.contrast = float(value)
+
+        for i, param in enumerate(params):
+            setattr(colorbalancergb_params, param, float(values[i]))
+        
         params_dict["colorbalancergb_params"] = colorbalancergb_params
         return params_dict
     
     @staticmethod
-    def highlights(value, params_dict, param='clip'):
+    def highlights(params_dict, params, values):
         highlights_params = HighlightsParams()
-        setattr(highlights_params, param, float(value))
+
+        for i, param in enumerate(params):
+            setattr(highlights_params, param, float(values[i]))
+
         params_dict["highlights_params"] = highlights_params
         return params_dict
     
     @staticmethod
-    def sharpen(value, params_dict, param='amount'):
+    def sharpen(params_dict, params, values):
         sharpen_params = SharpenParams()
-        setattr(sharpen_params, param, float(value))
-        #sharpen_params.amount = float(value)
+
+        for i, param in enumerate(params):
+            setattr(sharpen_params, param, float(values[i]))
+
         params_dict["sharpen_params"] = sharpen_params
         return params_dict
     
     @staticmethod
-    def exposure(value, params_dict, param='exposure'):
+    def exposure(params_dict, params, values):
         exposure_params = ExposureParams()
-        setattr(exposure_params, param, float(value))
-        #exposure_params.exposure = float(value)
+
+        for i, param in enumerate(params):
+            setattr(exposure_params, param, float(values[i]))
+
         params_dict["exposure_params"] = exposure_params
         return params_dict
     
     @staticmethod
-    def hazeremoval(value, params_dict, param='strength'):
+    def hazeremoval(params_dict, params, values):
         hazeremoval_params = HazeRemovalParams()
-        setattr(hazeremoval_params, param, float(value))
-        #hazeremoval_params.strength = float(value)
+
+        for i, param in enumerate(params):
+            setattr(hazeremoval_params, param, float(values[i]))
+
         params_dict["hazeremoval_params"] = hazeremoval_params
         return params_dict
     
     @staticmethod
-    def denoiseprofile(value, params_dict, param='strength'):
+    def denoiseprofile(params_dict, params, values):
         denoiseprofile_params = DenoiseProfileParams()
-        setattr(denoiseprofile_params, param, float(value))
-        #denoiseprofile_params.strength = float(value)
+
+        for i, param in enumerate(params):
+            setattr(denoiseprofile_params, param, float(values[i]))
+
         params_dict["denoiseprofile_params"] = denoiseprofile_params
         return params_dict
     
     @staticmethod
-    def lowpass(value, params_dict, param='radius'):
+    def lowpass(params_dict, params, values):
         lowpass_params = LowpassParams()
-        setattr(lowpass_params, param, float(value))
-        #lowpass_params.radius = float(value)
+
+        for i, param in enumerate(params):
+            setattr(lowpass_params, param, float(values[i]))
+
         params_dict["lowpass_params"] = lowpass_params
         return params_dict
     
     @staticmethod
-    def censorize(value, params_dict, param='pixelate'):
+    def censorize(params_dict, params, values):
         censorize_params = CensorizeParams()
-        setattr(censorize_params, param, float(value))
+
+        for i, param in enumerate(params):
+            setattr(censorize_params, param, float(values[i]))
+
         params_dict["censorize_params"] = censorize_params
         return params_dict
 
@@ -678,7 +696,7 @@ def render(src_dng_path, dst_path, pipe_stage_flags):
     print('Running:\n', ' '.join(args), '\n')
     subprocess.run(args)
 
-def get_params_dict(proxy_type, param_name, value, temperature_params, raw_prepare_params, dict=None):
+def get_params_dict(proxy_type, param_names, values, temperature_params, raw_prepare_params, dict=None):
 
     params_dict = {
         'filmicrgb_params': None,
@@ -699,15 +717,16 @@ def get_params_dict(proxy_type, param_name, value, temperature_params, raw_prepa
         return params_dict
 
     proxy = proxy_type
-    param = param_name
+    params = param_names
 
-    # If a dict is provided, use that instead
+    # If a dict is provided, use that instead of creating
+    # a new one from scratch
     if dict != None:
         params_dict = dict
 
     # Setting params
     fill_dict = getattr(functions, proxy)
-    params_dict = fill_dict(value, params_dict, param=param)
+    params_dict = fill_dict(params_dict, params, values)
 
     return params_dict
 
