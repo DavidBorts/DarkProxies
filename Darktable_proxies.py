@@ -21,8 +21,8 @@ parser.add_argument("proxy", help="Name of the Darktable block for which to trai
                                'demosaic'], required=True)
 parser.add_argument("-m", "--mono", help="[OPTIONAL] Train a proxy on only one user-specified input \
                     parameter for a given Darktable block, keeping the others fixed", default=None)
-parser.add_argument("-n", "--number", default=0, help="Number of training examples to generate for each \
-                    source DNG image", required=True)
+parser.add_argument("-n", "--number", help="Number of training examples to generate for each \
+                    source DNG image", required=True, default=0)
 args = parser.parse_args()
 proxy_type = args.proxy
 param = args.mono
@@ -112,7 +112,7 @@ if c.TRAIN_PROXY:
         interactive
     )
 
-# Stage 2 - parameter finetuning
+# Stage 2 - parameter regression
 if not append_params:
     print(f'{proxy_type} has no input parameters and therefore cannot be used for stage 2.')
     print('Skipping stage 2.')

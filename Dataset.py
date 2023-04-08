@@ -100,14 +100,14 @@ class Darktable_Dataset(Dataset):
                     self.param_mat = np.load(os.path.join(root_dir, self.stage_path, f'{proxy_type}_{param}_params.npy'))
                 else:
                     self.param_mat = np.load(os.path.join(root_dir, self.stage_path, f'{proxy_type}_params.npy'))
-            else:
+            else: # For sweep mode
                 self.param_mat = np.load(params_file)
             if self.sweep:
                 self.num_params = len(self.param_mat)
         else:
             self.param_mat = None
 
-        # Creating samplers
+        # Creating index samplers
         dataset_size = len(self)
         indices = list(range(dataset_size))
         train_indices, val_indices = self._get_split(val_split, shuffle_seed)
