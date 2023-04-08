@@ -27,7 +27,7 @@ def lhs(possible_values, num):
 
         min = values[0]
         max = values[1]
-        bin_size = (max-min)/num
+        bin_size = (max-min)/float(num)
 
         # Binning the param
         bins_low = np.arange(min, max, bin_size)
