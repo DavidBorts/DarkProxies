@@ -14,7 +14,7 @@ https://github.com/Ethan-Tseng/Neural_Nano-Optics/blob/master/loss.py
 '''
 # TODO: test me!
 class SpatialLoss():
-    def __init__():
+    def __init__(self):
 
         def spatial_gradient(x):
             diag_down = x[:, 1:, 1:, :] - x[:, :-1, :-1, :]
@@ -23,6 +23,7 @@ class SpatialLoss():
             diag_up = x[:, :-1, 1:, :] - x[:, 1:, :-1, :]
 
             return [dh, dv, diag_down, diag_up]
+        self.spatial_gradient = spatial_gradient
         
     def __call__(self, output_img, GT_img):
         total_loss = 0.0
