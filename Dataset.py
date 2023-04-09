@@ -296,7 +296,10 @@ class Darktable_Dataset(Dataset):
             #print('proxy_model_input shape after packing: ' + str(proxy_model_input.shape))
         
         if not self.sweep:
-            output_image = imageio.imread(os.path.join(self.output_image_dir, image_name))	
+            if c.TAPOUTS[self.proxy_type] is None:
+                output_image = Image.open(os.path.join(self.output_image_dir, image_name))
+            else:
+                output_image = imageio.imread(os.path.join(self.output_image_dir, image_name))	
             #output_image = output_image.astype(np.float32) #TODO: do we need this??	
             # output_image = Image.open(os.path.join(self.output_image_dir, image_name), mode='r', formats=None) FIXME: NOT WORKING!!
             
