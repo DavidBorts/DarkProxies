@@ -31,7 +31,7 @@ class Darktable_Dataset(Dataset):
     training of the proxy model, the fine-tuning of its parameters, and for ISP-tuning
     experiments.
     '''
-    def __init__(self, root_dir, stage, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, proxy_type=None, param=None, sweep=False, sampler=False):
+    def __init__(self, root_dir, stage, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, proxy_type=None, params=None, sweep=False, sampler=False):
         '''
         Initialize the object.
         Inputs:
@@ -45,7 +45,7 @@ class Darktable_Dataset(Dataset):
             [params_file]: path to the .npy file with parameter values
             [transform]: Transforms to be applied onto PIL Image.
             [proxy_type]: proxy type of data
-            [param]: parameter type of data
+            [params]: list of parameters that vary across data
             [sweep]: Toggles sweep mode of the dataloader for Darktable_sweep.py
         '''
         
@@ -57,21 +57,29 @@ class Darktable_Dataset(Dataset):
         self.stage_path = getattr(c, 'STAGE_' + str(self.stage) + '_PATH')
         self.transform = transform
         self.proxy_type = proxy_type
-        self.param = param
+        self.params = params
         self.sweep = sweep
         self.sampler = sampler
         
         # Configuring input & output directories
         if input_dir is None:
-            if self.param is not None:
-                self.input_image_dir = os.path.join(self.root_dir, self.stage_path, self.proxy_type + '_' + param + '_' + c.INPUT_DIR)
+            if self.params is not None:
+                dir_name = self.proxy_type + '_'
+                for param in self.params:
+                    dir_name += f'{param}_'
+                dir_name += c.INPUT_DIR
+                self.input_image_dir = os.path.join(self.root_dir, self.stage_path, dir_name)
             else:
                 self.input_image_dir = os.path.join(self.root_dir, self.stage_path, self.proxy_type + '_' + c.INPUT_DIR)
         else:
             self.input_image_dir = input_dir
         if output_dir is None:
-            if self.param is not None:
-                self.output_image_dir = os.path.join(self.root_dir, self.stage_path, self.proxy_type + '_' + param + '_' + c.OUTPUT_DIR)
+            if self.params is not None:
+                dir_name = self.proxy_type + '_'
+                for param in self.params:
+                    dir_name += f'{param}_'
+                dir_name += c.OUTPUT_DIR
+                self.output_image_dir = os.path.join(self.root_dir, self.stage_path, dir_name)
             else:
                 self.output_image_dir = os.path.join(self.root_dir, self.stage_path, self.proxy_type + '_' + c.OUTPUT_DIR)
         else:
@@ -96,8 +104,12 @@ class Darktable_Dataset(Dataset):
         # Getting path to params file (stage 1 only)
         if self.stage == 1 and proxy_type not in c.NO_PARAMS:
             if params_file is None:
-                if self.param is not None:
-                    self.param_mat = np.load(os.path.join(root_dir, self.stage_path, f'{proxy_type}_{param}_params.npy'))
+                if self.params is not None:
+                    filename = f'{proxy_type}_'
+                    for param in self.params:
+                        filename += f'{param}_'
+                    filename += 'params.npy'
+                    self.param_mat = np.load(os.path.join(root_dir, self.stage_path, filename))
                 else:
                     self.param_mat = np.load(os.path.join(root_dir, self.stage_path, f'{proxy_type}_params.npy'))
             else: # For sweep mode
@@ -306,8 +318,11 @@ class Darktable_Dataset(Dataset):
                     input_ndarray = pre_pack_input.detach().cpu().numpy()
                 input_ndarray = np.moveaxis(input_ndarray, 0, -1).copy(order='C')
 
-                if self.param is not None:
-                    crop_input_dir = self.proxy_type + '_' + self.param + '_' + c.CROPPED_INPUT_DIR
+                if self.params is not None:
+                    crop_input_dir = self.proxy_type + '_'
+                    for param in self.params:
+                        crop_input_dir += f'{param}_'
+                    crop_input_dir += c.CROPPED_INPUT_DIR
                 else:
                     crop_input_dir = self.proxy_type + '_' + c.CROPPED_INPUT_DIR
                 crop_input_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, crop_input_dir)
@@ -327,8 +342,11 @@ class Darktable_Dataset(Dataset):
 
                 label_ndarray = proxy_model_label.detach().cpu().numpy()
                 label_ndarray = np.moveaxis(label_ndarray, 0, -1).copy(order='C')
-                if self.param is not None:
-                    crop_label_dir = self.proxy_type + '_' + self.param + '_' + c.CROPPED_OUTPUT_DIR
+                if self.params is not None:
+                    crop_label_dir = self.proxy_type + '_'
+                    for param in self.params:
+                        crop_label_dir += f'{param}_'
+                    crop_label_dir += c.CROPPED_OUTPUT_DIR
                 else:
                     crop_label_dir = self.proxy_type + '_' + c.CROPPED_OUTPUT_DIR
                 crop_label_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, crop_label_dir)

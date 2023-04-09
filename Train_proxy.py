@@ -25,7 +25,7 @@ learning_rate = 0.0001 # was 0.0001
 gamma = 0.1 # was 0.1
 step_size = 1000 # was 7
 
-def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, param, append_params, interactive):
+def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, params, append_params, interactive):
     '''
     Sets up the dataset, Dataloader, model, and training regime, then begins training.
 
@@ -36,7 +36,7 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
         [use_gpu]: (Boolean) whether or not GPU is available
         [possible_params]: (list of tuples of floats) ranges of each input parameter
         [proxy_type]: Name of the block to learn
-        [param]: if None, train proxy on full parameter space, else train only on param
+        [params]: if None, train proxy on full parameter space, else train only on params list
         [append_params]: (Boolean) whether or not the given proxy has input parameters
         [interactive] (Boolean) is job interactive?
     '''
@@ -69,7 +69,7 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
     image_dataset = Darktable_Dataset(root_dir = image_root_dir, 
                                       stage=1, 
                                       proxy_type=proxy_type, 
-                                      param=param, 
+                                      params=params, 
                                       vary_input=not append_params)
     train_loader = torch.utils.data.DataLoader(image_dataset, 
                                                batch_size=batch_size, 
@@ -140,11 +140,15 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
         start_epoch,
         use_gpu,
         proxy_type,
-        param
+        params
     )
-    
-    if param is not None:
-        print(f'{proxy_type}: {param} proxy training completed.')
+
+    if params is not None:
+        msg = f"{proxy_type}: "
+        for param in params:
+            msg += param + '/ '
+        msg += ' proxy training completed.'
+        print(msg)
     else:
         print(f'{proxy_type} proxy training completed.')
 

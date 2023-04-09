@@ -11,9 +11,12 @@ from npy_convert import convert, merge
 from utils.latin_hypercube_sampling import lhs
 
 class ParamSamplerIterator():
-    def __init__(self, sampler, param, list):
+    '''
+    Iterator for sampled parameter values
+    '''
+    def __init__(self, sampler, params, list):
         self.sampler = sampler
-        self.param = param
+        self.params = params
         self.list = list
         self.num = len(sampler)
         self.idx = 0
@@ -23,7 +26,7 @@ class ParamSamplerIterator():
         vals = None
         if self.idx < self.num:
 
-            if self.param is None:
+            if len(self.params) > 1:
                 vals = np.squeeze(self.list[:, self.idx])
             else:
                 return [self.list[self.idx]]
@@ -38,24 +41,24 @@ class ParamSampler():
     proxy, no matter its dimensionality
     '''
     
-    def __init__(self, proxy_type, param, possible_values, num):
+    def __init__(self, proxy_type, params, possible_values, num):
         self.proxy_type = proxy_type
-        self.param = param
+        self.params = params
         self.possible_values = possible_values
         self.num = int(num)
 
-        if self.param is None:
+        if len(self.params) > 1:
             self.list = lhs(self.possible_values, self.num)
         else:
             self.list = np.linspace(self.possible_values[0][0], self.possible_values[0][1], self.num)
 
     def __iter__(self):
-        return ParamSamplerIterator(self, self.param, self.list)
+        return ParamSamplerIterator(self, self.params, self.list)
     
     def __len__(self):
         return self.num
 
-def generate(proxy_type, param, stage, possible_values, interactive, num):
+def generate(proxy_type, params, stage, possible_values, interactive, num):
 
     # Getting stage paths
     stage_path = getattr(c, 'STAGE_' + str(stage) + '_PATH')
@@ -63,9 +66,12 @@ def generate(proxy_type, param, stage, possible_values, interactive, num):
     # Getting image directory paths
     input_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + c.INPUT_DIR))
     output_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + c.OUTPUT_DIR))
-    if param is not None:
-        input_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + param + '_' + c.INPUT_DIR))
-        output_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + param + '_' + c.OUTPUT_DIR))
+    if params is not None:
+        dir_name = f"{proxy_type}_"
+        for param in params:
+            dir_name += f"{param}_"
+        input_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, dir_name + c.INPUT_DIR)
+        output_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, dir_name + c.OUTPUT_DIR)
 
     # Creating given input and output directories if they do not already exist
     if not os.path.exists(input_path):
@@ -77,7 +83,7 @@ def generate(proxy_type, param, stage, possible_values, interactive, num):
     
     # Checking that given input and output directories are empty
     if ((len(os.listdir(input_path)) > 0 or len(os.listdir(output_path)) > 0) and c.CHECK_DIRS):
-        print(f'ERROR: {proxy_type}: {param} directories already contain data for stage {stage}.')
+        print(f'ERROR: directories already contain data for stage {stage}.')
 
         # Checking if user wants to skip to stage 2 data generation
         if stage == 1 and interactive:
@@ -100,9 +106,6 @@ def generate(proxy_type, param, stage, possible_values, interactive, num):
                 quit()
             else:
                 return
-    
-    # List of all slider values
-    vals = []
 
     # Information about tapout requirement for the given proxy
     tapouts = c.TAPOUTS[proxy_type]
@@ -115,10 +118,10 @@ def generate(proxy_type, param, stage, possible_values, interactive, num):
     # training data. This effects which rendering parameters are passed
     # to darktable-cli)
     proxy_type_gt = proxy_type
-    param_gt = param
-    #if tapouts is not None:
+    params_gt = params
     if tapouts is not None and proxy_type != "demosaic":#TODO: temporary hack, remove me!!
-        proxy_type_gt, param_gt = c.SAMPLER_BLOCKS[proxy_type].split('_')
+        proxy_type_gt, params_gt = c.SAMPLER_BLOCKS[proxy_type].split('_')
+        params_gt = [params_gt] # NOTE: params_gt, like params, must be a list
 
     # Getting DNG images
     if stage == 1:
@@ -133,13 +136,17 @@ def generate(proxy_type, param, stage, possible_values, interactive, num):
         print(f"Training data generated: stage {stage}")
         return
     
-    sampler = ParamSampler(proxy_type_gt, param_gt, possible_values, num)
-    if param_gt is None:
+    sampler = ParamSampler(proxy_type_gt, params_gt, possible_values, num)
+    if params_gt is None:
         samples_concatenated = np.concatenate([sampler.list.copy() for _ in range(len(src_images))], axis=1)
         convert(samples_concatenated, os.path.join(c.IMAGE_ROOT_DIR, stage_path, f'{proxy_type}_params.npy'), ndarray=True)
     else:
         samples_concatenated = np.concatenate([sampler.list.copy() for _ in range(len(src_images))])
-        convert(samples_concatenated, os.path.join(c.IMAGE_ROOT_DIR, stage_path, f'{proxy_type}_{param}_params.npy'), ndarray=True)
+        filename = f'{proxy_type}_'
+        for param in params:
+            filename += f'{param}_'
+        filename += 'params.npy'
+        convert(samples_concatenated, os.path.join(c.IMAGE_ROOT_DIR, stage_path, filename), ndarray=True)
     print("Params file saved.")
 
     for image in src_images:
@@ -175,7 +182,7 @@ def generate(proxy_type, param, stage, possible_values, interactive, num):
             
             # Assembling a dictionary of all of the parameters to apply to the source DNG
             # Temperature and rawprepare params must be maintained in order to produce expected results
-            params_dict = dt.get_params_dict(proxy_type_gt, c.PARAM_NAMES[proxy_type_gt], values, temperature_params, raw_prepare_params)
+            params_dict = dt.get_params_dict(proxy_type_gt, params_gt, values, temperature_params, raw_prepare_params)
 
             # Getting path of the ground truth image
             gt_file_path = os.path.join(output_path, f'{image}_{proxy_type}')

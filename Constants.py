@@ -169,7 +169,7 @@ the following format: [input tapout, ground truth tapout]
 
 NO_PARAMS = ['colorin','colorout', 'demosaic']
 '''
-List of Darktable blocks that do not take input parameters
+List of Darktable blocks that do not require input parameters
 '''
 
 SAMPLER_BLOCKS = {
