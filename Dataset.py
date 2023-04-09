@@ -335,13 +335,14 @@ class Darktable_Dataset(Dataset):
                     print('directory created at: ' + crop_input_path)
                     
                 input_path = os.path.join(crop_input_path, f'crop_{image_name}')
-                if self.proxy_type == "demosaic":	
+                if self.proxy_type == "demosaic" and not os.path.exists(input_path):	
                     #Image.fromarray(input_ndarray).save(input_path, c.CROP_FORMAT)	
                     #imageio.imwrite(input_path, input_ndarray, format=c.CROP_FORMAT)	
-                    tifffile.imwrite(input_path, input_ndarray)	
-                else:	
+                    tifffile.imwrite(input_path, input_ndarray)
+                    print('crop saved: input')
+                elif not os.path.exists(input_path):	
                     plt.imsave(input_path, input_ndarray, format=c.CROP_FORMAT)
-                print('crop saved: input')
+                    print('crop saved: input')
 
                 label_ndarray = proxy_model_label.detach().cpu().numpy()
                 label_ndarray = np.moveaxis(label_ndarray, 0, -1).copy(order='C')
@@ -359,8 +360,10 @@ class Darktable_Dataset(Dataset):
                     print('directory created at: ' + crop_label_path)
 
                 label_path = os.path.join(crop_label_path, f'crop_{image_name}')
-                plt.imsave(label_path, label_ndarray, format=c.CROP_FORMAT)
-                print('crop saved: ground truth')
+
+                if not os.path.exists(label_path):
+                    plt.imsave(label_path, label_ndarray, format=c.CROP_FORMAT)
+                    print('crop saved: ground truth')
 
             # Appending parameter tensor
             if append_params:
