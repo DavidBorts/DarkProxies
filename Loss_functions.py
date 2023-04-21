@@ -1,6 +1,7 @@
 # File to define all of the loss functions used throughout this codebase
 
 import numpy as np
+import torch
 import torch.nn as nn
 
 # local files
@@ -34,7 +35,7 @@ class SpatialLoss():
 
             loss = 0
             for xx, yy in zip(gx, gy):
-                loss = loss + np.mean(np.abs(xx - yy))
+                loss = loss + torch.mean(torch.abs(xx - yy))
             total_loss += loss
         
         return total_loss
