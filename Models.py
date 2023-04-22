@@ -496,7 +496,8 @@ def load_checkpoint(model, model_weight_dir):
 '''
 Training routine for the model. For example of inputs, go to Train_proxy.py
 '''
-def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, scheduler, weight_out_dir, num_epochs, start_epoch, use_gpu, proxy_type, params, save_every_epoch = True, save_outputs=True):
+#TODO: add function comment
+def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, scheduler, weight_out_dir, num_epochs, start_epoch, use_gpu, proxy_type, params, name, save_every_epoch = True, save_outputs=True):
     save_output_frequency = c.SAVE_OUTPUT_FREQ
     num_epochs = num_epochs + start_epoch
     dtype = torch.FloatTensor
@@ -511,14 +512,7 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
         os.mkdir(weight_out_dir)
     
     # Creating directory to store model predictions
-    if params is not None:
-        dir_name = proxy_type + '_'
-        for p in params:
-            dir_name += f'{p}_'
-        dir_name += c.OUTPUT_PREDICTIONS_PATH
-        predictions_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, dir_name)
-    else:
-        predictions_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_'  + c.OUTPUT_PREDICTIONS_PATH)
+    predictions_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, name + c.OUTPUT_PREDICTIONS_PATH)
     if not os.path.exists(predictions_path):
         os.mkdir(predictions_path)
         print('New directory created at: ' + predictions_path)
@@ -565,16 +559,8 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                     if save_outputs and (epoch % save_output_frequency) == 0:
                         outputs_ndarray = outputs[0].detach().cpu().numpy()
                         outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
-                        if params is not None:
-                            filename = f'{proxy_type}_'
-                            for p in params:
-                                filename += f'{p}_'
-                            filename += f'pred_epoch-{epoch}_{names[0]}'
-                            outputs_path = os.path.join(predictions_path, filename)
-                        else:
-                            outputs_path = os.path.join(predictions_path, f'{proxy_type}_pred_epoch-{epoch}_{names[0]}')
+                        outputs_path = os.path.join(predictions_path, f'{name}_pred_epoch-{epoch}_{names[0]}')
                         plt.imsave(outputs_path, outputs_ndarray, format='png')
-
                     
 #                    print("outputs {}".format(outputs.size()))
 #                    sys.stdout.flush()
@@ -613,16 +599,8 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
             if (phase == 'val' and ((epoch_loss < best_loss or epoch == (num_epochs-1)) or save_every_epoch)) or proxy_type == "demosaic":#TODO: Temporary hack - remove me!
                 best_loss = epoch_loss
                 best_model_wts = copy.deepcopy(model.state_dict())
-                print('Saved model')
-                if params is not None:
-                    filename = f'{proxy_type}_'
-                    for p in params:
-                        filename += f'{p}_'
-                    filename += '{:03d}.pkl'.format(epoch)
-                    torch.save(best_model_wts, os.path.join(weight_out_dir, filename))
-                else:
-                    torch.save(best_model_wts, os.path.join(weight_out_dir, proxy_type + '_' + '{:03d}.pkl'.format(epoch)))
-        print()
+                print('Saving model')
+                torch.save(best_model_wts, os.path.join(weight_out_dir, name + '{:03d}.pkl'.format(epoch)))
 
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))

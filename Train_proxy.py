@@ -18,14 +18,14 @@ import Constants as c
 # Constants
 # TODO: move these into Constants.py
 skip_connect = True
-clip_output = True
+clip_output = c.CLIP_OUTPUT
 num_epoch = c.PROXY_MODEL_NUM_EPOCH
 use_checkpoint = True
 learning_rate = 0.0001 # was 0.0001
 gamma = 0.1 # was 0.1
 step_size = 1000 # was 7
 
-def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, params, append_params, interactive):
+def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, params, append_params, name, interactive):
     '''
     Sets up the dataset, Dataloader, model, and training regime, then begins training.
 
@@ -38,6 +38,7 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
         [proxy_type]: Name of the block to learn
         [params]: if None, train proxy on full parameter space, else train only on params list
         [append_params]: (Boolean) whether or not the given proxy has input parameters
+        [name]: Prefix used for all directories/files corresponding to this specific proxy
         [interactive] (Boolean) is job interactive?
     '''
 
@@ -66,11 +67,12 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
 
     # Set up data loading.
     since = time.time()
-    image_dataset = Darktable_Dataset(root_dir = image_root_dir, 
-                                      stage=1, 
-                                      proxy_type=proxy_type, 
-                                      params=params, 
-                                      sampler=not append_params)
+    image_dataset = Darktable_Dataset(image_root_dir, 
+                                      1, 
+                                      proxy_type, 
+                                      params, 
+                                      not append_params,
+                                      name)
     train_loader = torch.utils.data.DataLoader(image_dataset, 
                                                batch_size=batch_size, 
                                                sampler=image_dataset.train_sampler,
@@ -140,17 +142,11 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
         start_epoch,
         use_gpu,
         proxy_type,
-        params
+        params,
+        name
     )
 
-    if params is not None:
-        msg = f"{proxy_type}: "
-        for param in params:
-            msg += param + '/ '
-        msg += ' proxy training completed.'
-        print(msg)
-    else:
-        print(f'{proxy_type} proxy training completed.')
+    print(f'{name}: proxy training completed.')
 
 '''
 Evaluate the model on a any input(s)

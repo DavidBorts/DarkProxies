@@ -14,7 +14,7 @@ from utils.misc import get_possible_values
 
 def sort_params(proxy_type, params):
     '''
-    Re-arrange the params list into a standard order
+    Re-arrange the params list into a standard order (returns list)
     '''
     names = c.PARAM_NAMES[proxy_type]
     params_upper = [param.upper() for param in params]
@@ -36,33 +36,34 @@ parser.add_argument("-p", "--params", help="[OPTIONAL] Specify a list of _ separ
 parser.add_argument("-n", "--number", help="Number of training examples to generate for each \
                     source DNG image", required=True, default=0)
 parser.add_argument("-c", "--custom", help="[OPTIONAL] A custom name for the given proxy - overrides \
-                    default naming scheme set by --params flag", required=False)
+                    default naming scheme set by --params flag", default=None)
 args = parser.parse_args()
 proxy_type = args.proxy
 params = args.params
 custom = args.custom
 num = int(args.number)
 
+# Global constants
+image_root_dir = c.IMAGE_ROOT_DIR
+interactive = c.INTERACTIVE
+
 # Sorting params list for consistency
 if params is not None:
     params = params.split('_')
     params = sort_params(proxy_type, params)
 
-# Global constants
-image_root_dir = c.IMAGE_ROOT_DIR
-interactive = c.INTERACTIVE
+# Getting proxy name
+name = f'{proxy_type}_'
+if params is not None and custom is None:
+    name.join(f'{param}_' for param in params)
+elif custom is not None:
+    name.join(f'{custom}_')
 
 # Stage 1 constants
 generate_stage_1 = c.GENERATE_STAGE_1
 stage_1_batch_size = c.PROXY_MODEL_BATCH_SIZE
 num_epoch = c.PROXY_MODEL_NUM_EPOCH
-if params is not None:
-    weight_out_dir = os.path.join(image_root_dir, c.STAGE_1_PATH, proxy_type)
-    for param in params:
-        weight_out_dir = os.path.join(weight_out_dir, '_' + param)
-    weight_out_dir = os.path.join(weight_out_dir, '_' + c.MODEL_WEIGHTS_PATH)
-else:
-    weight_out_dir = os.path.join(image_root_dir, c.STAGE_1_PATH, proxy_type + '_' + c.MODEL_WEIGHTS_PATH)
+weight_out_dir = os.path.join(image_root_dir, c.STAGE_1_PATH, name + c.MODEL_WEIGHTS_PATH)
 
 # Stage 2 constants
 generate_stage_2 = c.GENERATE_STAGE_2
@@ -103,20 +104,33 @@ if not os.path.exists(stage_2_path):
 # Generating training data 
 # (This is done by performing a parameter sweep via Darktable's CLI)
 # TODO: does generate() really need interactive as an argument?
+checkpoints = c.GENERATE_WITH_CHECKPOINTS
 if generate_stage_1:
-    if c.GENERATE_WITH_CHECKPOINTS:
+    if checkpoints:
         print("Generating training data (w/ checkpoints): stage 1")
-        data.generate_piecewise(proxy_type, params, 1, possible_values, num)
     else:
         print("Generating training data: stage 1")
-        data.generate(proxy_type, params, 1, possible_values, interactive, num)
+    data.generate(proxy_type, 
+                  params, 
+                  1, 
+                  possible_values, 
+                  interactive, 
+                  num, 
+                  checkpoints, 
+                  name)
 if generate_stage_2:
-    if c.GENERATE_WITH_CHECKPOINTS:
+    if checkpoints:
         print("Generating training data (w/ checkpoints): stage 2")
-        data.generate_piecewise(proxy_type, params, 2, possible_values, c.STAGE_2_NUM_IMAGES)
     else:
         print("Generating training data: stage 2")
-        data.generate(proxy_type, params, 2, possible_values, interactive, c.STAGE_2_NUM_IMAGES)
+    data.generate(proxy_type, 
+                  params, 
+                  2, 
+                  possible_values, 
+                  interactive, 
+                  c.STAGE_2_NUM_IMAGES, 
+                  checkpoints, 
+                  name)
 
 # Stage 1 - proxy training
 if c.TRAIN_PROXY:
@@ -125,11 +139,13 @@ if c.TRAIN_PROXY:
     Train_proxy.run_training_procedure( 
         weight_out_dir, 
         stage_1_batch_size, 
-        num_epoch, use_gpu, 
+        num_epoch, 
+        use_gpu, 
         possible_values, 
         proxy_type,
         params,
         append_params,
+        name,
         interactive
     )
 
@@ -153,13 +169,8 @@ Parameter_regression.run_finetune_procedure(
     use_gpu,
     proxy_type,
     params,
+    name,
     interactive
 )
-if params is not None:
-    msg = f"{proxy_type}: "
-    for param in params:
-        msg += param + '/ '
-    msg += ' slider regression completed.\n Done.'
-    print(msg)
-else:
-    print(f"{proxy_type} slider regression completed.\n Done.")
+
+print(f'{name}: slider regression completed.\n Done.')

@@ -58,20 +58,14 @@ class ParamSampler():
     def __len__(self):
         return self.num
 
-def generate(proxy_type, params, stage, possible_values, interactive, num):
+def generate(proxy_type, params, stage, possible_values, interactive, num, checkpoints, name):
 
     # Getting stage paths
     stage_path = getattr(c, 'STAGE_' + str(stage) + '_PATH')
 
     # Getting image directory paths
-    input_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + c.INPUT_DIR))
-    output_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + c.OUTPUT_DIR))
-    if params is not None:
-        dir_name = f"{proxy_type}_"
-        for param in params:
-            dir_name += f"{param}_"
-        input_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, dir_name + c.INPUT_DIR)
-        output_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, dir_name + c.OUTPUT_DIR)
+    input_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, name + c.INPUT_DIR)
+    output_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, name + c.OUTPUT_DIR)
 
     # Creating given input and output directories if they do not already exist
     if not os.path.exists(input_path):
@@ -139,14 +133,10 @@ def generate(proxy_type, params, stage, possible_values, interactive, num):
     sampler = ParamSampler(proxy_type_gt, params_gt, possible_values, num)
     if params_gt is None:
         samples_concatenated = np.concatenate([sampler.list.copy() for _ in range(len(src_images))], axis=1)
-        convert(samples_concatenated, os.path.join(c.IMAGE_ROOT_DIR, stage_path, f'{proxy_type}_params.npy'), ndarray=True)
     else:
         samples_concatenated = np.concatenate([sampler.list.copy() for _ in range(len(src_images))])
-        filename = f'{proxy_type}_'
-        for param in params:
-            filename += f'{param}_'
-        filename += 'params.npy'
-        convert(samples_concatenated, os.path.join(c.IMAGE_ROOT_DIR, stage_path, filename), ndarray=True)
+    filename = name + 'params.npy'
+    convert(samples_concatenated, os.path.join(c.IMAGE_ROOT_DIR, stage_path, filename), ndarray=True)
     print("Params file saved.")
 
     for image in src_images:
