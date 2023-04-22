@@ -49,7 +49,7 @@ class Darktable_Dataset(Dataset):
             [sweep]: Toggles sweep mode of the dataloader for Darktable_sweep.py
         '''
         
-        if stage != 1 and stage != 2 and stage != 3:
+        if stage not in [1, 2, 3]:
             raise ValueError("Please enter either 1, 2, or 3 for the stage parameter.")
             
         self.root_dir = root_dir
