@@ -49,7 +49,7 @@ class Darktable_Dataset(Dataset):
             [sweep]: Toggles sweep mode of the dataloader for Darktable_sweep.py
         '''
         
-        if stage != 1 and stage != 2 and stage != 3:
+        if stage not in [1, 2, 3]:
             raise ValueError("Please enter either 1, 2, or 3 for the stage parameter.")
             
         self.root_dir = root_dir
@@ -250,22 +250,22 @@ class Darktable_Dataset(Dataset):
             input_image = self.transform(input_image)
 
         if self.proxy_type == "demosaic":
-            #pre_pack_input = np.squeeze(np.array(input_image).copy(), axis=2)	
-            pre_pack_input = to_tensor_transform(input_image)	
-            pre_pack_input = torch.squeeze(pre_pack_input, dim=0)	
-            #pre_pack_input = (pre_pack_input * 255).astype(np.uint8)	
-            #print("pre pack shape: ")	
+            #pre_pack_input = np.squeeze(np.array(input_image).copy(), axis=2)
+            pre_pack_input = to_tensor_transform(input_image)
+            pre_pack_input = torch.squeeze(pre_pack_input, dim=0)
+            #pre_pack_input = (pre_pack_input * 255).astype(np.uint8)
+            #print("pre pack shape: ")
             #print(np.shape(pre_pack_input))
             
         proxy_model_input = to_tensor_transform(input_image)
         if c.TAPOUTS[self.proxy_type] is None:
-            print('Downsampling input tensor.')
+            #print('Downsampling input tensor.')
             proxy_model_input = interpolate(proxy_model_input[None, :, :, :], scale_factor=0.25, mode='bilinear')
         proxy_model_input = torch.squeeze(proxy_model_input, dim=0)
         
-        if len(proxy_model_input.size()) == 3:	
-            _, width, height = proxy_model_input.size()	
-        else:	
+        if len(proxy_model_input.size()) == 3:
+            _, width, height = proxy_model_input.size()
+        else:
             width, height = proxy_model_input.size()
         
         # Cropping input tensor
@@ -282,17 +282,17 @@ class Darktable_Dataset(Dataset):
             height_low -= 1
         height_high = height_low + c.IMG_SIZE
 
-        if len(proxy_model_input.size()) == 3:	
-            proxy_model_input = proxy_model_input[:, width_low:width_high, height_low:height_high]	
+        if len(proxy_model_input.size()) == 3:
+            proxy_model_input = proxy_model_input[:, width_low:width_high, height_low:height_high]
         else:	
             proxy_model_input = proxy_model_input[width_low:width_high, height_low:height_high]
         
-        if self.proxy_type == 'demosaic':	
-            dng_name = input_image_name.split('_')[0].split('.')[0] + '.dng'	
-            dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)	
-            #print('dng path: ' + str(dng_path))	
-            cfa = get_cfa(dng_path)	
-            proxy_model_input = np.squeeze(pack_input_demosaic(proxy_model_input, cfa))	
+        if self.proxy_type == 'demosaic':
+            dng_name = input_image_name.split('_')[0].split('.')[0] + '.dng'
+            dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)
+            #print('dng path: ' + str(dng_path))
+            cfa = get_cfa(dng_path)
+            proxy_model_input = np.squeeze(pack_input_demosaic(proxy_model_input, cfa))
             #print('proxy_model_input shape after packing: ' + str(proxy_model_input.shape))
         
         if not self.sweep:
@@ -308,7 +308,9 @@ class Darktable_Dataset(Dataset):
             
             proxy_model_label = to_tensor_transform(output_image)
             if c.TAPOUTS[self.proxy_type] is None:
+                #print('Downsampling ground truth tensor')
                 proxy_model_label = interpolate(proxy_model_label[None, :, :, :], scale_factor=0.25, mode='bilinear')
+            proxy_model_label = torch.squeeze(proxy_model_label, dim=0)
             proxy_model_label = proxy_model_label[:, width_low:width_high, height_low:height_high]
         
         if self.stage == 1:
@@ -335,12 +337,12 @@ class Darktable_Dataset(Dataset):
                     print('directory created at: ' + crop_input_path)
                     
                 input_path = os.path.join(crop_input_path, f'crop_{image_name}')
-                if self.proxy_type == "demosaic" and not os.path.exists(input_path):	
-                    #Image.fromarray(input_ndarray).save(input_path, c.CROP_FORMAT)	
-                    #imageio.imwrite(input_path, input_ndarray, format=c.CROP_FORMAT)	
+                if self.proxy_type == "demosaic" and not os.path.exists(input_path):
+                    #Image.fromarray(input_ndarray).save(input_path, c.CROP_FORMAT)
+                    #imageio.imwrite(input_path, input_ndarray, format=c.CROP_FORMAT)
                     tifffile.imwrite(input_path, input_ndarray)
                     print('crop saved: input')
-                elif not os.path.exists(input_path):	
+                elif not os.path.exists(input_path):
                     plt.imsave(input_path, input_ndarray, format=c.CROP_FORMAT)
                     print('crop saved: input')
 

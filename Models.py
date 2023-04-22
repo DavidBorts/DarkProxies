@@ -479,7 +479,7 @@ def load_checkpoint(model, model_weight_dir):
     for weight_filename in saved_weight_filenames:
         if '.pkl' in weight_filename:
             print('weight filename: ' + weight_filename)
-            epoch = int(weight_filename.split('_')[2][0:-4]) + 1
+            epoch = int(weight_filename.split('_')[-1][0:-4]) + 1
             if epoch > latest_epoch:
                 latest_epoch = epoch
                 latest_weight = weight_filename
