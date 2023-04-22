@@ -51,7 +51,8 @@ import sys
 import Constants as c
 from Dataset import Darktable_Dataset
 from Generate_data import generate_pipeline
-from Models import UNet, generic_load
+from Models import UNet, ChenNet, DemosaicNet, generic_load
+from utils.misc import get_possible_values
 
 class ProxyPipeline:
     def __init__(self, proxies_list, use_gpu):
@@ -63,18 +64,26 @@ class ProxyPipeline:
         # in the correct order
         proxies = []
         possible_values_list = []
-        for proxy in proxies_list:
+        for proxy_type, params in proxies_list:
 
             # Getting necessary params to load in the proxy
-            proxy_type, param = proxy.split('_')
-            possible_values = getattr(c.POSSIBLE_VALUES(), proxy_type + '_' + param)
-            weight_out_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_' + param + '_' + c.MODEL_WEIGHTS_PATH)
+            params = params.split('_')
+            if params[0].lower() != 'full':
+                possible_values = get_possible_values(proxy_type, params)
+            else:
+                possible_values = c.POSSIBLE_VALUES[proxy_type]
+            possible_values_list.append(possible_values)
+
+            # Location of model weights
+            if params[0].lower() != 'full':
+                weight_out_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_' + ''.join([f'{param}_' for param in params]) + c.MODEL_WEIGHTS_PATH)
+            else:
+                weight_out_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_' + c.MODEL_WEIGHTS_PATH)
 
             # Loding proxy
-            proxies.append(load_model(proxy_type, param, possible_values, weight_out_dir, self.use_gpu))
-            possible_values_list.append(possible_values)
+            proxies.append(load_model(proxy_type, params, possible_values, weight_out_dir, self.use_gpu))
         self.models = proxies
-        self.possible_values = possible_values_list
+        self.possible_values = possible_values_list #NOTE: this is a list of lists
     
     def process(self, orig_tensor, input_tensors):#, params_list):
 
@@ -100,13 +109,16 @@ class ProxyPipeline:
 
         return outputs
 
-def load_model(proxy_type, param, possible_values, weight_out_dir, use_gpu):
+def load_model(proxy_type, params, possible_values, weight_out_dir, use_gpu):
     
-    print(f"Loading in model: {proxy_type}_{param}")
+    if params[0] != 'full':
+        print(f"Loading in model: {proxy_type}: " + "".join(f" {param}" for param in params))
+    else:
+        print(f"Loading in model: {proxy_type}")
 
     # Getting model weights
     weights_list = os.listdir(weight_out_dir)
-    weights_list.sort(key=lambda x: float(x.strip(proxy_type + '_' + param + '_').strip('.pkl')))
+    weights_list.sort(key=lambda x: float(x.strip(proxy_type + '_' + "".join(f"{param}_" for param in params)).strip('.pkl')))
     final_weights = weights_list[-1]
     #model_weight_file = os.path.join(weight_out_dir, final_weights)
     print(f'Using model weights from {final_weights}.')
@@ -114,24 +126,27 @@ def load_model(proxy_type, param, possible_values, weight_out_dir, use_gpu):
     # Loading the weights into a Unet
     num_input_channels = c.NUM_IMAGE_CHANNEL + len(possible_values)
     state_dict = generic_load(weight_out_dir, final_weights)
-    unet = UNet(
-                num_input_channels=num_input_channels,
-                num_output_channels=c.NUM_IMAGE_CHANNEL
-                )
-    unet.load_state_dict(state_dict)
+    if proxy_type == "demosaic":
+        model = ChenNet(0, clip_output=True, add_params=False)
+    else:
+        model = UNet(
+                    num_input_channels=num_input_channels,
+                    num_output_channels=c.NUM_IMAGE_CHANNEL
+                    )
+    model.load_state_dict(state_dict)
     
     # Locking the weights in the U-Net
-    unet.eval()
-    for parameter in unet.parameters():
+    model.eval()
+    for parameter in model.parameters():
         parameter.requires_grad=False
 
      # Adjusting for GPU usage
     if use_gpu:
-        unet.cuda()
+        model.cuda()
     if torch.cuda.device_count() > 1:
-        unet = nn.DataParallel(unet)
+        model = nn.DataParallel(model)
 
-    return unet
+    return model
 
 def evaluate(param_file, input_path, label_path, output_path, use_gpu):
 
@@ -140,9 +155,9 @@ def evaluate(param_file, input_path, label_path, output_path, use_gpu):
     with open(os.path.join(c.IMAGE_ROOT_DIR, c.CONFIG_FILE), 'r') as file:
         lines = file.readlines()
         for line in lines:
-            proxy, enable = line.split(' ')
+            proxy, params, enable = line.split(' ')
             if int(enable) == 1:
-                proxy_order.append(proxy)
+                proxy_order.append((proxy, params))
 
 
     # Differentiable ISP
@@ -173,7 +188,8 @@ def evaluate(param_file, input_path, label_path, output_path, use_gpu):
     for num in range(isp.num_proxies):
 
         # Getting possible values
-        proxy_type, param = proxy_order[num].split('_')
+        proxy_type, params = proxy_order[num]
+        #FIXME: bring everything below this line up to speed
         possible_values = getattr(c.POSSIBLE_VALUES(), proxy_type + '_' + param)
 
         # Getting correct tensor size
