@@ -1,7 +1,7 @@
-exposure_exposure 1
-hazeremoval_strength 0
-colorin_colorin 1
-censorize_pixelate 0
-lowpass_radius 0
-sharpen_amount 1
-colorbalancergb_contrast 1
+exposure full 1
+hazeremoval full 0
+colorin full 1
+censorize full 0
+lowpass full 0
+sharpen full 1
+colorbalancergb full 1

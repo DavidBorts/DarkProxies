@@ -18,9 +18,10 @@ import argparse
 import Constants as c
 import Dataset
 from Train_proxy import run_training_procedure
-from Generate_data import generate, generate_piecewise, generate_finetune
+from Generate_data import generate_finetune
 
-def run_finetune_procedure():
+def run_finetune_procedure(proxy_type, param, possible_values, finetune, param_finetune, possible_values_finetune):
+    
     raise NotImplementedError
 
 def finetune_proxy():
@@ -49,7 +50,7 @@ finetune = args.finetune
 param_finetune = args.monof
 num = args.number
 
-# Adjusting for varying training requirement across different proxies
+# Some proxies have no input params
 append_params = proxy_type not in c.NO_PARAMS
 
 # If the given proxy takes input params, it is necesary to find their
@@ -76,6 +77,19 @@ else:
 possible_values_finetune = c.POSSIBLE_VALUES[finetune]
 
 # Generating data
-generate_finetune(proxy_type, param, finetune, param_finetune, possible_values, possible_values_finetune, c.INTERACTIVE, num)
+generate_finetune(proxy_type, 
+                  param, 
+                  finetune, 
+                  param_finetune, 
+                  possible_values, 
+                  possible_values_finetune, 
+                  num)
 
 # Finetuning proxy
+run_finetune_procedure(proxy_type,
+                       param,
+                       possible_values,
+                       finetune,
+                       param_finetune,
+                       possible_values_finetune
+                       )

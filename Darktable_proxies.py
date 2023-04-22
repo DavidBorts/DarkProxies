@@ -10,6 +10,7 @@ import Generate_data as data
 import Constants as c
 import Train_proxy
 import Parameter_regression
+from utils.misc import get_possible_values
 
 def sort_params(proxy_type, params):
     '''
@@ -20,18 +21,6 @@ def sort_params(proxy_type, params):
 
     sorted = [name.lower() for name in names if name.upper() in params_upper]
     return sorted
-
-def get_possible_values(proxy_type, params):
-    '''
-    Given a proxy type and a subset of its input params,
-    return the corresponding ranges of possible values
-    of those parameters
-    '''
-    all_possible_values = c.POSSIBLE_VALUES[proxy_type]
-    all_param_names = c.PARAM_NAMES[proxy_type]
-
-    possible_values = [all_possible_values[all_param_names.index(param)] for param in params]
-    return possible_values
 
 if __name__ != '__main__':
     raise RuntimeError("This script is only configured to be called directly by the user!")
@@ -46,9 +35,12 @@ parser.add_argument("-p", "--params", help="[OPTIONAL] Specify a list of _ separ
                     -p contrast_radius_brightness)", default=None)
 parser.add_argument("-n", "--number", help="Number of training examples to generate for each \
                     source DNG image", required=True, default=0)
+parser.add_argument("-c", "--custom", help="[OPTIONAL] A custom name for the given proxy - overrides \
+                    default naming scheme set by --params flag", required=False)
 args = parser.parse_args()
 proxy_type = args.proxy
 params = args.params
+custom = args.custom
 num = int(args.number)
 
 # Sorting params list for consistency

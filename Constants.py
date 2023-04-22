@@ -14,6 +14,8 @@ IMAGE_ROOT_DIR = '.'                     #   Root directory from which to constr
 INTERACTIVE = False                      #   Toggle interactive prompts between stages
 NUM_IMAGE_CHANNEL = 3                    # X Number of channels in each image (3 for RGB)
 IMG_SIZE = 736                           # X Dimensions to crop all images to (IMG_SIZE x IMG_SIZE)
+CLIP_OUTPUT = False                      # X Toggle clipping of proxy outputs to [0, 1]
+RESCALE_PARAMS = False                   # X Toggle normalization of input parameters for model training/eval
 
 # Data generation constants (Stage 0)
 GENERATE_STAGE_1 = True                  #   Toggles new data generation for proxy training (stage 1)
@@ -59,6 +61,7 @@ STAGE_3_PATH = 'stage_3/'                #   Directory that stores all training 
 STAGE_3_INPUT_DIR = 'input/'             #   Directory that stores all training data
 STAGE_3_OUTPUT_DIR = 'output/'           #   Directory that stores all ground truth data
 STAGE_3_PARAM_DIR = 'params/'            #   Directory that stores optimized proxy params
+STAGE_3_LOSS_FN = 'Perceptual'           #   Loss function for pipeline regression (Default: spatial)
 CONFIG_FILE = 'pipeline_config.txt'      # X Path to file with pipeline conifugration
 PIPELINE_REGRESSION_NUM_ITERS = 2000     #   Number of regression iterations per image
 PIPELINE_OUTPUT_FORMAT = 'tiff'          #   Format to save pipeline outputs as (Default: png)
