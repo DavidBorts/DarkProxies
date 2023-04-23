@@ -58,7 +58,7 @@ class ParamSampler():
     def __len__(self):
         return self.num
 
-def generate(proxy_type, params, stage, possible_values, interactive, num, checkpoints, name):
+def generate(proxy_type, params, stage, possible_values, interactive, num, name):
 
     # Getting stage paths
     stage_path = getattr(c, 'STAGE_' + str(stage) + '_PATH')
@@ -143,36 +143,31 @@ def generate(proxy_type, params, stage, possible_values, interactive, num, check
 
         # Getting path of individual source DNG file
         src_path = os.path.join(dng_path, image)
-        
-        # Keeping track of the first input image generated
-        first_input = None
 
         # Extracting necessary params from the source image
         raw_prepare_params, temperature_params = dt.read_dng_params(src_path)
 
-        # Parameter value sweep
-        for values in sampler:
+        # No need to render input image separately when using ISP tap-outs
+        if tapouts is not None:
+            # Getting path of the input image
+            input_file_path = os.path.join(input_path, image.split('.')[0])
+            input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
 
-            # Making sure that the same input image is not generated multiple times
-            # (for proxies with input params)
-            if first_input is None and tapouts is None:
-
-                # Getting path of the input image
-                input_file_path = os.path.join(input_path, image.split('.')[0])
-                input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
-
-                first_input = input_file_path
-                
-                # Assembling a dictionary of all of the original params for the source image
-                # (used to render proxy input)
-                original_params = dt.get_params_dict(None, None, None, temperature_params, raw_prepare_params)
-
-                # Rendering an unchanged copy of the source image for model input
-                dt.render(src_path, input_file_path, original_params)
+            # Checking if input image already exists
+            # (this can happen if a previous data generation job was interrupted)
+            input_exists = os.path.exists(input_file_path)
             
-            # Assembling a dictionary of all of the parameters to apply to the source DNG
-            # Temperature and rawprepare params must be maintained in order to produce expected results
-            params_dict = dt.get_params_dict(proxy_type_gt, params_gt, values, temperature_params, raw_prepare_params)
+            # Assembling a dictionary of all of the original params for the source image
+            # (used to render proxy input)
+            original_params = dt.get_params_dict(None, None, None, temperature_params, raw_prepare_params)
+
+            # Rendering an unchanged copy of the source image for model input
+            if not input_exists:
+                dt.render(src_path, input_file_path, original_params)
+
+        # Parameter value sweep
+        # (to generate ground truth images)
+        for values in sampler:
 
             # Getting path of the ground truth image
             gt_file_path = os.path.join(output_path, f'{image}_{proxy_type}')
@@ -180,6 +175,14 @@ def generate(proxy_type, params, stage, possible_values, interactive, num, check
             for val in values:
                 gt_file_path += '_' + str(val)
             gt_file_path += '.tif'
+
+            # Skip ground truth images that already exist
+            if os.path.exists(gt_file_path):
+                continue
+            
+            # Assembling a dictionary of all of the parameters to apply to the source DNG
+            # Temperature and rawprepare params must be maintained in order to produce expected results
+            params_dict = dt.get_params_dict(proxy_type_gt, params_gt, values, temperature_params, raw_prepare_params)
 
             # Rendering the output image
             dt.render(src_path, gt_file_path, params_dict)
@@ -204,138 +207,6 @@ def generate(proxy_type, params, stage, possible_values, interactive, num, check
                 # Read in the tapouts and save them as tiffs
                 tmp2tiff(input_tapout_path, input_file_path)
                 tmp2tiff(gt_tapout_path, gt_file_path)
-    print(f"Training data generated: stage {stage}")
-
-def generate_piecewise(proxy_type, param, stage, min, max, num):
-
-    # Getting stage paths
-    stage_path = getattr(c, 'STAGE_' + str(stage) + '_PATH')
-
-    # Getting image directory paths
-    input_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + param + '_' + c.INPUT_DIR))
-    output_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + param + '_' + c.OUTPUT_DIR))
-    params_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, (proxy_type + '_' + param + '_' + c.PARAM_FILE_DIR))
-    merged_params_path = os.path.join(c.IMAGE_ROOT_DIR, stage_path, f'{proxy_type}_{param}_params.npy')
-
-    # Information about tapout requirement for the given proxy
-    tapouts = c.TAPOUTS[proxy_type]
-
-    # Creating given input, output, and checkpoint file directories if they do not already exist
-    if not os.path.exists(input_path):
-        os.mkdir(input_path)
-        print('Directory created at: ' + input_path)
-    if not os.path.exists(output_path):
-        os.mkdir(output_path)
-        print('Directory created at: ' + output_path)
-    if not os.path.exists(params_path):
-        os.mkdir(params_path)
-        print('Directory created at: ' + params_path)    
-
-    # Iterating over each source DNG file
-    if stage == 1:
-        dng_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_DNG_PATH)
-    else:
-        dng_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_2_DNG_PATH)
-    src_images = os.listdir(dng_path)
-    imgNum = 1
-    for image in src_images:
-
-        # Making sure that the given source image has not already
-        # had data generated
-        if imgNum <= len(os.listdir(params_path)):
-            imgNum += 1
-            continue
-
-        # List of all slider values
-        vals = []
-
-        # Getting path of individual source DNG file
-        src_path = os.path.join(dng_path, image)
-        
-        # Keeping track of the first input image generated
-        first_input = None
-
-        # Extracting necessary params from the source image
-        raw_prepare_params, temperature_params = dt.read_dng_params(src_path)
-
-        # Parameter value sweep
-        #Alternate approach -> for value in random.uniform(min, max, int(num)):
-        for value in np.linspace(min, max, int(num)):
-
-            # Tracking duplicate images
-            skip_input = False
-            skip_output = False
-
-            # Making sure that the same input image is not generated multiple times
-            if first_input is None and tapouts is None:
-
-                # Getting path of the input image and confirming that it does not yet exist
-                input_file_path = os.path.join(input_path, image.split('.')[0])
-                input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
-                if os.path.exists(input_file_path):
-                    print(f'{input_file_path} already exists. Skipping.')
-                    first_input = input_file_path
-                    skip_input = True
-
-                first_input = input_file_path # Path of the original input image to be copied later
-                
-                # Assembling a dictionary of all of the original params for the source image
-                # (used to render proxy input)
-                original_params = dt.get_params_dict(None, None, None, temperature_params, raw_prepare_params)
-
-                # Rendering an unchanged copy of the source image for model input
-                if not skip_input:
-                    dt.render(src_path, input_file_path, original_params)
-
-            # Assembling a dictionary of all of the parameters to apply to the source DNG
-            # Temperature and rawprepare params must be maintained in order to produce expected results
-            params_dict = dt.get_params_dict(proxy_type, param, value, temperature_params, raw_prepare_params)
-            vals.append(float(value)) # Adding to params list
-
-            # Rendering the output image and confirming that it does not yet exist
-            output_file_path = os.path.join(output_path, f'{image}_{proxy_type}_{param}')
-            output_file_path = (repr(output_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
-            if os.path.exists(output_file_path):
-                    print(f'{output_file_path} already exists. Skipping.')
-                    skip_output = True
-            if not skip_output:
-                dt.render(src_path, output_file_path, params_dict)
-
-                # Checking if ground truth image needs to be replaced with tapout
-                if tapouts is not None:
-                    
-                    # Getting file path of the tapout
-                    input_tapout_path = tapouts[0] + '.tmp'
-                    gt_tapout_path = tapouts[1] + '.tmp'
-                    print('input tapout path: ' + input_tapout_path)
-                    print('ground truth tapout path: ' + gt_tapout_path)
-
-                    # Getting path of the input image
-                    input_file_path = os.path.join(input_path, image.split('.')[0])
-                    input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif'
-
-                    # Deleting final output image
-                    os.remove(output_file_path)
-                    print('replacing: ' + output_file_path)
-
-                    # Read in the tapouts and save them as tiffs
-                    tmp2tiff(input_tapout_path, input_file_path)
-                    tmp2tiff(gt_tapout_path, output_file_path)
-
-        # Converting param list to numpy array and saving to checkpoint file (once for each source image)
-        convert(vals, os.path.join(params_path, f'{image}_{proxy_type}_{param}.npy'))
-
-        # Keeping track of checkpoint progress
-        imgNum += 1
-
-    # Merging all of the checkpoint files together into one .npy file
-    param_files = os.listdir(params_path)
-    if len(os.listdir(params_path)) == len(os.listdir(dng_path)):
-        merge(param_files, params_path, merged_params_path)
-    else:
-        print("ERROR: number of checkpoints not equal to number of source images.\n Quitting.")
-        quit()
-    
     print(f"Training data generated: stage {stage}")
 
 # Renders a single input -> ground truth pair for a given source image in src_images, 
@@ -384,7 +255,6 @@ def generate_single(proxy_type, dng_path, src_images, input_path, output_path, t
             # Read in the tapout and save as a tiff
             tmp2tiff(tapout_path_input, input_file_path, color='minisblack')
             tmp2tiff(tapout_path_gt, output_file_path)
-
 
 #TODO: UPDATE ME TO ONLY GENERATE ONE INPUT IMAGE PER DNG!!
 def generate_eval(proxy_type, param, params_file):
@@ -524,7 +394,6 @@ def generate_pipeline(param_file, proxy_order, input_path, label_path, dng_path=
 
     print('Pipeline images generated.')
 
-# TODO: add a piecewise flag
 def generate_finetune(proxy_type, param, finetune, param_finetune, possible_values, possible_values_finetune, num):
     '''
     Generate data on which to finetune a given proxy on the 

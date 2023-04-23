@@ -20,7 +20,6 @@ RESCALE_PARAMS = False                   # X Toggle normalization of input param
 # Data generation constants (Stage 0)
 GENERATE_STAGE_1 = True                  #   Toggles new data generation for proxy training (stage 1)
 GENERATE_STAGE_2 = False                 #   Toggles new data generation for slider regression (stage 2)
-GENERATE_WITH_CHECKPOINTS = False        #   If True, progress will be tracked in case of interruption
 INPUT_DIR = 'input/'                     #   Name of directories that store training data
 OUTPUT_DIR = 'output/'                   #   Name of directories that store ground truth data
 PARAM_FILE_DIR = 'param_files'           #   Name of directories with data generation checkpoints

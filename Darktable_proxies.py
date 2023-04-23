@@ -52,11 +52,11 @@ if params is not None:
     params = params.split('_')
     params = sort_params(proxy_type, params)
 
-# Getting proxy name
+# Getting proxy name (unique ID for this training job)
 name = f'{proxy_type}_'
 if params is not None and custom is None:
     name.join(f'{param}_' for param in params)
-elif custom is not None:
+if custom is not None:
     name.join(f'{custom}_')
 
 # Stage 1 constants
@@ -104,32 +104,23 @@ if not os.path.exists(stage_2_path):
 # Generating training data 
 # (This is done by performing a parameter sweep via Darktable's CLI)
 # TODO: does generate() really need interactive as an argument?
-checkpoints = c.GENERATE_WITH_CHECKPOINTS
 if generate_stage_1:
-    if checkpoints:
-        print("Generating training data (w/ checkpoints): stage 1")
-    else:
-        print("Generating training data: stage 1")
+    print("Generating training data: stage 1")
     data.generate(proxy_type, 
                   params, 
                   1, 
                   possible_values, 
                   interactive, 
-                  num, 
-                  checkpoints, 
+                  num,  
                   name)
 if generate_stage_2:
-    if checkpoints:
-        print("Generating training data (w/ checkpoints): stage 2")
-    else:
-        print("Generating training data: stage 2")
+    print("Generating training data: stage 2")
     data.generate(proxy_type, 
                   params, 
                   2, 
                   possible_values, 
                   interactive, 
                   c.STAGE_2_NUM_IMAGES, 
-                  checkpoints, 
                   name)
 
 # Stage 1 - proxy training
