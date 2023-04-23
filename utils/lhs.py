@@ -40,6 +40,8 @@ def lhs(possible_values, num):
     # Randomly pairing together the sampled variables
     samples = np.zeros([dim, int(num)])
     for i, param in enumerate(values):
-        samples[i, :] = np.random.shuffle(np.asarray(param))
+        param_shuffled = np.asarray(param).copy()	
+        np.random.shuffle(param_shuffled)	
+        samples[i, :] = param_shuffled
     
     return samples
