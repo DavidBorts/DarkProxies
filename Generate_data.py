@@ -7,7 +7,7 @@ import numpy as np
 import Constants as c
 import PyDarktable as dt
 from Tapouts import tmp2tiff
-from npy_convert import convert, merge
+from npy_convert import convert
 from utils.latin_hypercube_sampling import lhs
 
 class ParamSamplerIterator():

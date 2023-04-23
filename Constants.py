@@ -22,7 +22,6 @@ GENERATE_STAGE_1 = True                  #   Toggles new data generation for pro
 GENERATE_STAGE_2 = False                 #   Toggles new data generation for slider regression (stage 2)
 INPUT_DIR = 'input/'                     #   Name of directories that store training data
 OUTPUT_DIR = 'output/'                   #   Name of directories that store ground truth data
-PARAM_FILE_DIR = 'param_files'           #   Name of directories with data generation checkpoints
 CHECK_DIRS = False                       #   Toggles whether INPUT/OUTPUT_DIR need to be empty before generating
 STAGE_1_DNG_PATH = 'images/stage_1/'     # X Path to folder with all DNG files for proxy training
 STAGE_2_DNG_PATH = 'images/stage_2/'     # X Path to folder with all DNG files for slider regression
@@ -44,6 +43,7 @@ CROPPED_OUTPUT_DIR = 'output_crop/'      #   Directory at which to save ground t
 SWEEP_INPUT_DIR = 'sweep_input'          #   Name of directories that store data for the Darktable_sweep.py script
 SWEEP_OUTPUT_DIR = 'sweep_output'        #   Name of directories that store proxy outputs for the Darktable_sweep.py script
 EVAL_PATH = 'eval/'                      #   Name of directories that store evluations data and results
+DOWNSAMPLE_IMAGES = False                # X Toggles downsampling of training data w/ bilinear interpolation
 
 # Slider regression on trained proxies (Stage 2)
 REGRESS_PROXY = True                     #   Toggles proxy regression
