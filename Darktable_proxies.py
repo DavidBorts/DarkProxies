@@ -1,4 +1,4 @@
-# Main script for data generation, proxy training, and hyperparameter finetuning (slider regression)
+# Main script for data generation, proxy training, and parameter regression
 
 import sys
 import os
@@ -16,6 +16,9 @@ def sort_params(proxy_type, params):
     '''
     Re-arrange the params list into a standard order (returns list)
     '''
+    if params is None:
+        return c.POSSIBLE_VALUES[proxy_type]
+
     names = c.PARAM_NAMES[proxy_type]
     params_upper = [param.upper() for param in params]
 
@@ -37,15 +40,17 @@ parser.add_argument("-n", "--number", help="Number of training examples to gener
                     source DNG image", required=True, default=0)
 parser.add_argument("-c", "--custom", help="[OPTIONAL] A custom name for the given proxy - overrides \
                     default naming scheme set by --params flag", default=None)
+parser.add_argument("-r", "--regression", help="[OPTIONAL] Number of data points to generate for \
+                    parameter regression experiments", default=10)
 args = parser.parse_args()
 proxy_type = args.proxy
 params = args.params
 custom = args.custom
 num = int(args.number)
+num_regression = int(args.regression)
 
 # Global constants
 image_root_dir = c.IMAGE_ROOT_DIR
-interactive = c.INTERACTIVE
 
 # Sorting params list for consistency
 if params is not None:
@@ -72,24 +77,18 @@ param_out_dir = c.STAGE_2_PARAM_PATH
 
 # If the given proxy takes input params, it is necesary to find their
 # ranges of possible values
-possible_values = None
+possible_values = None # NOTE: possible_values needs to be a list
 append_params = proxy_type not in c.NO_PARAMS
 if append_params: 
-    if params is not None:
-        # Only a subset of the proxy's input params is being learned
-        # NOTE: possible_values needs to be a list
-        possible_values = get_possible_values(proxy_type, params)
-    else:
-        possible_values = c.POSSIBLE_VALUES[proxy_type]
+    possible_values = get_possible_values(proxy_type, params)
 else:
-    # Proxy has no input parameters - use inputs of a sampler block instead
+    # Proxy has no input parameters - use inputs of a "sampler" block instead
     #TODO: replace with highlights or temperature to support demosaic?
     if proxy_type == 'demosaic': # Temporary hack: not sweeping for demosaic
         possible_values = [(None, None)]
     else:
         sampler_block, sampler_param = c.SAMPLER_BLOCKS[proxy_type].split('_')
         possible_values = get_possible_values(sampler_block, [sampler_param])
-        #possible_values = [c.POSSIBLE_VALUES[sampler_block][c.PARAM_NAMES[sampler_block].index(sampler_param)]]
 
 # Creating stage 1 and 2 directories if they do not already exist
 stage_1_path = os.path.join(image_root_dir, c.STAGE_1_PATH)
@@ -103,25 +102,24 @@ if not os.path.exists(stage_2_path):
 
 # Generating training data 
 # (This is done by performing a parameter sweep via Darktable's CLI)
-# TODO: does generate() really need interactive as an argument?
 if generate_stage_1:
     print("Generating training data: stage 1")
     data.generate(proxy_type, 
                   params, 
                   1, 
-                  possible_values, 
-                  interactive, 
+                  possible_values,
                   num,  
                   name)
+    print("Training data generated: stage 1")
 if generate_stage_2:
     print("Generating training data: stage 2")
     data.generate(proxy_type, 
                   params, 
                   2, 
-                  possible_values, 
-                  interactive, 
-                  c.STAGE_2_NUM_IMAGES, 
+                  possible_values,
+                  num_regression, 
                   name)
+    print("Training data generated: stage 2")
 
 # Stage 1 - proxy training
 if c.TRAIN_PROXY:
@@ -136,11 +134,11 @@ if c.TRAIN_PROXY:
         proxy_type,
         params,
         append_params,
-        name,
-        interactive
+        name
     )
+    print(f'{name}: proxy training completed.')
 
-# Stage 2 - parameter regression
+# Stage 2 - parameter regression experiment
 if not append_params:
     print(f'{proxy_type} has no input parameters and therefore cannot be used for stage 2.')
     print('Skipping stage 2.')
@@ -160,8 +158,6 @@ Parameter_regression.run_finetune_procedure(
     use_gpu,
     proxy_type,
     params,
-    name,
-    interactive
+    name
 )
-
 print(f'{name}: slider regression completed.\n Done.')

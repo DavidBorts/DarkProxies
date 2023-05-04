@@ -14,7 +14,8 @@ IMAGE_ROOT_DIR = '.'                     #   Root directory from which to constr
 INTERACTIVE = False                      #   Toggle interactive prompts between stages
 NUM_IMAGE_CHANNEL = 3                    # X Number of channels in each image (3 for RGB)
 IMG_SIZE = 736                           # X Dimensions to crop all images to (IMG_SIZE x IMG_SIZE)
-CLIP_OUTPUT = False                      # X Toggle clipping of proxy outputs to [0, 1]
+CLIP_OUTPUT = False                      # X Toggle clipping of proxy outputs
+CLIP_RANGE = [-0.2, 1.3]                 # X  Set lower and upper bounds to clip model outputs to
 RESCALE_PARAMS = False                   # X Toggle normalization of input parameters for model training/eval
 
 # Data generation constants (Stage 0)
@@ -22,7 +23,6 @@ GENERATE_STAGE_1 = True                  #   Toggles new data generation for pro
 GENERATE_STAGE_2 = False                 #   Toggles new data generation for slider regression (stage 2)
 INPUT_DIR = 'input/'                     #   Name of directories that store training data
 OUTPUT_DIR = 'output/'                   #   Name of directories that store ground truth data
-CHECK_DIRS = False                       #   Toggles whether INPUT/OUTPUT_DIR need to be empty before generating
 STAGE_1_DNG_PATH = 'images/stage_1/'     # X Path to folder with all DNG files for proxy training
 STAGE_2_DNG_PATH = 'images/stage_2/'     # X Path to folder with all DNG files for slider regression
 STAGE_3_DNG_PATH = 'images/stage_3/'     # X Path to folder with all DNG files for pipeline regression
@@ -49,7 +49,6 @@ DOWNSAMPLE_IMAGES = False                # X Toggles downsampling of training da
 REGRESS_PROXY = True                     #   Toggles proxy regression
 STAGE_2_PATH = 'stage_2/'                #   Directory that stores all training data and predictions
 STAGE_2_PARAM_PATH = 'stage_2/params/'   #   Directory that stores optimized proxy params
-STAGE_2_NUM_IMAGES = 10                  #   Number of images to generate per DNG file for parameter regression
 ANIMATIONS_DIR = 'animations/'           #   Directory that stores frames for all animations
 PARAM_TUNING_NUM_ITER = 100              #   Number of regression iterations per image
 CREATE_ANIMATION = True                  #   If True, saves frames from regression to use for videos
@@ -157,7 +156,6 @@ TAPOUTS = {
     # Colorout needs to be trained on images that
     # have not yet been processed for output by the
     # colorout block
-    # TODO: Do we need 'colorout_out'??
     'colorout': ['colorbalancergb_out', 'colorout_out']
 }
 '''

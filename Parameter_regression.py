@@ -195,11 +195,11 @@ def run_finetune_procedure(
     num_iters,
     use_gpu,
     proxy_type,
-    param,
-    interactive
+    param
 ):
 
     # Checking if user wants to finetune params
+    interactive = c.INTERACTIVE
     finetune = None
     while finetune is not 'n' and finetune is not 'y' and interactive:
         finetune = input('Proceed to finetuning? (y/n)\n')

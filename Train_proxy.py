@@ -25,7 +25,7 @@ learning_rate = 0.0001 # was 0.0001
 gamma = 0.1 # was 0.1
 step_size = 1000 # was 7
 
-def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, params, append_params, name, interactive):
+def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, params, append_params, name):
     '''
     Sets up the dataset, Dataloader, model, and training regime, then begins training.
 
@@ -46,6 +46,7 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
     image_root_dir = c.IMAGE_ROOT_DIR
     
     # Checking if user wants to train a proxy
+    interactive = c.INTERACTIVE
     train = None
     while train not in ['y', 'n', 'Y', 'N'] and interactive:
         train = input('Continue to training? (y/n)\n')
@@ -153,7 +154,7 @@ Evaluate the model on a any input(s)
 '''
 # TODO: add suppport for colorin & colorout (+ demosaic)
 # TODO: move this to eval file?
-# TODO: bring up to speed woth run_training_procedure
+# TODO: bring up to speed with run_training_procedure
 def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, params_file, possible_params, proxy_type, param, append_params):
 
     # Constants

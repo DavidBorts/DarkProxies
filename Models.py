@@ -201,7 +201,8 @@ class UNet(nn.Module):
             out =  out + x[:,0:self.num_output_channels,:,:] # Skip connection from input to output
         
         if self.clip_output:
-            return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
+            #return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
+            return torch.min(torch.max(out, torch.full_like(out, c.CLIP_RANGE[0])), torch.full_like(out, c.CLIP_RANGE[1]))
         
         return out
     
@@ -320,7 +321,8 @@ class ChenNet(nn.Module):
         out    = self.pixel_shuffle(out)
         
         if self.clip_output:
-            return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
+            #return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
+            return torch.min(torch.max(out, torch.full_like(out, c.CLIP_RANGE[0])), torch.full_like(out, c.CLIP_RANGE[1]))
         
         return out
 
@@ -418,7 +420,8 @@ class DemosaicNet(nn.Module):
             #out =  out + x[:,0:self.num_output_channels,:,:] # Skip connection from input to output
         
         if self.clip_output:
-            return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
+            #return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
+            return torch.min(torch.max(out, torch.full_like(out, c.CLIP_RANGE[0])), torch.full_like(out, c.CLIP_RANGE[1]))
         
         # Unpacking channels into 3-channel RGB image
         out = f.pixel_shuffle(out, 2)
