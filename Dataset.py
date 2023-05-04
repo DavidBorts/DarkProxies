@@ -31,7 +31,7 @@ class Darktable_Dataset(Dataset):
     training of the proxy model, the fine-tuning of its parameters, and for ISP-tuning
     experiments.
     '''
-    def __init__(self, root_dir, stage, proxy_type, params, sampler, name, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, sweep=False):
+    def __init__(self, root_dir, stage, proxy_type, params, sampler, name, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, sweep=False, param_ranges=None):
         '''
         Initialize the object.
         Inputs:
@@ -49,6 +49,7 @@ class Darktable_Dataset(Dataset):
             [params_file]: path to the .npy file with parameter values
             [transform]: Transforms to be applied onto PIL Image.
             [sweep]: Toggles sweep mode of the dataloader for Darktable_sweep.py
+            [param_ranges]: 
         '''
         
         if stage not in [1, 2, 3]:
@@ -63,6 +64,11 @@ class Darktable_Dataset(Dataset):
         self.sweep = sweep
         self.sampler = sampler
         self.name = name
+        self.param_ranges = param_ranges
+
+        if self.param_ranges is not None:
+            self.param_lower_bounds = np.array([range[0] for range in param_ranges])
+            self.param_upper_bounds = np.array([range[1] for range in param_ranges])
         
         # Configuring input & output directories
         if input_dir is None:
@@ -336,9 +342,18 @@ class Darktable_Dataset(Dataset):
             # Appending parameter tensor
             if append_params:
                 params = self.param_mat[:,index]
+
                 #params = float(params) # TODO: is this necessary? does it work??
                 if self.sweep:
                     params = self.param_mat[:, param_num]
+
+                # Normalizing param values to [0, 1] range
+                if len(params) != len(self.param_lower_bounds):
+                    raise ValueError("ERROR: param possible ranges should be the same length as params")
+                if self.param_ranges is not None:
+                    params += self.param_lower_bounds
+                    params /= self.param_upper_bounds
+
                 proxy_model_input = _format_input_with_parameters(proxy_model_input, params)
             
         if self.sweep:

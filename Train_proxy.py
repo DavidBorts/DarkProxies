@@ -73,7 +73,8 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
                                       proxy_type, 
                                       params, 
                                       not append_params,
-                                      name)
+                                      name,
+                                      param_ranges=possible_params)
     train_loader = torch.utils.data.DataLoader(image_dataset, 
                                                batch_size=batch_size, 
                                                sampler=image_dataset.train_sampler,
