@@ -1,7 +1,5 @@
 import math
 import numpy as np
-import sys
-import os
 import struct
 import subprocess
 import tempfile
@@ -200,7 +198,6 @@ _FMT_STR = '''<?xml version="1.0" encoding="UTF-8"?>
  </rdf:RDF>
 </x:xmpmeta>
 '''
-
 
 def to_hex_string(x):
     if type(x) == bytes:
@@ -542,6 +539,27 @@ def read_dng_params(dng_file):
         # temperature_params.g2 = float(raw.camera_whitebalance[3])
     return raw_prepare_params, temperature_params
 
+def fill(params_dict, proxy_type, params, values):
+    ops = {
+        "colorbalancergb": ColorBalanceRGBParams,
+        "highlights": HighlightsParams,
+        "sharpen": SharpenParams,
+        "exposure": ExposureParams,
+        "hazeremoval": HazeRemovalParams,
+        "denoiseprofile": DenoiseProfileParams,
+        "lowpass": LowpassParams,
+        "censorize": CensorizeParams
+    }
+    params_class = ops[proxy_type]()
+
+    #TODO: replace enumerate w/ zip)() ??
+    for i, param in enumerate(params):
+        setattr(params_class, param, float(values[i]))
+
+    params_dict[f"{proxy_type}_params"] = params_class
+    return params_dict
+
+
 class functions:
     @staticmethod
     def colorbalancergb(params_dict, params, values):
@@ -716,6 +734,7 @@ def get_params_dict(proxy_type, param_names, values, temperature_params, raw_pre
     if proxy_type is None:
         return params_dict
 
+    #TODO: is this necessary?
     proxy = proxy_type
     params = param_names
 
@@ -725,27 +744,7 @@ def get_params_dict(proxy_type, param_names, values, temperature_params, raw_pre
         params_dict = dict
 
     # Setting params
-    fill_dict = getattr(functions, proxy)
-    params_dict = fill_dict(params_dict, params, values)
-
+    #fill_dict = getattr(functions, proxy)
+    #params_dict = fill_dict(params_dict, params, values)
+    params_dict = fill(params_dict, proxy, params, values)
     return params_dict
-
-if __name__ == '__main__':
-    proxy_type, param = sys.argv[1].split('_')
-    value = float(sys.argv[2])
-    dng_path = sys.argv[3]
-    output_dir = sys.argv[4]
-
-    # Constants
-    image = dng_path.split('\\')[-1]
-    print('image: ' + image)
-
-    # Extracting necessary params from the source image
-    raw_prepare_params, temperature_params = read_dng_params(dng_path)
-
-    output_path = os.path.join(output_dir, f'{image}_{proxy_type}_{param}')
-    output_path = (repr(output_path).replace('\\\\', '/')).strip("'") + f'_{value}.png' # Dealing with Darktable CLI pickiness
-
-    params_dict = get_params_dict(proxy_type, param, value, temperature_params, raw_prepare_params)
-
-    render(dng_path, output_path, params_dict)
