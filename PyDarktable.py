@@ -575,7 +575,8 @@ def fill(params_dict, proxy_type, params, values):
         "censorize": CensorizeParams,
         "filmicrgb": FilmicRGBParams,
         "bloom": BloomParams,
-        "colorize": ColorizeParams
+        "colorize": ColorizeParams,
+        "soften": SoftenParams
     }
     params_class = ops[proxy_type]()
 
