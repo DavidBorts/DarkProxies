@@ -32,6 +32,10 @@ def lhs(possible_values, num):
         # Binning the param
         bins_low = np.arange(min, max, bin_size)
         bins_high = np.arange(min+bin_size, max+bin_size, bin_size)
+        if len(bins_high) > len(bins_low):
+            bins_high = bins_high[:-1]
+        if len(bins_low) > len(bins_high):
+            bins_low = bins_low[:-1]
 
         # Sampling random value from each bin
         sampled_vals = np.random.uniform(bins_low, bins_high)
