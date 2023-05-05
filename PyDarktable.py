@@ -207,7 +207,7 @@ _FMT_STR = '''<?xml version="1.0" encoding="UTF-8"?>
       darktable:operation="bloom"
       darktable:enabled="{enable_bloom}"
       darktable:modversion="1"
-      darktable:params="{bloom_params}}"
+      darktable:params="{bloom_params}"
       darktable:multi_name=""
       darktable:multi_priority="0"
       darktable:blendop_version="11"
