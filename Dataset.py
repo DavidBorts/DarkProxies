@@ -70,6 +70,7 @@ class Darktable_Dataset(Dataset):
         if self.param_ranges is not None:
             self.param_lower_bounds = np.array([range[0] for range in param_ranges])
             self.param_upper_bounds = np.array([range[1] for range in param_ranges])
+            self.param_diff = self.param_upper_bounds - self.param_lower_bounds
         
         # Configuring input & output directories
         if input_dir is None:
@@ -349,8 +350,7 @@ class Darktable_Dataset(Dataset):
                 if len(params) != len(self.param_lower_bounds):
                     raise ValueError("ERROR: param possible ranges should be the same length as params")
                 if self.param_ranges is not None:
-                    params += self.param_lower_bounds
-                    params /= self.param_upper_bounds
+                    params = (params + self.param_lower_bounds) / self.param_diff
 
                 proxy_model_input = _format_input_with_parameters(proxy_model_input, params)
             

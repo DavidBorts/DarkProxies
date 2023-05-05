@@ -41,12 +41,16 @@ parser.add_argument("-n", "--number", help="Number of training examples to gener
                     source DNG image", required=True, default=0)
 parser.add_argument("-c", "--custom", help="[OPTIONAL] A custom name for the given proxy - overrides \
                     default naming scheme set by --params flag", default=None)
+parser.add_argument("-d", "--dataset", help="[OPTIONAL] Name of the dataset to train on. Useful \
+                    for training multiple proxies on the same images. Note: this automatically \
+                    disables any data generation.", default=None)
 parser.add_argument("-r", "--regression", help="[OPTIONAL] Number of data points to generate for \
                     parameter regression experiments", default=10)
 args = parser.parse_args()
 proxy_type = args.proxy
 params = args.params
 custom = args.custom
+dataset_name = args.dataset
 num = int(args.number)
 num_regression = int(args.regression)
 
@@ -78,6 +82,11 @@ weight_out_dir = os.path.join(image_root_dir, c.STAGE_1_PATH, name + c.MODEL_WEI
 generate_stage_2 = c.GENERATE_STAGE_2
 num_iters = c.PARAM_TUNING_NUM_ITER
 param_out_dir = c.STAGE_2_PARAM_PATH
+
+# If an existing dataset is being used, skip data generation
+if dataset_name is not None:
+    generate_stage_1 = False
+    generate_stage_2 = False
 
 # If the given proxy takes input params, it is necesary to find their
 # ranges of possible values
@@ -138,7 +147,8 @@ if c.TRAIN_PROXY:
         proxy_type,
         params,
         append_params,
-        name
+        name,
+        dataset_name
     )
     print(f'{name}: proxy training completed.')
 
