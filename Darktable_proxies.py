@@ -64,6 +64,9 @@ if params is not None and custom is None:
 if custom is not None:
     name.join(f'{custom}_')
 
+if params is None:
+    params = c.PARAM_NAMES[proxy_type]
+
 # Stage 1 constants
 generate_stage_1 = c.GENERATE_STAGE_1
 stage_1_batch_size = c.PROXY_MODEL_BATCH_SIZE
@@ -79,7 +82,7 @@ param_out_dir = c.STAGE_2_PARAM_PATH
 # ranges of possible values
 possible_values = None # NOTE: possible_values needs to be a list
 append_params = proxy_type not in c.NO_PARAMS
-if append_params: 
+if append_params:
     possible_values = get_possible_values(proxy_type, params)
 else:
     # Proxy has no input parameters - use inputs of a "sampler" block instead
