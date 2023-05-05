@@ -123,7 +123,7 @@ def generate(proxy_type, params, stage, possible_values, num, name):
         raw_prepare_params, temperature_params = dt.read_dng_params(src_path)
 
         # No need to render input image separately when using ISP tap-outs
-        if tapouts is not None:
+        if tapouts is None:
             # Getting path of the input image
             input_file_path = os.path.join(input_path, image.split('.')[0])
             input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
