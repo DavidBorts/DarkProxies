@@ -15,8 +15,12 @@ INTERACTIVE = False                      #   Toggle interactive prompts between 
 NUM_IMAGE_CHANNEL = 3                    # X Number of channels in each image (3 for RGB)
 IMG_SIZE = 736                           # X Dimensions to crop all images to (IMG_SIZE x IMG_SIZE)
 CLIP_OUTPUT = False                      # X Toggle clipping of proxy outputs
-CLIP_RANGE = [-0.2, 1.3]                 # X  Set lower and upper bounds to clip model outputs to
+CLIP_RANGE = [-0.1, 1.1]                 # X  Set lower and upper bounds to clip model outputs to
 RESCALE_PARAMS = False                   # X Toggle normalization of input parameters for model training/eval
+EMBEDDING_TYPE = 0                       # X Selects method of embedding parameters into a latent vector
+EMBEDDING_RATIO = 2                      # X Number of input parameters to map to a single latent parameter
+EMBED_TO_SINGLE = False                  # X If True, input paramaters are mapped to a single latent parameter
+DOWNSAMPLE_IMAGES = False                # X Toggles downsampling of training data w/ bilinear interpolation
 
 # Data generation constants (Stage 0)
 GENERATE_STAGE_1 = True                  #   Toggles new data generation for proxy training (stage 1)
@@ -40,10 +44,9 @@ SAVE_CROPS = False                       #   If True, cropped versions of all tr
 CROP_FORMAT = 'tiff'                     #   Format to save crops as (Default: png)
 CROPPED_INPUT_DIR = 'input_crop/'        #   Directory at which to save cropped training data
 CROPPED_OUTPUT_DIR = 'output_crop/'      #   Directory at which to save ground truth data
-SWEEP_INPUT_DIR = 'sweep_input'          #   Name of directories that store data for the Darktable_sweep.py script
-SWEEP_OUTPUT_DIR = 'sweep_output'        #   Name of directories that store proxy outputs for the Darktable_sweep.py script
+SWEEP_INPUT_DIR = 'sweep_input'          #   Name of directories that store data for the Sweep.py script
+SWEEP_OUTPUT_DIR = 'sweep_output'        #   Name of directories that store proxy outputs for the Sweep.py script
 EVAL_PATH = 'eval/'                      #   Name of directories that store evluations data and results
-DOWNSAMPLE_IMAGES = False                # X Toggles downsampling of training data w/ bilinear interpolation
 
 # Slider regression on trained proxies (Stage 2)
 REGRESS_PROXY = True                     #   Toggles proxy regression
@@ -72,15 +75,22 @@ WHICH_LOSS = {
     'denoise': ['MSE', 'L1'],
     'hazeremoval': ['MSE', 'L1'],
     'exposure': ['MSE', 'L1'],
+    'graduateddensity': ['MSE', 'L1'],
     'colorin': ['MSE', 'L1'],
     'censorize': ['MSE', 'L1'],
     'lowpass': ['MSE', 'L1'],
     'sharpen': ['Spatial', 'Spatial'],
     'colorbalancergb': ['MSE', 'L1'],
+    'filmicrgb': ['MSE', 'L1'],
+    'bloom': ['MSE', 'L1'],
+    'colorize': ['MSE', 'L1'],
+    'soften': ['MSE', 'L1'],
     'colorout': ['MSE', 'L1']
 }
 '''
 Dictionary to store which Darktable blocks will require which loss functions to train
+
+Options: MSE, L1, Spatial, Perceptual
 
 Format: [stage_1, stage_2]
 '''
@@ -94,11 +104,16 @@ POSSIBLE_VALUES = {
     'sharpen': [(0.0, 99.0), (0.0, 2.0), (0.0, 100.0)],# FIXME: amount was 0.0 - 10.0 ??
     'exposure': [(-1.0, 1.0), (-2.0, 4.0), (0.0, 100.0), 
                  (-18.0, 18.0)],# FIXME: exposure is actually -18.0 - 18.0??
+    'graduateddensity':[(-8.0, 8.0), (0.0, 100.0), (-180.0, 180.0), (0.0, 1.0), (0.0, 1.0)],
     'hazeremoval': [(-1.0, 1.0), (0.0, 1.0)],
     'denoiseprofile': [(0.0, 12.0), (1.0, 30.0), (0.001, 1000.0), 
                        (0.0, 1.8), (-1000.0, 100.0), (0.0, 20.0), 
                        (0.0, 10.0), (0.001, 1000.0)],
-    'lowpass': [(0.1, 500.0), (-3.0, 3.0), (-3.0, 3.0), (-3.0, 3.0)]
+    'lowpass': [(0.1, 20.0), (-3.0, 3.0), (-3.0, 3.0), (-3.0, 3.0)],# NOTE: radius truncated to 20.0, not 500.0
+    'filmicrgb': [],
+    'bloom': [(0.0, 100.0), (0.0, 100.0), (0.0, 100.0)],
+    'colorize': [(0.0, 1.0), (0.0, 1.0), (0.0, 100.0), (0.0, 100.0)],
+    'soften': [(0.0, 100.0), (0.0, 100.0), (-2.0, 2.0), (0.0, 100.0)]
 }
 '''
 Dictionary to store the range of possible values for every
@@ -110,11 +125,18 @@ PARAM_NAMES= {
     'sharpen': ['radius', 'amount', 'threshold'],
     'exposure': ['black', 'exposure', 'deflicker_percentile', 
                  'deflicker_target_level'],
+    'graduateddensity': ['density', 'hardness', 'rotation',
+                         'hue', 'saturation'],
     'hazeremoval': ['strength', 'distance'],
     'denoiseprofile': ['radius', 'nbhood', 'strength', 'shadows', 
                        'bias', 'scattering', 'central_pixel_weight', 
                        'overshooting'],
-    'lowpass': ['radius', 'contrast', 'brightness', 'saturation']
+    'lowpass': ['radius', 'contrast', 'brightness', 'saturation'],
+    'filmic': [],
+    'bloom': ['size', 'threshold', 'strength'],
+    'colorize': ['hue', 'saturation', 'source_lightness_mix',
+                 'lightness'],
+    'soften': ['size', 'saturation', 'brightness','amount']
 }
 '''
 Dictionary to store which parameter name maps to which index
@@ -144,6 +166,7 @@ TAPOUTS = {
     'denoise': ['demosaic_out', 'denoise_out'],
     'hazeremoval': ['demosaic_out', 'hazeremoval_out'],
     'exposure': ['demosaic_out', 'exposure_out'],
+    'graduateddensity': None,
     'colorin': ['colorin_in', 'colorbalancergb_out'],
 
     # All blocks after colorin and before colorout
@@ -152,6 +175,10 @@ TAPOUTS = {
     'lowpass': None,
     'sharpen': None,
     'colorbalancergb': None,
+    'filmicrgb': None,
+    'bloom': None,
+    'colorize': None,
+    'soften': None,
 
     # Colorout needs to be trained on images that
     # have not yet been processed for output by the
@@ -180,4 +207,16 @@ SAMPLER_BLOCKS = {
 '''
 Dict of which blocks to sample parameters from for parameter-less
 blocks like colorin and colorout
+'''
+
+EMBEDDING_TYPES = ["none", 
+                   "linear_to_channel",
+                   "linear_to_value"]
+'''
+Types of parameter embedding used by proxy neural networks
+(set by the integer EMBEDDING_TYPE constant)
+
+0, none: (DEFAULT) no embedding - each param is its own channel
+1, linear_to_channel: learn a linear layer to map params to n channels
+2, linear_to_value: learn a linear layer to map params to n float value
 '''

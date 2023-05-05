@@ -191,7 +191,47 @@ _FMT_STR = '''<?xml version="1.0" encoding="UTF-8"?>
       darktable:multi_name=""
       darktable:multi_priority="0"
       darktable:blendop_version="11"
-      darktable:blendop_params="000000000400000018000000000000000000c84200000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000000000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f0000000000000000000000000000000000000000000000000000000000000000789ad4c0789ad4c00000000000000000789ad4c0789ad4c000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>  
+      darktable:blendop_params="000000000400000018000000000000000000c84200000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000000000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f0000000000000000000000000000000000000000000000000000000000000000789ad4c0789ad4c00000000000000000789ad4c0789ad4c000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
+      <rdf:li
+      darktable:num="16"
+      darktable:operation="graduatednd"
+      darktable:enabled="{enable_graduateddensity}"
+      darktable:modversion="1"
+      darktable:params="{graduateddensity_params}"
+      darktable:multi_name=""
+      darktable:multi_priority="0"
+      darktable:blendop_version="11"
+      darktable:blendop_params="gz10eJxjYGBgYAFiCQYYOOHEgAZY0QVwggZ7CB6pfOygYtaVAyCMi08IAAB/xiOk"/>
+      <rdf:li
+      darktable:num="17"
+      darktable:operation="bloom"
+      darktable:enabled="{enable_bloom}"
+      darktable:modversion="1"
+      darktable:params="{bloom_params}}"
+      darktable:multi_name=""
+      darktable:multi_priority="0"
+      darktable:blendop_version="11"
+      darktable:blendop_params="gz13eJxjYGBgYAJiCQYYOOHEgAZY0QVwggZ7CB6pfNoAAFJgGQo="/>
+      <rdf:li
+      darktable:num="18"
+      darktable:operation="colorize"
+      darktable:enabled="{enable_colorize}"
+      darktable:modversion="2"
+      darktable:params="{colorize_params}"
+      darktable:multi_name=""
+      darktable:multi_priority="0"
+      darktable:blendop_version="11"
+      darktable:blendop_params="gz13eJxjYGBgYAJiCQYYOOHEgAZY0QVwggZ7CB6pfNoAAFJgGQo="/>
+      <rdf:li
+      darktable:num="19"
+      darktable:operation="soften"
+      darktable:enabled="{enable_soften}"
+      darktable:modversion="1"
+      darktable:params="{soften_params}"
+      darktable:multi_name=""
+      darktable:multi_priority="0"
+      darktable:blendop_version="11"
+      darktable:blendop_params="gz10eJxjYGBgYAFiCQYYOOHEgAZY0QVwggZ7CB6pfOygYtaVAyCMi08IAAB/xiOk"/>
     </rdf:Seq>
    </darktable:history>
   </rdf:Description>
@@ -235,10 +275,8 @@ class RawPrepareParams:
     def to_hex_string(self):
         return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
 
-
 def make_black_levels(bl_0, bl_1, bl_2, bl_3):
     return [np.uint16(bl_0), np.uint16(bl_1), np.uint16(bl_2), np.uint16(bl_3)]
-
 
 @dataclass
 class ColorBalanceRGBParams:
@@ -303,7 +341,6 @@ class ExposureParams:
     def to_hex_string(self):
         return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
 
-
 @dataclass
 class FilmicRGBParams:
     grey_point_source: float = 18.45
@@ -350,7 +387,6 @@ class FilmicRGBParams:
 
     def to_hex_string(self):
         return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
-
 
 # dt_iop_highlights_params_t
 #TODO: Update to reflected updated params in Darktable highlights.c source code
@@ -467,60 +503,47 @@ class TemperatureParams:
 
     def to_hex_string(self):
         return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
-
-'''
+    
 @dataclass
-class ColorinParams:
-    # In the original C code, they are enums:
-    # DT_COLORSPACE_NONE = -1,
-    # DT_COLORSPACE_FILE = 0,
-    # DT_COLORSPACE_SRGB = 1,
-    # DT_COLORSPACE_ADOBERGB = 2,
-    # DT_COLORSPACE_LIN_REC709 = 3,
-    # DT_COLORSPACE_LIN_REC2020 = 4,
-    # DT_COLORSPACE_XYZ = 5,
-    # DT_COLORSPACE_LAB = 6,
-    # DT_COLORSPACE_INFRARED = 7,
-    # DT_COLORSPACE_DISPLAY = 8,
-    # DT_COLORSPACE_EMBEDDED_ICC = 9,
-    # DT_COLORSPACE_EMBEDDED_MATRIX = 10,
-    # DT_COLORSPACE_STANDARD_MATRIX = 11,
-    # DT_COLORSPACE_ENHANCED_MATRIX = 12,
-    # DT_COLORSPACE_VENDOR_MATRIX = 13,
-    # DT_COLORSPACE_ALTERNATE_MATRIX = 14,
-    # DT_COLORSPACE_BRG = 15,
-    # DT_COLORSPACE_EXPORT = 16,
-    # DT_COLORSPACE_SOFTPROOF = 17,
-    # DT_COLORSPACE_WORK = 18,
-    # DT_COLORSPACE_DISPLAY2 = 19,
-    # DT_COLORSPACE_REC709 = 20,
-    # DT_COLORSPACE_PROPHOTO_RGB = 21,
-    # DT_COLORSPACE_PQ_REC2020 = 22,
-    # DT_COLORSPACE_HLG_REC2020 = 23,
-    # DT_COLORSPACE_PQ_P3 = 24,
-    # DT_COLORSPACE_HLG_P3 = 25,
-    # DT_COLORSPACE_LAST = 26
-    type: int = 12 # $DEFAULT: DT_COLORSPACE_ENHANCED_MATRIX
-    char filename[DT_IOP_COLOR_ICC_LEN];
-    # In the original C code, they are enums:
-    #DT_INTENT_PERCEPTUAL = INTENT_PERCEPTUAL,                       // 0
-    #DT_INTENT_RELATIVE_COLORIMETRIC = INTENT_RELATIVE_COLORIMETRIC, // 1
-    #DT_INTENT_SATURATION = INTENT_SATURATION,                       // 2
-    #DT_INTENT_ABSOLUTE_COLORIMETRIC = INTENT_ABSOLUTE_COLORIMETRIC, // 3
-    #DT_INTENT_LAST
-    intent: int = 0 # $DEFAULT: DT_INTENT_PERCEPTUAL
-    # In the original C code, they are enums:
-    #DT_NORMALIZE_OFF,               //$DESCRIPTION: "off"
-    #DT_NORMALIZE_SRGB,              //$DESCRIPTION: "sRGB"
-    #DT_NORMALIZE_ADOBE_RGB,         //$DESCRIPTION: "Adobe RGB (compatible)"
-    #DT_NORMALIZE_LINEAR_REC709_RGB, //$DESCRIPTION: "linear Rec709 RGB"
-    #DT_NORMALIZE_LINEAR_REC2020_RGB //$DESCRIPTION: "linear Rec2020 RGB"
-    normalize: int = 0 # $DEFAULT: DT_NORMALIZE_OFF $DESCRIPTION: "gamut clipping"
-    int blue_mapping;
-    // working color profile
-    dt_colorspaces_color_profile_type_t type_work; // $DEFAULT: DT_COLORSPACE_LIN_REC2020
-     filename_work[DT_IOP_COLOR_ICC_LEN];
-'''
+class ColorizeParams:
+    hue: float = 0.0 # $MIN: 0.0 $MAX: 1.0 $DEFAULT: 0.0
+    saturation: float = 0.5 # $MIN: 0.0 $MAX: 1.0 $DEFAULT: 0.5
+    source_lightness_mix: float = 50.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 50.0 $DESCRIPTION: "source mix"
+    lightness: float = 50.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 50.0
+
+    def to_hex_string(self):
+        return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
+
+@dataclass
+class GraduatedDensityParams:
+    density: float = 1.0 # $MIN: -8.0 $MAX: 8.0 $DEFAULT: 1.0 $DESCRIPTION: "density" The density of filter 0-8 EV
+    hardness: float = 0.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 0.0 $DESCRIPTION: "hardness" 0% = soft and 100% = hard
+    rotation: float = 0.0 # $MIN: -180.0 $MAX: 180.0 $DEFAULT: 0.0 $DESCRIPTION: "rotation" 2*PI -180 - +180
+    offset: float = 50.0 # $DEFAULT: 50.0 $DESCRIPTION: "offset" centered, can be offsetted...
+    hue: float = 0.0 # $MIN: 0.0 $MAX: 1.0 $DEFAULT: 0.0 $DESCRIPTION: "hue"
+    saturation: float = 0.0 # $MIN: 0.0 $MAX: 1.0 $DEFAULT: 0.0 $DESCRIPTION: "saturation"
+
+    def to_hex_string(self):
+        return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
+
+@dataclass
+class SoftenParams:
+    size: float = 50.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 50.0
+    saturation: float = 100.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 100.0
+    brightness: float = 0.33 # $MIN: -2.0 $MAX: 2.0 $DEFAULT: 0.33
+    amount: float = 50.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 50.0 $DESCRIPTION: "mix"
+
+    def to_hex_string(self):
+        return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
+    
+@dataclass
+class BloomParams:
+    size: float = 20.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 20.0
+    threshold: float = 90.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 90.0
+    strength: float = 25.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 25.0
+
+    def to_hex_string(self):
+        return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
 
 # Return temperature and rawprepare params for input DNG file
 def read_dng_params(dng_file):
@@ -545,10 +568,14 @@ def fill(params_dict, proxy_type, params, values):
         "highlights": HighlightsParams,
         "sharpen": SharpenParams,
         "exposure": ExposureParams,
+        "graduateddensity": GraduatedDensityParams,
         "hazeremoval": HazeRemovalParams,
         "denoiseprofile": DenoiseProfileParams,
         "lowpass": LowpassParams,
-        "censorize": CensorizeParams
+        "censorize": CensorizeParams,
+        "filmicrgb": FilmicRGBParams,
+        "bloom": BloomParams,
+        "colorize": ColorizeParams
     }
     params_class = ops[proxy_type]()
 
@@ -559,7 +586,7 @@ def fill(params_dict, proxy_type, params, values):
     params_dict[f"{proxy_type}_params"] = params_class
     return params_dict
 
-
+'''
 class functions:
     @staticmethod
     def colorbalancergb(params_dict, params, values):
@@ -640,34 +667,43 @@ class functions:
 
         params_dict["censorize_params"] = censorize_params
         return params_dict
-
+'''
+        
 # Pipeline order is as follows, * means it can be skipped and therefore has a bool param.
 # 0 rawprepare
-# 1 temperature      *
-# 2 highlights       *
+# 1 temperature       *
+# 2 highlights        *
 # 3 demosaic
-# 4 denoise(profiled)*
-# 5 hazeremoval      *
-# 6 flip             *
-# 7 exposure         *
-# 8 colorin
-# 9 censorize        *
-# 10 lowpass         *
-# 11 sharpen         *
-# 12 colorbalancergb *
-# 13 filmicrgb       *
-# 14 colorout
+# 4 denoise(profiled) *
+# 5 hazeremoval       *
+# 6 flip              *
+# 7 exposure          *
+# 8 graduated density *
+# 9 colorin
+# 10 censorize        *
+# 11 lowpass          *
+# 12 sharpen          *
+# 13 colorbalancergb  *
+# 14 filmicrgb        *
+# 15 bloom            *
+# 16 colorize         *
+# 17 soften           *
+# 1X colorout
 def get_pipe_xmp(raw_prepare_params=RawPrepareParams(),
                  temperature_params=TemperatureParams(),
                  highlights_params=HighlightsParams(),
                  denoiseprofile_params=DenoiseProfileParams(),
                  hazeremoval_params=HazeRemovalParams(),
                  exposure_params=ExposureParams(),
-                 lowpass_params=LowpassParams(),
+                 graduateddensity_params=GraduatedDensityParams(),
                  censorize_params=CensorizeParams(),
+                 lowpass_params=LowpassParams(),
                  sharpen_params=SharpenParams(),
                  colorbalancergb_params=ColorBalanceRGBParams(),
-                 filmicrgb_params=FilmicRGBParams()):
+                 filmicrgb_params=FilmicRGBParams(),
+                 bloom_params=BloomParams(),
+                 colorize_params=ColorizeParams(),
+                 soften_params=SoftenParams()):
     def zineo(x):
         return 0 if x is None else 1
 
@@ -689,6 +725,8 @@ def get_pipe_xmp(raw_prepare_params=RawPrepareParams(),
         hazeremoval_params=to_hex(hazeremoval_params, HazeRemovalParams()),
         enable_exposure=zineo(exposure_params),
         exposure_params=to_hex(exposure_params, ExposureParams()),
+        enable_graduateddensity=zineo(graduateddensity_params),
+        graduateddensity_params=to_hex(graduateddensity_params, GraduatedDensityParams()),
         enable_lowpass=zineo(lowpass_params),
         lowpass_params=to_hex(lowpass_params, LowpassParams()),
         enable_censorize=zineo(censorize_params),
@@ -699,8 +737,13 @@ def get_pipe_xmp(raw_prepare_params=RawPrepareParams(),
         colorbalancergb_params=to_hex(colorbalancergb_params,
                                       ColorBalanceRGBParams()),
         enable_filmicrgb=zineo(filmicrgb_params),
-        filmicrgb_params=to_hex(filmicrgb_params, FilmicRGBParams()))
-
+        filmicrgb_params=to_hex(filmicrgb_params, FilmicRGBParams()),
+        enable_bloom=zineo(bloom_params),
+        bloom_params=to_hex(bloom_params, BloomParams()),
+        enable_colorize=zineo(colorize_params),
+        colorize_params=to_hex(colorize_params, ColorizeParams()),
+        enable_soften=zineo(soften_params),
+        soften_params=to_hex(soften_params, SoftenParams()))
 
 def render(src_dng_path, dst_path, pipe_stage_flags):
     with tempfile.NamedTemporaryFile(mode="w+t", suffix=".xmp",
@@ -717,12 +760,16 @@ def render(src_dng_path, dst_path, pipe_stage_flags):
 def get_params_dict(proxy_type, param_names, values, temperature_params, raw_prepare_params, dict=None):
 
     params_dict = {
+        'soften_params': None,
+        'colorize_params': None,
+        'bloom_params': None,
         'filmicrgb_params': None,
         'colorbalancergb_params': None,
         'sharpen_params': None,
         'censorize_params': None,
         'lowpass_params': None,
         'exposure_params': None,
+        'graduateddensity_params': None,
         'hazeremoval_params': None,
         'denoiseprofile_params': None,
         'highlights_params': None,
