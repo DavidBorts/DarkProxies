@@ -82,7 +82,7 @@ def double_conv_leaky(in_channels, out_channels):
 UNet implementation. This UNet allows for a single skip connection from input to output.
 '''
 class UNet(nn.Module):   
-    def __init__(self, num_input_channels, num_output_channels, skip_connect=True, add_params=True, clip_output=True, channel_list=DEFAULT_UNET_CHANNEL_LIST):
+    def __init__(self, num_input_channels, num_output_channels, skip_connect=True, add_params=True, clip_output=True, channel_list=DEFAULT_UNET_CHANNEL_LIST, num_params=None):
         super().__init__()
         if not len(channel_list) == 5:
             raise ValueError('channel_list argument should be a list of integers of size 5.')
@@ -90,6 +90,8 @@ class UNet(nn.Module):
         self.num_output_channels = num_output_channels
         self.skip_connect = skip_connect
         self.add_params = add_params
+        self.embedding_type = c.EMBEDDING_TYPES[c.EMBEDDING_TYPE]
+        self.embed = self.embedding_type != "none"
         self.clip_output = clip_output
 
         if self.add_params:
@@ -97,10 +99,14 @@ class UNet(nn.Module):
             # Downsamples for param channels.
             in_channel_list = []
             for channel in channel_list:
-                self.down1 = nn.AvgPool2d(2)
-                self.down2 = nn.AvgPool2d(2)
-                self.down3 = nn.AvgPool2d(2) 
-                self.down4 = nn.AvgPool2d(2)
+                self.down1 = nn.MaxPool2d(2)
+                self.down2 = nn.MaxPool2d(2)
+                self.down3 = nn.MaxPool2d(2) 
+                self.down4 = nn.MaxPool2d(2)
+                # self.down1 = nn.AvgPool2d(2)
+                # self.down2 = nn.AvgPool2d(2)
+                # self.down3 = nn.AvgPool2d(2) 
+                # self.down4 = nn.AvgPool2d(2)
                 in_channel_list.append(channel + num_input_channels - num_output_channels) 
         else:
             in_channel_list = channel_list 
@@ -109,6 +115,14 @@ class UNet(nn.Module):
             print('Adding skip connection from input to output.')
         if self.clip_output:
             print('Clipping output of model.')
+
+        # Param embedding
+        if self.embed:
+            print("Embedding input parameters.")
+            if self.embedding_type == "linear_to_channel":
+                self.param_embedding = nn.Linear(num_params, c.IMG_SIZE**2)
+            else: # embedding type is "linear_to_value"
+                self.param_embedding = nn.Linear(num_params, 1)
             
         # Down
         self.conv_down_1 = double_conv(self.num_input_channels, channel_list[0])              # num_input_channels -> 32
@@ -143,10 +157,20 @@ class UNet(nn.Module):
         # is why the final convolution does not have any padding.
         self.conv_final = nn.Conv2d(channel_list[0], self.num_output_channels, 1, padding=0)  # 32  -> num_output_channels 
 
-    def forward(self, x):
+    def forward(self, x, params=None):
         if self.add_params:
-            # Get param channels first.
-            param_half = self.down1(x[:,3:,:,:])
+            # Embedding params
+            if self.embed:
+                param = self.param_embedding(params)
+                if self.embedding_type == "linear_to_channel":
+                    param = torch.reshape(param, (c.IMG_SIZE, c.IMG_SIZE))
+                else: # embedding type is "linear_to_value"
+                    param = torch.ones((c.IMG_SIZE, c.IMG_SIZE)) * param
+            else:
+                param = x[:,3:,:,:]
+
+            # Getting param channels first.
+            param_half = self.down1(param)
             param_fourth = self.down2(param_half)
             param_eighth = self.down3(param_fourth)
             param_sixteenth = self.down4(param_eighth)

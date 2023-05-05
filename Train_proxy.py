@@ -25,6 +25,31 @@ learning_rate = 0.0001 # was 0.0001
 gamma = 0.1 # was 0.1
 step_size = 1000 # was 7
 
+def get_num_input_channels(proxy_type, possible_params, append_params):
+    '''
+    TODO: add comment
+    '''
+    # Bayer mosaics are always unpacked into 4 channels
+    if proxy_type == "demosaic":
+        return 4
+    
+    num_channels = c.NUM_IMAGE_CHANNEL # input tensor
+    
+    # Depending on c.EMBEDDING_TYPE, some number of parameter
+    # channels might be appended to the input tensor
+    if append_params:
+
+        # If parameters are embedded into a latent
+        # vector, only 1 channel is appended to the
+        # tensor. Otherwise, each parameter is 
+        # appended as its own channel
+        if c.EMBEDDING_TYPES[c.EMBEDDING_TYPE] == "none":
+            num_channels += len(possible_params)
+        else:
+            num_channels += 1 
+    return num_channels
+
+
 def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, params, append_params, name):
     '''
     Sets up the dataset, Dataloader, model, and training regime, then begins training.
@@ -97,19 +122,20 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
     }
     
     # Setting up model
-    num_channels = c.NUM_IMAGE_CHANNEL
-    if proxy_type == "demosaic":
-        num_channels = 4
-    if append_params:
-        num_channels += len(possible_params)
+    num_channels = get_num_input_channels(proxy_type, possible_params, append_params)
     model = None
     if proxy_type == "demosaic":
         #model = DemosaicNet(num_input_channels=num_channels, num_output_channels=12,
                             #skip_connect=skip_connect, clip_output=clip_output)
         model = ChenNet(0, clip_output=clip_output, add_params=False)
     else:
-        model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
-                skip_connect=skip_connect, add_params=append_params, clip_output=clip_output)
+        if append_params:
+            model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
+                    skip_connect=skip_connect, add_params=append_params, clip_output=clip_output,
+                    num_params=len(possible_params))
+        else:
+             model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
+                    skip_connect=skip_connect, add_params=append_params, clip_output=clip_output)
     if use_checkpoint:
         start_epoch = load_checkpoint(model, model_out_dir) #weight_out_dir
     else:

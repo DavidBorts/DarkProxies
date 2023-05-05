@@ -61,6 +61,7 @@ class Darktable_Dataset(Dataset):
         self.transform = transform
         self.proxy_type = proxy_type
         self.params = params
+        self.append_params = self.proxy_type not in c.NO_PARAMS
         self.sweep = sweep
         self.sampler = sampler
         self.name = name
@@ -212,9 +213,6 @@ class Darktable_Dataset(Dataset):
         else:
             index = indexValue
         
-        # Determining whether or not to append parameter channels
-        append_params = self.proxy_type not in c.NO_PARAMS
-        
         image_name = self.image_name_list[index]
         if not self.sweep:
             print('ground truth image name: ' + image_name)
@@ -340,10 +338,10 @@ class Darktable_Dataset(Dataset):
                     print('crop saved: ground truth')
 
             # Appending parameter tensor
-            if append_params:
+            if self.append_params:
                 params = self.param_mat[:,index]
-
                 #params = float(params) # TODO: is this necessary? does it work??
+
                 if self.sweep:
                     params = self.param_mat[:, param_num]
 
