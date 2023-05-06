@@ -65,6 +65,7 @@ class Darktable_Dataset(Dataset):
         self.sweep = sweep
         self.sampler = sampler
         self.name = name
+        self.embedding_type = c.EMBEDDING_TYPES[c.EMBEDDING_TYPE]
         self.param_ranges = param_ranges
 
         if self.param_ranges is not None:
@@ -351,6 +352,9 @@ class Darktable_Dataset(Dataset):
                     raise ValueError("ERROR: param possible ranges should be the same length as params")
                 if self.param_ranges is not None:
                     params = (params + self.param_lower_bounds) / self.param_diff
+                
+                if self.embedding_type != "none":
+                    return image_name, proxy_model_input, params, proxy_model_label
 
                 proxy_model_input = _format_input_with_parameters(proxy_model_input, params)
             

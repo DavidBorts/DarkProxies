@@ -4,6 +4,7 @@ import sys
 sys.path.append('../') # TODO: is this necessary?
 import os
 import time
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -34,20 +35,31 @@ def get_num_input_channels(proxy_type, possible_params, append_params):
         return 4
     
     num_channels = c.NUM_IMAGE_CHANNEL # input tensor
+    params_size = (len(possible_params), c.IMG_SIZE, c.IMG_SIZE) # tuple size of the appended params
     
     # Depending on c.EMBEDDING_TYPE, some number of parameter
     # channels might be appended to the input tensor
     if append_params:
+        num_params = len(possible_params)
+        embedding_type = c.EMBEDDING_TYPES[c.EMBEDDING_TYPE]
 
-        # If parameters are embedded into a latent
-        # vector, only 1 channel is appended to the
-        # tensor. Otherwise, each parameter is 
-        # appended as its own channel
-        if c.EMBEDDING_TYPES[c.EMBEDDING_TYPE] == "none":
+        if embedding_type == "none":
             num_channels += len(possible_params)
-        else:
-            num_channels += 1 
-    return num_channels
+
+        elif embedding_type == "linear_to_channel":
+            channels = int(np.ceil(float(num_params) / c.EMBEDDING_RATIO))
+            if c.EMBED_TO_SINGLE:
+                channels = 1
+            params_size = (channels, c.IMG_SIZE, c.IMG_SIZE)
+            num_channels += channels
+
+        else: # embedding type is "linear_to_value"
+            final = int(np.ceil(num_params*1.0 / c.EMBEDDING_RATIO))
+            if c.EMBED_TO_SINGLE:
+                final = 1
+            params_size = (final, c.IMG_SIZE, c.IMG_SIZE)
+            num_channels += final
+    return num_channels, params_size
 
 
 def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, params, append_params, name, dataset_name):

@@ -82,7 +82,7 @@ def double_conv_leaky(in_channels, out_channels):
 UNet implementation. This UNet allows for a single skip connection from input to output.
 '''
 class UNet(nn.Module):   
-    def __init__(self, num_input_channels, num_output_channels, skip_connect=True, add_params=True, clip_output=True, channel_list=DEFAULT_UNET_CHANNEL_LIST, num_params=None):
+    def __init__(self, num_input_channels, num_output_channels, skip_connect=True, add_params=True, clip_output=True, channel_list=DEFAULT_UNET_CHANNEL_LIST, num_params=None, params_size=None):
         super().__init__()
         if not len(channel_list) == 5:
             raise ValueError('channel_list argument should be a list of integers of size 5.')
@@ -92,6 +92,8 @@ class UNet(nn.Module):
         self.add_params = add_params
         self.embedding_type = c.EMBEDDING_TYPES[c.EMBEDDING_TYPE]
         self.embed = self.embedding_type != "none"
+        self.param_channels = num_input_channels - num_output_channels
+        self.params_size = params_size
         self.clip_output = clip_output
 
         if self.add_params:
@@ -107,7 +109,7 @@ class UNet(nn.Module):
                 # self.down2 = nn.AvgPool2d(2)
                 # self.down3 = nn.AvgPool2d(2) 
                 # self.down4 = nn.AvgPool2d(2)
-                in_channel_list.append(channel + num_input_channels - num_output_channels) 
+                in_channel_list.append(channel + self.param_channels) 
         else:
             in_channel_list = channel_list 
         
@@ -120,9 +122,23 @@ class UNet(nn.Module):
         if self.embed:
             print("Embedding input parameters.")
             if self.embedding_type == "linear_to_channel":
-                self.param_embedding = nn.Linear(num_params, c.IMG_SIZE**2)
+                final = self.param_channels*(c.IMG_SIZE**2)
+                intermediate = int(np.ceil((final + num_params)/2.0))
+                self.param_embedding = nn.Sequential(
+                                            nn.Linear(num_params, intermediate),
+                                            nn.ReLU(inplace=True),
+                                            nn.Linear(intermediate, final),
+                                            nn.ReLU(inplace=True)
+                                        )
             else: # embedding type is "linear_to_value"
-                self.param_embedding = nn.Linear(num_params, 1)
+                final = self.param_channels
+                intermediate = int(np.ceil((final + num_params)/2.0))
+                self.param_embedding = nn.Sequential(
+                                            nn.Linear(num_params, intermediate),
+                                            nn.ReLU(inplace=True),
+                                            nn.Linear(intermediate, final),
+                                            nn.ReLU(inplace=True)
+                                        )
             
         # Down
         self.conv_down_1 = double_conv(self.num_input_channels, channel_list[0])              # num_input_channels -> 32
@@ -163,9 +179,9 @@ class UNet(nn.Module):
             if self.embed:
                 param = self.param_embedding(params)
                 if self.embedding_type == "linear_to_channel":
-                    param = torch.reshape(param, (c.IMG_SIZE, c.IMG_SIZE))
+                    param = torch.reshape(param, self.params_size)
                 else: # embedding type is "linear_to_value"
-                    param = torch.ones((c.IMG_SIZE, c.IMG_SIZE)) * param
+                    param = torch.ones(self.params_size) * param
             else:
                 param = x[:,3:,:,:]
 
@@ -537,6 +553,11 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
 
     if not os.path.exists(weight_out_dir):
         os.mkdir(weight_out_dir)
+
+    # Param Embeddings
+    embed = False
+    if c.EMBEDDING_TYPES[c.EMBEDDING_TYPE] != "none":
+        embed = True
     
     # Creating directory to store model predictions
     predictions_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, name + c.OUTPUT_PREDICTIONS_PATH)
@@ -566,56 +587,93 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
             i = 0
             num_inputs_seen = 0
             
-            for names, inputs, labels in dataloaders[phase]:  
-                inputs = inputs.type(dtype)
-                labels = labels.type(dtype)
+            if embed:
+                for names, inputs, params, labels in dataloaders[phase]:  
+                    inputs = inputs.type(dtype)
+                    params = params.type(dtype)
+                    labels = labels.type(dtype)
 
-                # zero the parameter gradients
-                optimizer.zero_grad()
-                
-#                print("inputs {}".format(inputs.size()))
-#                print("labels {}".format(labels.size()))
-#                sys.stdout.flush()
-                
-                # forward
-                # track history if only in train
-                with torch.set_grad_enabled(phase == 'train'):
-                    outputs = model(inputs)
+                    # zero the parameter gradients
+                    optimizer.zero_grad()
+                    
+                    # forward
+                    # track history if only in train
+                    with torch.set_grad_enabled(phase == 'train'):
+                        outputs = model(inputs, params=params)
 
-                    # Saving model outputs during training
-                    if save_outputs and (epoch % save_output_frequency) == 0:
-                        outputs_ndarray = outputs[0].detach().cpu().numpy()
-                        outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
-                        outputs_path = os.path.join(predictions_path, f'{name}_pred_epoch-{epoch}_{names[0]}')
-                        plt.imsave(outputs_path, outputs_ndarray, format='png')
-                    
-#                    print("outputs {}".format(outputs.size()))
-#                    sys.stdout.flush()
-                    
-                    loss = criterion(outputs, labels)
-                    
-#                    print("loss {}".format(loss))
-#                    sys.stdout.flush()
-                    
-                    # backward + optimize only if in training phase
-                    if phase == 'train':
-                        loss.backward()
+                        # Saving model outputs during training
+                        if save_outputs and (epoch % save_output_frequency) == 0:
+                            outputs_ndarray = outputs[0].detach().cpu().numpy()
+                            outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
+                            outputs_path = os.path.join(predictions_path, f'{name}_pred_epoch-{epoch}_{names[0]}')
+                            plt.imsave(outputs_path, outputs_ndarray, format='png')
                         
-#                        print("backward loss")
-#                        sys.stdout.flush()
+                        loss = criterion(outputs, labels)
                         
-                        optimizer.step()
-                        
-#                        print("step optimizer")
-#                        sys.stdout.flush()
+                        # backward + optimize only if in training phase
+                        if phase == 'train':
+                            loss.backward()
+                            
+                            optimizer.step()
 
-                # statistics
-                running_loss += loss.item() * inputs.size(0)
-                num_inputs_seen += inputs.size(0)
-                print("\tbatch {:d}/{:d}, Average Loss: {:3f}".format(
-                    i + 1, max_iter_per_epoch, running_loss/num_inputs_seen), end='\r')
-                sys.stdout.flush()
-                i += 1
+                    # statistics
+                    running_loss += loss.item() * inputs.size(0)
+                    num_inputs_seen += inputs.size(0)
+                    print("\tbatch {:d}/{:d}, Average Loss: {:3f}".format(
+                        i + 1, max_iter_per_epoch, running_loss/num_inputs_seen), end='\r')
+                    sys.stdout.flush()
+                    i += 1
+            else:
+                for names, inputs, labels in dataloaders[phase]:  
+                    inputs = inputs.type(dtype)
+                    labels = labels.type(dtype)
+
+                    # zero the parameter gradients
+                    optimizer.zero_grad()
+                    
+    #                print("inputs {}".format(inputs.size()))
+    #                print("labels {}".format(labels.size()))
+    #                sys.stdout.flush()
+                    
+                    # forward
+                    # track history if only in train
+                    with torch.set_grad_enabled(phase == 'train'):
+                        outputs = model(inputs)
+
+                        # Saving model outputs during training
+                        if save_outputs and (epoch % save_output_frequency) == 0:
+                            outputs_ndarray = outputs[0].detach().cpu().numpy()
+                            outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
+                            outputs_path = os.path.join(predictions_path, f'{name}_pred_epoch-{epoch}_{names[0]}')
+                            plt.imsave(outputs_path, outputs_ndarray, format='png')
+                        
+    #                    print("outputs {}".format(outputs.size()))
+    #                    sys.stdout.flush()
+                        
+                        loss = criterion(outputs, labels)
+                        
+    #                    print("loss {}".format(loss))
+    #                    sys.stdout.flush()
+                        
+                        # backward + optimize only if in training phase
+                        if phase == 'train':
+                            loss.backward()
+                            
+    #                        print("backward loss")
+    #                        sys.stdout.flush()
+                            
+                            optimizer.step()
+                            
+    #                        print("step optimizer")
+    #                        sys.stdout.flush()
+
+                    # statistics
+                    running_loss += loss.item() * inputs.size(0)
+                    num_inputs_seen += inputs.size(0)
+                    print("\tbatch {:d}/{:d}, Average Loss: {:3f}".format(
+                        i + 1, max_iter_per_epoch, running_loss/num_inputs_seen), end='\r')
+                    sys.stdout.flush()
+                    i += 1
                 
             epoch_loss = running_loss / dataset_sizes[phase]
 

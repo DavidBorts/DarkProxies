@@ -14,11 +14,11 @@ IMAGE_ROOT_DIR = '.'                     #   Root directory from which to constr
 INTERACTIVE = False                      #   Toggle interactive prompts between stages
 NUM_IMAGE_CHANNEL = 3                    # X Number of channels in each image (3 for RGB)
 IMG_SIZE = 736                           # X Dimensions to crop all images to (IMG_SIZE x IMG_SIZE)
-CLIP_OUTPUT = False                      # X Toggle clipping of proxy outputs
+CLIP_OUTPUT = True                       # X Toggle clipping of proxy outputs
 CLIP_RANGE = [-0.1, 1.1]                 # X  Set lower and upper bounds to clip model outputs to
-RESCALE_PARAMS = False                   # X Toggle normalization of input parameters for model training/eval
+RESCALE_PARAMS = True                    # X Toggle normalization of input parameters for model training/eval
 EMBEDDING_TYPE = 0                       # X Selects method of embedding parameters into a latent vector
-EMBEDDING_RATIO = 2                      # X Number of input parameters to map to a single latent parameter
+EMBEDDING_RATIO = 2                      # X Number of input parameters to map to a single latent parameter/channel
 EMBED_TO_SINGLE = False                  # X If True, input paramaters are mapped to a single latent parameter
 DOWNSAMPLE_IMAGES = False                # X Toggles downsampling of training data w/ bilinear interpolation
 
