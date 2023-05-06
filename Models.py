@@ -191,9 +191,9 @@ class UNet(nn.Module):
 
             # Getting param channels first.
             param_half = self.down1(param)
-            print("half param size: " + str(param.shape))
+            print("half param size: " + str(param_half.shape))
             param_fourth = self.down2(param_half)
-            print("fourth param size: " + str(param.shape))
+            print("fourth param size: " + str(param_fourth.shape))
             param_eighth = self.down3(param_fourth)
             param_sixteenth = self.down4(param_eighth)
 
