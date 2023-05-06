@@ -351,8 +351,7 @@ class Darktable_Dataset(Dataset):
                 if self.sweep:
                     params = self.param_mat[:, param_num]
 
-                print("image name + params: ")
-                print(image_name, params)
+                print("image name + params: " + image_name + str(params))
                 sys.stdout.flush()
 
                 # Normalizing param values to [0, 1] range
