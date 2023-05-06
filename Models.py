@@ -176,6 +176,7 @@ class UNet(nn.Module):
         self.conv_final = nn.Conv2d(channel_list[0], self.num_output_channels, 1, padding=0)  # 32  -> num_output_channels 
 
     def forward(self, x, params=None):
+        print("params: " + str(params.shape))
         if self.add_params:
             # Embedding params
             if self.embed:
