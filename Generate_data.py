@@ -106,7 +106,7 @@ def generate(proxy_type, params, stage, possible_values, num, name):
         return
     
     sampler = ParamSampler(proxy_type_gt, params_gt, possible_values, num)
-    if params_gt is None:
+    if len(possible_values) > 1:
         samples_concatenated = np.concatenate([sampler.list.copy() for _ in range(len(src_images))], axis=1)
     else:
         samples_concatenated = np.concatenate([sampler.list.copy() for _ in range(len(src_images))])
