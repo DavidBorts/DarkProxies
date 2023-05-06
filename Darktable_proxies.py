@@ -67,7 +67,7 @@ name = f'{proxy_type}_'
 if params is not None and custom is None:
     name.join(f'{param}_' for param in params)
 if custom is not None:
-    name.join(f'{custom}_')
+    name = f"{proxy_type}_{custom}_"
 
 if params is None:
     params = c.PARAM_NAMES[proxy_type]
