@@ -117,7 +117,7 @@ if not os.path.exists(stage_2_path):
 # (This is done by performing a parameter sweep via Darktable's CLI)
 if generate_stage_1:
     print("Generating training data: stage 1")
-    data.generate(proxy_type, 
+    gts_1 = data.generate(proxy_type, 
                   params, 
                   1, 
                   possible_values,
@@ -126,7 +126,7 @@ if generate_stage_1:
     print("Training data generated: stage 1")
 if generate_stage_2:
     print("Generating training data: stage 2")
-    data.generate(proxy_type, 
+    gts_2 = data.generate(proxy_type, 
                   params, 
                   2, 
                   possible_values,
@@ -148,7 +148,8 @@ if c.TRAIN_PROXY:
         params,
         append_params,
         name,
-        dataset_name
+        dataset_name,
+        gt_list = gts_1
     )
     print(f'{name}: proxy training completed.')
 

@@ -31,7 +31,7 @@ class Darktable_Dataset(Dataset):
     training of the proxy model, the fine-tuning of its parameters, and for ISP-tuning
     experiments.
     '''
-    def __init__(self, root_dir, stage, proxy_type, params, sampler, name, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, sweep=False, param_ranges=None):
+    def __init__(self, root_dir, stage, proxy_type, params, sampler, name, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, sweep=False, param_ranges=None, gt_list=None):
         '''
         Initialize the object.
         Inputs:
@@ -67,6 +67,7 @@ class Darktable_Dataset(Dataset):
         self.name = name
         self.embedding_type = c.EMBEDDING_TYPES[c.EMBEDDING_TYPE]
         self.param_ranges = param_ranges
+        self.gt_list = gt_list
 
         if self.param_ranges is not None:
             self.param_lower_bounds = np.array([range[0] for range in param_ranges])
@@ -96,6 +97,8 @@ class Darktable_Dataset(Dataset):
                 self.image_name_list.sort()
             else:
                 self.image_name_list.sort(key=lambda x: (x.split(".")[0], float(x.split("_")[3].split(".tif")[0])))
+            if self.gt_list is not None:
+                self.image_name_list = self.gt_list
             print('Images in the dataset:')
             print(self.image_name_list)
 

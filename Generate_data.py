@@ -114,6 +114,8 @@ def generate(proxy_type, params, stage, possible_values, num, name):
     convert(samples_concatenated, os.path.join(c.IMAGE_ROOT_DIR, stage_path, filename), ndarray=True)
     print("Params file saved.")
 
+    gt_imgs = []
+
     for image in src_images:
 
         # Getting path of individual source DNG file
@@ -161,6 +163,7 @@ def generate(proxy_type, params, stage, possible_values, num, name):
 
             # Rendering the output image
             dt.render(src_path, gt_file_path, params_dict)
+            gt_imgs.append(gt_file_path)
 
             # Checking if input & ground truth images need to be replaced with tapouts
             if tapouts is not None:
@@ -183,6 +186,7 @@ def generate(proxy_type, params, stage, possible_values, num, name):
                 tmp2tiff(input_tapout_path, input_file_path)
                 tmp2tiff(gt_tapout_path, gt_file_path)
     print(f"Training data generated: stage {stage}")
+    return gt_imgs
 
 # Renders a single input -> ground truth pair for a given source image in src_images, 
 # instead of sweeping over a range of parameter values

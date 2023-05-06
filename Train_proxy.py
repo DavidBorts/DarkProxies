@@ -62,7 +62,7 @@ def get_num_input_channels(proxy_type, possible_params, append_params):
     return num_channels, params_size
 
 
-def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, params, append_params, name, dataset_name):
+def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, params, append_params, name, dataset_name, gt_list=None):
     '''
     Sets up the dataset, Dataloader, model, and training regime, then begins training.
 
@@ -76,7 +76,8 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
         [params]: if None, train proxy on full parameter space, else train only on params list
         [append_params]: (Boolean) whether or not the given proxy has input parameters
         [name]: Prefix used for all directories/files corresponding to this specific proxy
-        [dataset_name] Name of custom pre-existing dataset to train on
+        [dataset_name]: Name of custom pre-existing dataset to train on
+        [gt_list]: (OPTIONAL) list of ground truth image names (in correct order)
     '''
 
     # Constants
@@ -113,7 +114,8 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
                                         params, 
                                         not append_params,
                                         dataset_name,
-                                        param_ranges=possible_params)
+                                        param_ranges=possible_params,
+                                        gt_list=gt_list)
     else:
         image_dataset = Darktable_Dataset(image_root_dir, 
                                         1, 
@@ -121,7 +123,8 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
                                         params, 
                                         not append_params,
                                         name,
-                                        param_ranges=possible_params)
+                                        param_ranges=possible_params,
+                                        gt_list=gt_list)
     train_loader = torch.utils.data.DataLoader(image_dataset, 
                                                batch_size=batch_size, 
                                                sampler=image_dataset.train_sampler,
