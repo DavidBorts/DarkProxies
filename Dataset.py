@@ -218,7 +218,7 @@ class Darktable_Dataset(Dataset):
         else:
             index = indexValue
         
-        image_name = self.image_name_list[index]
+        image_name = self.image_name_list[index].strip('\n')
         if not self.sweep:
             print('ground truth image name: ' + image_name)
         input_image_name = image_name.split(".")[0] + '.tif'
@@ -350,8 +350,8 @@ class Darktable_Dataset(Dataset):
                 if self.sweep:
                     params = self.param_mat[:, param_num]
 
-                print("params: ")
-                print(params)
+                print("image name + params: ")
+                print(image_name, params)
 
                 # Normalizing param values to [0, 1] range
                 if len(params) != len(self.param_lower_bounds):
