@@ -133,7 +133,7 @@ class UNet(nn.Module):
                                         )
             else: # embedding type is "linear_to_value"
                 final = self.param_channels
-                intermediate = int(np.ceil((final + num_params)/2.0))
+                intermediate = int(np.ceil((num_params)*2))
                 print("Embedding layer sizes: " + str((num_params, intermediate, final)))
                 self.param_embedding = nn.Sequential(
                                             nn.Linear(num_params, intermediate),
