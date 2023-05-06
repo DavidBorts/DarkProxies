@@ -6,6 +6,7 @@ Stages 2 & 3: Loads in image data
 '''
 
 import os
+import sys
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -352,6 +353,7 @@ class Darktable_Dataset(Dataset):
 
                 print("image name + params: ")
                 print(image_name, params)
+                sys.stdout.flush()
 
                 # Normalizing param values to [0, 1] range
                 if len(params) != len(self.param_lower_bounds):
