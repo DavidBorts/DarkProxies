@@ -122,7 +122,7 @@ class UNet(nn.Module):
         if self.embed:
             print("Embedding input parameters.")
             if self.embedding_type == "linear_to_channel":
-                final = self.param_channels*(c.IMG_SIZE * c.IMG_SIZE)
+                final = self.param_channels*(c.IMG_SIZE * c.IMG_SIZE / 4)
                 intermediate = int(np.ceil((final + num_params)/2.0))
                 print("Embedding layer sizes: " + str((num_params, intermediate, final)))
                 self.param_embedding = nn.Sequential(
@@ -182,6 +182,8 @@ class UNet(nn.Module):
                 param = self.param_embedding(params)
                 if self.embedding_type == "linear_to_channel":
                     param = torch.reshape(param, self.params_size)
+                    param = torch.tile(param, (2,2))
+                    print("param size: " + str(param.shape))
                 else: # embedding type is "linear_to_value"
                     param = torch.ones(self.params_size) * param
             else:
@@ -189,7 +191,9 @@ class UNet(nn.Module):
 
             # Getting param channels first.
             param_half = self.down1(param)
+            print("half param size: " + str(param.shape))
             param_fourth = self.down2(param_half)
+            print("fourth param size: " + str(param.shape))
             param_eighth = self.down3(param_fourth)
             param_sixteenth = self.down4(param_eighth)
 
