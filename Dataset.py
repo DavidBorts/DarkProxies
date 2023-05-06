@@ -347,6 +347,9 @@ class Darktable_Dataset(Dataset):
                 if self.sweep:
                     params = self.param_mat[:, param_num]
 
+                print("params: ")
+                print(params)
+
                 # Normalizing param values to [0, 1] range
                 if len(params) != len(self.param_lower_bounds):
                     raise ValueError("ERROR: param possible ranges should be the same length as params")
