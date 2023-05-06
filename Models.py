@@ -186,6 +186,7 @@ class UNet(nn.Module):
                     param = torch.tile(param_sixteenth, (16,16))
                 else: # embedding type is "linear_to_value"
                     param = torch.ones(self.params_size) * param
+                x = torch.cat((x, param), dim=1)
             else:
                 param = x[:,3:,:,:]
             print("param size: " + str(param.shape))
