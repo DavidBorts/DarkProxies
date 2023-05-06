@@ -122,8 +122,9 @@ class UNet(nn.Module):
         if self.embed:
             print("Embedding input parameters.")
             if self.embedding_type == "linear_to_channel":
-                final = self.param_channels*(c.IMG_SIZE**2)
+                final = self.param_channels*(c.IMG_SIZE * c.IMG_SIZE)
                 intermediate = int(np.ceil((final + num_params)/2.0))
+                print("Embedding layer sizes: " + str((num_params, intermediate, final)))
                 self.param_embedding = nn.Sequential(
                                             nn.Linear(num_params, intermediate),
                                             nn.ReLU(inplace=True),
@@ -133,6 +134,7 @@ class UNet(nn.Module):
             else: # embedding type is "linear_to_value"
                 final = self.param_channels
                 intermediate = int(np.ceil((final + num_params)/2.0))
+                print("Embedding layer sizes: " + str((num_params, intermediate, final)))
                 self.param_embedding = nn.Sequential(
                                             nn.Linear(num_params, intermediate),
                                             nn.ReLU(inplace=True),
