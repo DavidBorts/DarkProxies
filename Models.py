@@ -185,7 +185,7 @@ class UNet(nn.Module):
                     param_sixteenth = torch.reshape(param, self.params_size)
                     param = torch.tile(param_sixteenth, (16,16))
                 else: # embedding type is "linear_to_value"
-                    param = torch.ones(self.params_size) * param
+                    param = torch.ones(self.params_size) * torch.squeeze(param)
                 x = torch.cat((x, param), dim=1)
             else:
                 param = x[:,3:,:,:]
