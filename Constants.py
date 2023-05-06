@@ -21,6 +21,7 @@ EMBEDDING_TYPE = 0                       # X Selects method of embedding paramet
 EMBEDDING_RATIO = 2                      # X Number of input parameters to map to a single latent parameter/channel
 EMBED_TO_SINGLE = False                  # X If True, input paramaters are mapped to a single latent parameter
 DOWNSAMPLE_IMAGES = False                # X Toggles downsampling of training data w/ bilinear interpolation
+NPF_BASELINE = False                     # X Toggles NPF model architecture
 
 # Data generation constants (Stage 0)
 GENERATE_STAGE_1 = True                  #   Toggles new data generation for proxy training (stage 1)
@@ -32,7 +33,7 @@ STAGE_2_DNG_PATH = 'images/stage_2/'     # X Path to folder with all DNG files f
 STAGE_3_DNG_PATH = 'images/stage_3/'     # X Path to folder with all DNG files for pipeline regression
 
 # Training the proxies (Stage 1)
-TRAIN_PROXY = True                       #   Toggles proxy training
+TRAIN_PROXY = False                       #   Toggles proxy training
 STAGE_1_PATH = 'stage_1/'                #   Directory that stores all training data, model weights, and predictions
 PROXY_MODEL_BATCH_SIZE = 1               #   Batch size for proxy training
 PROXY_MODEL_NUM_EPOCH = 500              #   Number of epochs for which to train
@@ -49,7 +50,7 @@ SWEEP_OUTPUT_DIR = 'sweep_output'        #   Name of directories that store prox
 EVAL_PATH = 'eval/'                      #   Name of directories that store evluations data and results
 
 # Slider regression on trained proxies (Stage 2)
-REGRESS_PROXY = True                     #   Toggles proxy regression
+REGRESS_PROXY = False                     #   Toggles proxy regression
 STAGE_2_PATH = 'stage_2/'                #   Directory that stores all training data and predictions
 STAGE_2_PARAM_PATH = 'stage_2/params/'   #   Directory that stores optimized proxy params
 ANIMATIONS_DIR = 'animations/'           #   Directory that stores frames for all animations

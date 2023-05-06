@@ -144,20 +144,24 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
     }
     
     # Setting up model
-    num_channels = get_num_input_channels(proxy_type, possible_params, append_params)
+    num_channels, params_size = get_num_input_channels(proxy_type, possible_params, append_params)
     model = None
     if proxy_type == "demosaic":
         #model = DemosaicNet(num_input_channels=num_channels, num_output_channels=12,
                             #skip_connect=skip_connect, clip_output=clip_output)
         model = ChenNet(0, clip_output=clip_output, add_params=False)
     else:
+        channel_list = [32, 64, 128, 256, 512]
+        if c.NPF_BASELINE:
+            channel_list = [16, 32, 64, 128, 256]
         if append_params:
             model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
                     skip_connect=skip_connect, add_params=append_params, clip_output=clip_output,
-                    num_params=len(possible_params))
+                    num_params=len(possible_params), params_size=params_size, channel_list=channel_list)
         else:
              model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
-                    skip_connect=skip_connect, add_params=append_params, clip_output=clip_output)
+                    skip_connect=skip_connect, add_params=append_params, clip_output=clip_output,
+                    channel_list=channel_list)
     if use_checkpoint:
         start_epoch = load_checkpoint(model, model_out_dir) #weight_out_dir
     else:
