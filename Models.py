@@ -176,7 +176,7 @@ class UNet(nn.Module):
         self.conv_final = nn.Conv2d(channel_list[0], self.num_output_channels, 1, padding=0)  # 32  -> num_output_channels 
 
     def forward(self, x, params=None):
-        print("params: " + str(params.shape))
+        #print("params: " + str(params.shape))
         if self.add_params:
             # Embedding params
             if self.embed:
@@ -189,7 +189,7 @@ class UNet(nn.Module):
                 x = torch.cat((x, param), dim=1)
             else:
                 param = x[:,3:,:,:]
-            print("param size: " + str(param.shape))
+            #print("param size: " + str(param.shape))
 
             # Getting param channels first.
             if self.embedding_type == "linear_to_channel":
@@ -201,8 +201,8 @@ class UNet(nn.Module):
                 param_fourth = self.down2(param_half)
                 param_eighth = self.down3(param_fourth)
                 param_sixteenth = self.down4(param_eighth)
-            print("half param size: " + str(param_half.shape))
-            print("fourth param size: " + str(param_fourth.shape))
+            #print("half param size: " + str(param_half.shape))
+            #print("fourth param size: " + str(param_fourth.shape))
         # Down
         conv1  = self.conv_down_1(x)
         pool1  = self.maxpool_1(conv1)

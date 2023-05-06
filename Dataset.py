@@ -220,15 +220,15 @@ class Darktable_Dataset(Dataset):
             index = indexValue
         
         image_name = self.image_name_list[index].strip('\n')
-        if not self.sweep:
-            print('ground truth image name: ' + image_name)
+        #if not self.sweep:
+            #print('ground truth image name: ' + image_name)
         input_image_name = image_name.split(".")[0] + '.tif'
         if self.sampler: # colorin/colorout/demosaic
             input_image_name = image_name
             #input_image_name = image_name.split(".")[0] + '_' + str(image_name.split('_')[3]) # Temporary hack - rename colorin data and delete me!
             if self.proxy_type == "demosaic": # TODO: Temporary hack - delete me!
                 input_image_name = image_name.split('.')[0] + '.tif'
-        print('input image name: ' + input_image_name)
+        #print('input image name: ' + input_image_name)
         #input_image = imageio.imread(os.path.join(self.input_image_dir, input_image_name))	
         #input_image = tifffile.imread(os.path.join(self.input_image_dir, input_image_name))	
         input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))	
@@ -325,10 +325,10 @@ class Darktable_Dataset(Dataset):
                     #Image.fromarray(input_ndarray).save(input_path, c.CROP_FORMAT)
                     #imageio.imwrite(input_path, input_ndarray, format=c.CROP_FORMAT)
                     tifffile.imwrite(input_path, input_ndarray)
-                    print('crop saved: input')
+                    #print('crop saved: input')
                 elif not os.path.exists(input_path):
                     plt.imsave(input_path, input_ndarray, format=c.CROP_FORMAT)
-                    print('crop saved: input')
+                    #print('crop saved: input')
 
                 label_ndarray = proxy_model_label.detach().cpu().numpy()
                 label_ndarray = np.moveaxis(label_ndarray, 0, -1).copy(order='C')
@@ -341,7 +341,7 @@ class Darktable_Dataset(Dataset):
                 label_path = os.path.join(crop_label_path, f'crop_{image_name}')
                 if not os.path.exists(label_path):
                     plt.imsave(label_path, label_ndarray, format=c.CROP_FORMAT)
-                    print('crop saved: ground truth')
+                    #print('crop saved: ground truth')
 
             # Appending parameter tensor
             if self.append_params:
@@ -351,7 +351,7 @@ class Darktable_Dataset(Dataset):
                 if self.sweep:
                     params = self.param_mat[:, param_num]
 
-                print("image name + params: " + image_name + str(params))
+                #print("image name + params: " + image_name + str(params))
                 sys.stdout.flush()
 
                 # Normalizing param values to [0, 1] range
