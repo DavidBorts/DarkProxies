@@ -51,7 +51,7 @@ def get_num_input_channels(proxy_type, possible_params, append_params):
             channels = int(np.ceil(float(num_params) / c.EMBEDDING_RATIO))
             if c.EMBED_TO_SINGLE:
                 channels = 1
-            params_size = (channels, c.IMG_SIZE/2, c.IMG_SIZE/2)
+            params_size = (channels, c.IMG_SIZE/16, c.IMG_SIZE/16)
             num_channels += channels
 
         else: # embedding type is "linear_to_value"

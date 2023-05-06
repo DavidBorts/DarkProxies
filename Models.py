@@ -122,7 +122,7 @@ class UNet(nn.Module):
         if self.embed:
             print("Embedding input parameters.")
             if self.embedding_type == "linear_to_channel":
-                final = int(self.param_channels*(c.IMG_SIZE * c.IMG_SIZE / 4))
+                final = int(self.param_channels*(c.IMG_SIZE * c.IMG_SIZE / 256))
                 intermediate = int(np.ceil((final + num_params)/2.0))
                 print("Embedding layer sizes: " + str((num_params, intermediate, final)))
                 self.param_embedding = nn.Sequential(
@@ -181,8 +181,8 @@ class UNet(nn.Module):
             if self.embed:
                 param = self.param_embedding(params)
                 if self.embedding_type == "linear_to_channel":
-                    param = torch.reshape(param, self.params_size)
-                    param = torch.tile(param, (2,2))
+                    param_sixteenth = torch.reshape(param, self.params_size)
+                    param = torch.tile(param_sixteenth, (16,16))
                 else: # embedding type is "linear_to_value"
                     param = torch.ones(self.params_size) * param
             else:
@@ -190,13 +190,17 @@ class UNet(nn.Module):
             print("param size: " + str(param.shape))
 
             # Getting param channels first.
-            param_half = self.down1(param)
+            if self.embedding_type == "linear_to_channel":
+                param_eighth = torch.tile(param_sixteenth, (2,2))
+                param_fourth = torch.tile(param_sixteenth, (4,4))
+                param_half = torch.tile(param_sixteenth, (8,8))
+            else:
+                param_half = self.down1(param)
+                param_fourth = self.down2(param_half)
+                param_eighth = self.down3(param_fourth)
+                param_sixteenth = self.down4(param_eighth)
             print("half param size: " + str(param_half.shape))
-            param_fourth = self.down2(param_half)
             print("fourth param size: " + str(param_fourth.shape))
-            param_eighth = self.down3(param_fourth)
-            param_sixteenth = self.down4(param_eighth)
-
         # Down
         conv1  = self.conv_down_1(x)
         pool1  = self.maxpool_1(conv1)
