@@ -183,11 +183,11 @@ class UNet(nn.Module):
                 if self.embedding_type == "linear_to_channel":
                     param = torch.reshape(param, self.params_size)
                     param = torch.tile(param, (2,2))
-                    print("param size: " + str(param.shape))
                 else: # embedding type is "linear_to_value"
                     param = torch.ones(self.params_size) * param
             else:
                 param = x[:,3:,:,:]
+            print("param size: " + str(param.shape))
 
             # Getting param channels first.
             param_half = self.down1(param)
