@@ -147,11 +147,13 @@ def generate(proxy_type, params, stage, possible_values, num, name):
         for values in sampler:
 
             # Getting path of the ground truth image
-            gt_file_path = os.path.join(output_path, f'{image}_{proxy_type}')
-            gt_file_path = (repr(gt_file_path).replace('\\\\', '/')).strip("'") # Dealing with Darktable CLI pickiness
+            gt_file_path = f'{image}_{proxy_type}'
             for val in values:
                 gt_file_path += '_' + str(val)
             gt_file_path += '.tif'
+            gt_imgs.append(gt_file_path)
+            gt_file_path = os.path.join(output_path, gt_file_path)
+            gt_file_path = (repr(gt_file_path).replace('\\\\', '/')).strip("'") # Dealing with Darktable CLI pickiness
 
             # Skip ground truth images that already exist
             if os.path.exists(gt_file_path):
@@ -163,7 +165,6 @@ def generate(proxy_type, params, stage, possible_values, num, name):
 
             # Rendering the output image
             dt.render(src_path, gt_file_path, params_dict)
-            gt_imgs.append(gt_file_path)
 
             # Checking if input & ground truth images need to be replaced with tapouts
             if tapouts is not None:
