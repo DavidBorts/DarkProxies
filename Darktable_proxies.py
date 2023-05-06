@@ -142,7 +142,10 @@ if generate_stage_2:
 if c.TRAIN_PROXY:
     print("Begin proxy training (stage 1)")
     use_gpu = torch.cuda.is_available() 
-    gt_list = read_img_list(name, 1)
+    if dataset_name is not None:
+        gt_list = read_img_list(proxy_type + '_' + dataset_name, 1)
+    else:
+        gt_list = read_img_list(name, 1)
     Train_proxy.run_training_procedure( 
         weight_out_dir, 
         stage_1_batch_size, 
