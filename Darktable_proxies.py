@@ -10,7 +10,7 @@ import Generate_data as data
 import Constants as c
 import Train_proxy
 import Parameter_regression
-from utils.misc import get_possible_values
+from utils.misc import get_possible_values, write_img_list, read_img_list
 
 def sort_params(proxy_type, params):
     '''
@@ -124,6 +124,8 @@ if generate_stage_1:
                   num,  
                   name)
     print("Training data generated: stage 1")
+    print("Writing image list...")
+    write_img_list(name, 1, gts_1)
 if generate_stage_2:
     print("Generating training data: stage 2")
     gts_2 = data.generate(proxy_type, 
@@ -133,11 +135,14 @@ if generate_stage_2:
                   num_regression, 
                   name)
     print("Training data generated: stage 2")
+    print("Writing image list...")
+    write_img_list(name, 2, gts_2)
 
 # Stage 1 - proxy training
 if c.TRAIN_PROXY:
     print("Begin proxy training (stage 1)")
     use_gpu = torch.cuda.is_available() 
+    gt_list = read_img_list(name, 1)
     Train_proxy.run_training_procedure( 
         weight_out_dir, 
         stage_1_batch_size, 
@@ -149,7 +154,7 @@ if c.TRAIN_PROXY:
         append_params,
         name,
         dataset_name,
-        gt_list = gts_1
+        gt_list = gt_list
     )
     print(f'{name}: proxy training completed.')
 
