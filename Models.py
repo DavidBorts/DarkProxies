@@ -111,7 +111,8 @@ class UNet(nn.Module):
                 # self.down4 = nn.AvgPool2d(2)
                 in_channel_list.append(channel + self.param_channels) 
         else:
-            in_channel_list = channel_list 
+            in_channel_list = channel_list
+        print("input channels: " + str(in_channel_list))
         
         if self.skip_connect:
             print('Adding skip connection from input to output.')
