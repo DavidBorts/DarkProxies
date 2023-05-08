@@ -693,11 +693,11 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                 
             epoch_loss = running_loss / dataset_sizes[phase]
             if phase == 'train':
-                losses_train = [epoch_loss]
+                losses_train = [str(epoch_loss)]
                 with open(loss_log_path_train, 'w') as file:
                     file.write('\n'.join(losses_train))
             else:
-                losses_val = [epoch_loss]
+                losses_val = [str(epoch_loss)]
                 with open(loss_log_path_val, 'w') as file:
                     file.write('\n'.join(losses_val))
 
