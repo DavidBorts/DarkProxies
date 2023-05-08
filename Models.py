@@ -578,8 +578,8 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
         os.mkdir(predictions_path)
         print('New directory created at: ' + predictions_path)
 
-    losses_train=[]
-    losses_val=[]
+    loss_log_path_train = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, f'{name}_loss_train.txt')
+    loss_log_path_val = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, f'{name}_loss_val.txt')
         
     for epoch in range(start_epoch, num_epochs):
         print('Epoch {}/{}'.format(epoch+1, num_epochs))
@@ -693,9 +693,13 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                 
             epoch_loss = running_loss / dataset_sizes[phase]
             if phase == 'train':
-                losses_train.append(epoch_loss)
+                losses_train = [epoch_loss]
+                with open(loss_log_path_train, 'w') as file:
+                    file.write('\n'.join(losses_train))
             else:
-                losses_val.append(epoch_loss)
+                losses_val = [epoch_loss]
+                with open(loss_log_path_val, 'w') as file:
+                    file.write('\n'.join(losses_val))
 
             print('\tDone with {} phase. Average Loss: {:.4f}'.format(
                 phase, epoch_loss))
@@ -710,12 +714,6 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
     sys.stdout.flush()
-    loss_log_path_train = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, f'{name}_loss_train.txt')
-    loss_log_path_val = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, f'{name}_loss_val.txt')
-    with open(loss_log_path_train, 'w') as file:
-        file.write('\n'.join(losses_train))
-    with open(loss_log_path_val, 'w') as file:
-        file.write('\n'.join(losses_val))
 
 '''
 Evaluate the model on a any input(s)
