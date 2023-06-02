@@ -69,7 +69,7 @@ if params is not None and custom is None:
 if custom is not None:
     name = f"{proxy_type}_{custom}_"
 
-if params is None:
+if params is None and proxy_type not in c.NO_PARAMS:
     params = c.PARAM_NAMES[proxy_type]
 
 # Stage 1 constants
