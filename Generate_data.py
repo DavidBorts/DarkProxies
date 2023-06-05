@@ -88,7 +88,7 @@ def generate(proxy_type, params, stage, possible_values, num, name):
     #TODO: is this still necessary?
     proxy_type_gt = proxy_type
     params_gt = params
-    if tapouts is not None and proxy_type != "demosaic":#TODO: temporary hack, remove me!!
+    if tapouts is not None and proxy_type != "demosaic" and proxy_type != "exposure":#TODO: temporary hack, remove me!!
         proxy_type_gt, params_gt = c.SAMPLER_BLOCKS[proxy_type].split('_')
         params_gt = [params_gt] # NOTE: params_gt, like params, must be a list
 
