@@ -2,7 +2,21 @@
 
 import os
 
+# Local files
 import Constants as c
+
+def sort_params(proxy_type, params):
+    '''
+    Re-arrange a params list into a standard order (returns list)
+    '''
+    if params is None or params[0].lower() == 'full':
+        return c.PARAM_NAMES[proxy_type]
+
+    names = c.PARAM_NAMES[proxy_type]
+    params_upper = [param.upper() for param in params]
+
+    sorted = [name.lower() for name in names if name.upper() in params_upper]
+    return sorted
 
 def get_possible_values(proxy_type, params):
     '''
@@ -13,10 +27,12 @@ def get_possible_values(proxy_type, params):
     all_possible_values = c.POSSIBLE_VALUES[proxy_type]
     all_param_names = c.PARAM_NAMES[proxy_type]
 
-    if params is None:
+    if params is None or params[0].lower() == 'full':
         return all_possible_values
+    
+    params_sorted = sort_params(proxy_type, params)
 
-    possible_values = [all_possible_values[all_param_names.index(param)] for param in params]
+    possible_values = [all_possible_values[all_param_names.index(param)] for param in params_sorted]
     return possible_values
 
 def write_img_list(name, stage, img_list):
