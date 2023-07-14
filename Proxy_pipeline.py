@@ -64,17 +64,19 @@ class ProxyPipeline:
         # in the correct order
         proxies = []
         possible_values_list = []
-        for proxy_type, params in proxies_list:
+        for proxy_name, params in proxies_list:
+
+            proxy_type = proxy_name.split('_')[0]
 
             # Getting necessary params to load in the proxy
             params = params.split('_')
-            if params[0].lower() != 'full':
-                possible_values = get_possible_values(proxy_type, params)
-            else:
-                possible_values = c.POSSIBLE_VALUES[proxy_type]
+            possible_values = get_possible_values(proxy_type, params)
             possible_values_list.append(possible_values)
 
+            proxy_type = proxy_name
+
             # Location of model weights
+            #TODO: refactor to get rid of 'full' checks
             if params[0].lower() != 'full':
                 weight_out_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_' + ''.join([f'{param}_' for param in params]) + c.MODEL_WEIGHTS_PATH)
             else:

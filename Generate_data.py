@@ -9,6 +9,7 @@ import PyDarktable as dt
 from Tapouts import tmp2tiff
 from utils.npy_convert import convert
 from utils.lhs import lhs
+from utils.misc import get_possible_values, sort_params
 
 class ParamSamplerIterator():
     '''
@@ -309,12 +310,7 @@ def generate_eval(proxy_type, param, params_file):
     print("Data for evaluation generated.")
     return params_mat
 
-def generate_pipeline(param_file, proxy_order, input_path, label_path, dng_path=None):
-    
-    # Reading in the list of input param values
-    params_list = None
-    with open(param_file, 'r') as file:
-        params_list = file.readlines()
+def generate_pipeline(proxy_order, input_path, label_path, dng_path=None):
 
     # Checking that input_path and label_path exist
     if not os.path.exists(input_path):
@@ -329,10 +325,6 @@ def generate_pipeline(param_file, proxy_order, input_path, label_path, dng_path=
         dng_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_DNG_PATH)
     src_images = os.listdir(dng_path)
 
-    # Information about tapout requirement for the ISP
-    tapouts = [c.TAPOUTS[proxy_order[0][0]][0], c.TAPOUTS[proxy_order[-1][0]][1]]
-    #tapouts = [c.TAPOUTS[proxy_type[0]] for proxy_type in proxy_order]
-
     for image in src_images:
 
         # Getting path of individual source DNG file
@@ -341,69 +333,38 @@ def generate_pipeline(param_file, proxy_order, input_path, label_path, dng_path=
         # Extracting necessary params from the source image
         raw_prepare_params, temperature_params = dt.read_dng_params(src_path)
 
-        # No need to render input image separately when using ISP tap-outs
-        if tapouts[0] is not None:
-            # Getting path of the input image
-            input_file_path = os.path.join(input_path, image.split('.')[0])
-            input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
+        # Getting possible values & sampling
+        proxy_type_list = []
+        param_names_list = []
+        sampled_values_list = []
+        for proxy_name, params in proxy_order:
+            proxy_type = proxy_name.split('_')[0]
+            proxy_type_list.append(proxy_type)
+            params = params.split('_')
+            param_names_list.append(sort_params(params))
+            sampled_values_list.append(lhs(get_possible_values(proxy_type, params), 1))
 
-            # Checking if input image already exists
-            # (this can happen if a previous data generation job was interrupted)
-            input_exists = os.path.exists(input_file_path)
-            
-            # Assembling a dictionary of all of the original params for the source image
-            # (used to render proxy input)
-            original_params = dt.get_params_dict(None, None, None, temperature_params, raw_prepare_params)
-
-            # Rendering an unchanged copy of the source image for model input
-            if not input_exists:
-                dt.render(src_path, input_file_path, original_params)
-
-        # Rendering ground truth labels for each set of pipeline parameters
-        for params in params_list:
-            param_id = params # Used to give ground truth images unique names
-            #params = param_id.split(',')
-            # NOTE: param_values is a list of lists
-            param_values = [[param for param in proxy.split('_')] for proxy in params.split(',')]
-
-            # Assembling a dictionary of all of the parameters to apply to the source DNG in order
-            # to render a given ground truth label image
-            # Temperature and rawprepare params must be maintained in order to produce expected results
-            params_dict = dt.get_params_dict(None, None, None, temperature_params, raw_prepare_params)
+        # Assembling a dictionary of all of the parameters to apply to the source DNG in order
+        # to render a given ground truth label image
+        # Temperature and rawprepare params must be maintained in order to produce expected results
+        params_dict = dt.get_params_dict(None, None, None, temperature_params, raw_prepare_params)
         
-            # Filling the dictionary
-            for idx, proxy_type, params in enumerate(proxy_order):
-                params_list = params.split('_')
-                params_dict = dt.get_params_dict(proxy_type, params_list, param_values[idx], None, None, dict=params_dict)
-            print('Assembled params dict: \n' + params_dict)
+        # Filling the dictionary with the sampled params
+        for proxy_type, param_names, sampled_values in zip(proxy_type_list, param_names_list, sampled_values_list):
+            params_dict = dt.get_params_dict(proxy_type, param_names, sampled_values, None, None, dict=params_dict)
+        print('Assembled params dict: \n' + params_dict)
 
-            # Rendering the ground truth image
-            label_file_path = os.path.join(label_path, f'{image}_pipeline_{param_id}')
-            label_file_path = (repr(label_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
-            if os.path.exists(label_file_path):# Skip ground truth images that already exist
-                continue
-            dt.render(src_path, label_file_path, params_dict)  
-        
-            # Checking if input & ground truth images need to be replaced with tapouts
-            if tapouts is not None:
-                
-                # Getting file path of the tapout
-                input_tapout_path = tapouts[0] + '.tmp'
-                gt_tapout_path = tapouts[1] + '.tmp'
-                #print('input tapout path: ' + input_tapout_path)
-                #print('ground truth tapout path: ' + gt_tapout_path)
+        # Rendering an image with Darktable
+        label_file_path = os.path.join(label_path, f'{image}_pipeline')
+        label_file_path = (repr(label_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
+        dt.render(src_path, label_file_path, params_dict)
 
-                # Getting path of the input image
-                input_file_path = os.path.join(input_path, image.split('.')[0])
-                input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
+        # Extracting input and GT tapouts
+        #TODO: uncomment me
+        #if proxy_type_list[-1].lower() != "colorout":
+            #os.remove(label_file_path)
+        #TODO: programmatically extract and convert .pfm tapouts
 
-                # Deleting final output image
-                os.remove(label_file_path)
-                print('replacing: ' + label_file_path)
-
-                # Read in the tapouts and save them as tiffs
-                tmp2tiff(input_tapout_path, input_file_path)
-                tmp2tiff(gt_tapout_path, label_file_path)
     print('Pipeline images generated.')
 
 def generate_finetune(proxy_type, param, finetune, param_finetune, possible_values, possible_values_finetune, num):

@@ -751,6 +751,7 @@ def render(src_dng_path, dst_path, pipe_stage_flags):
                                      delete=False) as f:
         f.write(get_pipe_xmp(**pipe_stage_flags))
         xmp_path = f.name
+    #TODO: add --dump-pipe arg
     args = [
         _DARKTABLE_CLI, src_dng_path, xmp_path, dst_path, "--core",
         "--disable-opencl", "-d", "perf"

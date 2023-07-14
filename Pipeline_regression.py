@@ -2,9 +2,9 @@ import sys
 sys.path.append('../')
 import numpy as np
 import os
+import argparse
 import matplotlib.pyplot as plt
 import torch
-import torch.nn as nn 
 import torch.optim as optim
 from torch.optim import lr_scheduler
 from torch.autograd import Variable
@@ -261,35 +261,42 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
     np.save(os.path.join(param_out_dir, f'pipeline_optimized_params.npy'), best_params_mat)
     print('Finished pipeline regression.')
 
-if __name__ == '__main__':
+if __name__ != '__main__':
+    raise RuntimeError("This script is only configured to be called directly by the user!")
 
-    # Creating stage 3 directory if it does not already exist
-    stage_3_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH)
-    if not os.path.exists(stage_3_path):
-        os.mkdir(stage_3_path)
-        print('Directory created at: ' + stage_3_path)
+parser = argparse.ArgumentParser()
+parser.add_argument("-s", "--skip", help="[OPTIONAL] Skip data generation", default=False, 
+                    action=argparse.BooleanOptionalAction)
+args = parser.parse_args()
+skip_data = args.skip
 
-    # Adjuting for gpu usage
-    use_gpu = torch.cuda.is_available()
+config_path = os.path.join(c.IMAGE_ROOT_DIR, c.CONFIG_FILE)
 
-    # Arguments
-    param_file = sys.argv[1]
+# Creating stage 3 directory if it does not already exist
+stage_3_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH)
+if not os.path.exists(stage_3_path):
+    os.mkdir(stage_3_path)
+    print('Directory created at: ' + stage_3_path)
 
-    # Getting paths to input and label data
-    input_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, c.STAGE_3_INPUT_DIR)
-    label_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, c.STAGE_3_OUTPUT_DIR)
+# Adjuting for gpu usage
+use_gpu = torch.cuda.is_available()
 
-    # Reading in proxy order
-    proxy_order = []
-    with open(os.path.join(c.IMAGE_ROOT_DIR, c.CONFIG_FILE), 'r') as file:
-        lines = file.readlines()
-        for line in lines:
-            proxy, params, enable = line.split(' ')
-            if int(enable) == 1:
-                proxy_order.append((proxy, params))
+# Getting paths to input and label data
+input_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, c.STAGE_3_INPUT_DIR)
+label_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, c.STAGE_3_OUTPUT_DIR)
 
-    # Generating data
-    generate_pipeline(param_file, proxy_order, input_path, label_path)
+# Reading in proxy order
+proxy_order = []
+with open(config_path, 'r') as file:
+    lines = file.readlines()
+    for line in lines:
+        proxy, params, enable = line.split(' ')
+        if int(enable) == 1:
+            proxy_order.append((proxy, params))
 
-    # Running regression procedure
-    regression_procedure(proxy_order, input_path, label_path, use_gpu)
+# Generating data
+if not skip_data:
+    generate_pipeline(proxy_order, input_path, label_path)
+
+# Running regression procedure
+regression_procedure(proxy_order, input_path, label_path, use_gpu)

@@ -10,20 +10,7 @@ import Generate_data as data
 import Constants as c
 import Train_proxy
 import Parameter_regression
-from utils.misc import get_possible_values, write_img_list, read_img_list
-
-def sort_params(proxy_type, params):
-    '''
-    Re-arrange the params list into a standard order (returns list)
-    '''
-    if params is None:
-        return c.POSSIBLE_VALUES[proxy_type]
-
-    names = c.PARAM_NAMES[proxy_type]
-    params_upper = [param.upper() for param in params]
-
-    sorted = [name.lower() for name in names if name.upper() in params_upper]
-    return sorted
+from utils.misc import get_possible_values, write_img_list, read_img_list, sort_params
 
 if __name__ != '__main__':
     raise RuntimeError("This script is only configured to be called directly by the user!")
