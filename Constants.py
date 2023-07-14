@@ -14,7 +14,7 @@ IMAGE_ROOT_DIR = '.'                     #   Root directory from which to constr
 INTERACTIVE = False                      #   Toggle interactive prompts between stages
 NUM_IMAGE_CHANNEL = 3                    # X Number of channels in each image (3 for RGB)
 IMG_SIZE = 736                           # X Dimensions to crop all images to (IMG_SIZE x IMG_SIZE)
-CLIP_OUTPUT = True                       # X Toggle clipping of proxy outputs
+CLIP_OUTPUT = False                       # X Toggle clipping of proxy outputs
 CLIP_RANGE = [0.0, 1.0]                 # X  Set lower and upper bounds to clip model outputs to
 RESCALE_PARAMS = True                    # X Toggle normalization of input parameters for model training/eval
 EMBEDDING_TYPE = 0                       # X Selects method of embedding parameters into a latent vector
@@ -24,7 +24,7 @@ DOWNSAMPLE_IMAGES = False                # X Toggles downsampling of training da
 NPF_BASELINE = False                     # X Toggles NPF model architecture
 
 # Data generation constants (Stage 0)
-GENERATE_STAGE_1 = True                  #   Toggles new data generation for proxy training (stage 1)
+GENERATE_STAGE_1 = False                  #   Toggles new data generation for proxy training (stage 1)
 GENERATE_STAGE_2 = False                 #   Toggles new data generation for slider regression (stage 2)
 INPUT_DIR = 'input/'                     #   Name of directories that store training data
 OUTPUT_DIR = 'output/'                   #   Name of directories that store ground truth data
@@ -33,10 +33,10 @@ STAGE_2_DNG_PATH = 'images/stage_2/'     # X Path to folder with all DNG files f
 STAGE_3_DNG_PATH = 'images/stage_3/'     # X Path to folder with all DNG files for pipeline regression
 
 # Training the proxies (Stage 1)
-TRAIN_PROXY = False                       #   Toggles proxy training
+TRAIN_PROXY = True                       #   Toggles proxy training
 STAGE_1_PATH = 'stage_1/'                #   Directory that stores all training data, model weights, and predictions
 PROXY_MODEL_BATCH_SIZE = 1               #   Batch size for proxy training
-PROXY_MODEL_NUM_EPOCH = 500              #   Number of epochs for which to train
+PROXY_MODEL_NUM_EPOCH = 1500              #   Number of epochs for which to train
 MODEL_WEIGHTS_PATH = 'model_weights/'    #   Name of directories where model weights are stored
 SAVE_OUTPUT_FREQ = 10                    #   Frequency at which to save model predictions (in terms of epochs)
 OUTPUT_PREDICTIONS_PATH = 'predictions/' #   Name of directories where model predictions are stored
@@ -114,7 +114,8 @@ POSSIBLE_VALUES = {
     'filmicrgb': [],
     'bloom': [(0.0, 100.0), (0.0, 100.0), (0.0, 100.0)],
     'colorize': [(0.0, 1.0), (0.0, 1.0), (0.0, 100.0), (0.0, 100.0)],
-    'soften': [(0.0, 100.0), (0.0, 100.0), (-2.0, 2.0), (0.0, 100.0)]
+    'soften': [(0.0, 100.0), (0.0, 100.0), (-2.0, 2.0), (0.0, 100.0)],
+    'highlights': [None]
 }
 '''
 Dictionary to store the range of possible values for every
@@ -137,7 +138,8 @@ PARAM_NAMES= {
     'bloom': ['size', 'threshold', 'strength'],
     'colorize': ['hue', 'saturation', 'source_lightness_mix',
                  'lightness'],
-    'soften': ['size', 'saturation', 'brightness','amount']
+    'soften': ['size', 'saturation', 'brightness','amount'],
+    'highlights': [None]
 }
 '''
 Dictionary to store which parameter name maps to which index
@@ -148,6 +150,7 @@ and not necessarily every param in the module (some are deprecated or
 not otherwise useful to learn)
 '''
  
+#TODO: deprecate
 TAPOUTS = {
 
     # Highlights needs to be trained on images that have
@@ -166,7 +169,7 @@ TAPOUTS = {
     # CENSORIZE, & LOWPASS
     'denoise': ['demosaic_out', 'denoise_out'],
     'hazeremoval': ['demosaic_out', 'hazeremoval_out'],
-    'exposure': ['demosaic_out', 'exposure_out'],
+    'exposure': ['exposure_in', 'exposure_out'],
     'graduateddensity': None,
     'colorin': ['colorin_in', 'colorbalancergb_out'],
 
@@ -203,7 +206,7 @@ List of Darktable blocks that do not require input parameters
 SAMPLER_BLOCKS = {
     'colorin': 'exposure_exposure',
     'colorout': 'colorbalancergb_contrast',
-    'demosaic': None
+    'demosaic': 'highlights_strength'
 }
 '''
 Dict of which blocks to sample parameters from for parameter-less

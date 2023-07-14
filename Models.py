@@ -15,6 +15,7 @@ import torchvision.models as models
 from collections import OrderedDict
 
 import matplotlib.pyplot as plt
+import tifffile
 import numpy as np
 import Constants as c
 
@@ -622,7 +623,14 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                             outputs_ndarray = outputs[0].detach().cpu().numpy()
                             outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
                             outputs_path = os.path.join(predictions_path, f'{name}_pred_epoch-{epoch}_{names[0]}')
-                            plt.imsave(outputs_path, outputs_ndarray, format='png')
+                            #try:
+                                #plt.imsave(outputs_path, outputs_ndarray, format='png')
+                            #except:
+                                #tifffile.imwrite(outputs_path, outputs_ndarray)
+                            #print("Outputs shape: " + str(outputs_ndarray.shape))
+                            #sys.stdout.flush()
+                            #quit()
+                            tifffile.imwrite(outputs_path, outputs_ndarray)
                         
                         loss = criterion(outputs, labels)
                         
@@ -661,7 +669,13 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                             outputs_ndarray = outputs[0].detach().cpu().numpy()
                             outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
                             outputs_path = os.path.join(predictions_path, f'{name}_pred_epoch-{epoch}_{names[0]}')
-                            plt.imsave(outputs_path, outputs_ndarray, format='png')
+                            #try:
+                                #plt.imsave(outputs_path, outputs_ndarray, format='png')
+                            #except:
+                                #tifffile.imwrite(outputs_path, outputs_ndarray)
+                            print("Outputs shape: " + str(outputs_ndarray.shape))
+                            sys.stdout.flush()
+                            tifffile.imwrite(outputs_path, outputs_ndarray)
                         
     #                    print("outputs {}".format(outputs.size()))
     #                    sys.stdout.flush()

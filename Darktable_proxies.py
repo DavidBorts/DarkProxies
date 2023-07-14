@@ -50,7 +50,7 @@ args = parser.parse_args()
 proxy_type = args.proxy
 params = args.params
 custom = args.custom
-dataset_name = args.dataset
+dataset_name = args.dataset + '_'
 num = int(args.number)
 num_regression = int(args.regression)
 
@@ -72,6 +72,7 @@ if custom is not None:
 if params is None and proxy_type not in c.NO_PARAMS:
     params = c.PARAM_NAMES[proxy_type]
 
+#TODO: these are likely redundant - can be moved into respective scripts
 # Stage 1 constants
 generate_stage_1 = c.GENERATE_STAGE_1
 stage_1_batch_size = c.PROXY_MODEL_BATCH_SIZE
@@ -83,7 +84,7 @@ generate_stage_2 = c.GENERATE_STAGE_2
 num_iters = c.PARAM_TUNING_NUM_ITER
 param_out_dir = c.STAGE_2_PARAM_PATH
 
-# If an existing dataset is being used, skip data generation
+# If an existing dataset is being used, always skip data generation
 if dataset_name is not None:
     generate_stage_1 = False
     generate_stage_2 = False
@@ -96,11 +97,8 @@ if append_params:
     possible_values = get_possible_values(proxy_type, params)
 else:
     # Proxy has no input parameters - use inputs of a "sampler" block instead
-    #TODO: replace with highlights or temperature to support demosaic?
-    if proxy_type == 'demosaic': # Temporary hack: not sweeping for demosaic
-        possible_values = [(None, None)]
-    else:
-        sampler_block, sampler_param = c.SAMPLER_BLOCKS[proxy_type].split('_')
+    sampler_block, sampler_param = c.SAMPLER_BLOCKS[proxy_type].split('_')
+    if proxy_type != 'demosaic':#FIXME: remove
         possible_values = get_possible_values(sampler_block, [sampler_param])
 
 # Creating stage 1 and 2 directories if they do not already exist
@@ -113,26 +111,26 @@ if not os.path.exists(stage_2_path):
     os.mkdir(stage_2_path)
     print('Directory created at: ' + stage_2_path)
 
-# Generating training data 
+# Generating training data
 # (This is done by performing a parameter sweep via Darktable's CLI)
 if generate_stage_1:
     print("Generating training data: stage 1")
-    gts_1 = data.generate(proxy_type, 
-                  params, 
-                  1, 
+    gts_1 = data.generate(proxy_type,
+                  params,
+                  1,
                   possible_values,
-                  num,  
+                  num,
                   name)
     print("Training data generated: stage 1")
     print("Writing image list...")
     write_img_list(name, 1, gts_1)
 if generate_stage_2:
     print("Generating training data: stage 2")
-    gts_2 = data.generate(proxy_type, 
-                  params, 
-                  2, 
+    gts_2 = data.generate(proxy_type,
+                  params,
+                  2,
                   possible_values,
-                  num_regression, 
+                  num_regression,
                   name)
     print("Training data generated: stage 2")
     print("Writing image list...")
@@ -141,17 +139,17 @@ if generate_stage_2:
 # Stage 1 - proxy training
 if c.TRAIN_PROXY:
     print("Begin proxy training (stage 1)")
-    use_gpu = torch.cuda.is_available() 
+    use_gpu = torch.cuda.is_available()
     if dataset_name is not None:
         gt_list = read_img_list(dataset_name, 1)
     else:
         gt_list = read_img_list(name, 1)
-    Train_proxy.run_training_procedure( 
-        weight_out_dir, 
-        stage_1_batch_size, 
-        num_epoch, 
-        use_gpu, 
-        possible_values, 
+    Train_proxy.run_training_procedure(
+        weight_out_dir,
+        stage_1_batch_size,
+        num_epoch,
+        use_gpu,
+        possible_values,
         proxy_type,
         params,
         append_params,

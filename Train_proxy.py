@@ -30,13 +30,14 @@ def get_num_input_channels(proxy_type, possible_params, append_params):
     '''
     TODO: add comment
     '''
-    # Bayer mosaics are always unpacked into 4 channels
+    # Bayer mosaics are always unpacked into 4 channels,
+    # with no appended parameter channels
     if proxy_type == "demosaic":
-        return 4
-    
+        return 4, 0
+
     num_channels = c.NUM_IMAGE_CHANNEL # input tensor
     params_size = (len(possible_params), c.IMG_SIZE, c.IMG_SIZE) # tuple size of the appended params
-    
+
     # Depending on c.EMBEDDING_TYPE, some number of parameter
     # channels might be appended to the input tensor
     #TODO: move this into Models.py
@@ -83,7 +84,7 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
 
     # Constants
     image_root_dir = c.IMAGE_ROOT_DIR
-    
+
     # Checking if user wants to train a proxy
     interactive = c.INTERACTIVE
     train = None
@@ -99,8 +100,6 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
         else:
             return
 
-    print('Begin proxy training (stage 1)')
-
     if not os.path.exists(model_out_dir):
         os.mkdir(model_out_dir)
         print('directory created at: ' + model_out_dir)
@@ -109,28 +108,28 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
     since = time.time()
     if dataset_name is not None:
         print(f'Loading data from: {dataset_name}')
-        image_dataset = Darktable_Dataset(image_root_dir, 
-                                        1, 
-                                        proxy_type, 
-                                        params, 
+        image_dataset = Darktable_Dataset(image_root_dir,
+                                        1,
+                                        proxy_type,
+                                        params,
                                         not append_params,
                                         dataset_name,
                                         param_ranges=possible_params,
                                         gt_list=gt_list)
     else:
-        image_dataset = Darktable_Dataset(image_root_dir, 
-                                        1, 
-                                        proxy_type, 
-                                        params, 
+        image_dataset = Darktable_Dataset(image_root_dir,
+                                        1,
+                                        proxy_type,
+                                        params,
                                         not append_params,
                                         name,
                                         param_ranges=possible_params,
                                         gt_list=gt_list)
-    train_loader = torch.utils.data.DataLoader(image_dataset, 
-                                               batch_size=batch_size, 
+    train_loader = torch.utils.data.DataLoader(image_dataset,
+                                               batch_size=batch_size,
                                                sampler=image_dataset.train_sampler,
                                                num_workers=1)
-    val_loader = torch.utils.data.DataLoader(image_dataset, 
+    val_loader = torch.utils.data.DataLoader(image_dataset,
                                              batch_size=batch_size,
                                              sampler=image_dataset.val_sampler,
                                              num_workers=1)
@@ -151,10 +150,12 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
     num_channels, params_size = get_num_input_channels(proxy_type, possible_params, append_params)
     model = None
     if proxy_type == "demosaic":
+        print("model: ChenNet")
         #model = DemosaicNet(num_input_channels=num_channels, num_output_channels=12,
                             #skip_connect=skip_connect, clip_output=clip_output)
         model = ChenNet(0, clip_output=clip_output, add_params=False)
     else:
+        print("model: UNET")
         channel_list = [32, 64, 128, 256, 512]
         if c.NPF_BASELINE:
             channel_list = [16, 32, 64, 128, 256]

@@ -94,7 +94,7 @@ class Darktable_Dataset(Dataset):
         else:
             # Sorting image list
             self.image_name_list = os.listdir(self.output_image_dir)
-            if self.proxy_type == "demosaic":#TODO: temporary hack - delete me!
+            if self.proxy_type == "demosaic" or self.proxy_type == "colorin":#TODO: temporary hack - delete me!
                 self.image_name_list.sort()
             else:
                 self.image_name_list.sort(key=lambda x: (x.split(".")[0], float(x.split("_")[3].split(".tif")[0])))
@@ -231,8 +231,12 @@ class Darktable_Dataset(Dataset):
         #print('input image name: ' + input_image_name)
         #input_image = imageio.imread(os.path.join(self.input_image_dir, input_image_name))	
         #input_image = tifffile.imread(os.path.join(self.input_image_dir, input_image_name))	
-        input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))	
-        input_image = ImageOps.exif_transpose(input_image)	
+        try:
+            input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
+            input_image = ImageOps.exif_transpose(input_image)
+        except:
+            input_image = imageio.imread(os.path.join(self.input_image_dir, input_image_name))
+        #input_image = ImageOps.exif_transpose(input_image)
         #print("input image shape:")	
         #print(input_image.shape)
         #input_image = input_image.astype(np.float32) #TODO: do we need this??
@@ -309,9 +313,9 @@ class Darktable_Dataset(Dataset):
             # Saving crops
             if c.SAVE_CROPS and self.sweep == False:
 
-                if self.proxy_type != "demosaic":	
-                    input_ndarray = proxy_model_input.detach().cpu().numpy()	
-                else:	
+                if self.proxy_type != "demosaic":
+                    input_ndarray = proxy_model_input.detach().cpu().numpy()
+                else:
                     input_ndarray = pre_pack_input.detach().cpu().numpy()
                 input_ndarray = np.moveaxis(input_ndarray, 0, -1).copy(order='C')
 
@@ -319,7 +323,7 @@ class Darktable_Dataset(Dataset):
                 if not os.path.exists(crop_input_path):
                     os.mkdir(crop_input_path)
                     print('directory created at: ' + crop_input_path)
-                    
+
                 input_path = os.path.join(crop_input_path, f'crop_{image_name}')
                 if self.proxy_type == "demosaic" and not os.path.exists(input_path):
                     #Image.fromarray(input_ndarray).save(input_path, c.CROP_FORMAT)
@@ -340,7 +344,11 @@ class Darktable_Dataset(Dataset):
 
                 label_path = os.path.join(crop_label_path, f'crop_{image_name}')
                 if not os.path.exists(label_path):
-                    plt.imsave(label_path, label_ndarray, format=c.CROP_FORMAT)
+                    #TODO - switch to .tif crops only
+                    try:
+                        plt.imsave(label_path, label_ndarray, format=c.CROP_FORMAT)
+                    except:
+                        tifffile.imwrite(label_path, label_ndarray)
                     #print('crop saved: ground truth')
 
             # Appending parameter tensor
