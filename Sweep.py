@@ -22,7 +22,7 @@ from Dataset import Darktable_Dataset
 from Loss_functions import losses
 import Constants as c
 import PyDarktable as dt
-from npy_convert import convert
+from utils.npy_convert import convert
 
 # Constants
 add_params = True
