@@ -62,8 +62,6 @@ STAGE_3_PATH = 'stage_3/'                #   Directory that stores all training 
 STAGE_3_INPUT_DIR = 'input/'             #   Directory that stores all training data
 STAGE_3_OUTPUT_DIR = 'output/'           #   Directory that stores all ground truth data
 STAGE_3_PARAM_DIR = 'params/'            #   Directory that stores optimized proxy params
-#TODO: delete this
-STAGE_3_LOSS_FN = 'Perceptual'           #   Loss function for pipeline regression (Default: spatial)
 CONFIG_FILE = 'pipeline_config.txt'      # X Path to file with pipeline conifugration
 PIPELINE_REGRESSION_NUM_ITERS = 2000     #   Number of regression iterations per image
 PIPELINE_CREATE_ANIMATION = True         #   If True, saves frames from regression to use for animations
