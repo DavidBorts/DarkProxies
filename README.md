@@ -19,8 +19,8 @@ __3.__ Chain blocks together into a single pipeline
 
 To use the code in this repository, there are several essential prerequisites.
 
-### Install Darktable
-Before running any code, make sure that you have __Darktable__ installed on your system. This can be done for free at https://www.darktable.org/install/. This repository relies on Darktable's CLI to generate ground truth data for the neural proxies. 
+### Build our Modified Version of Darktable
+This repository still relies on Darktable's CLI to generate ground truth data for the neural proxies. Before running any code, make sure that you have __Darktable__ built on your system. The scripts in this repository are configured to run with a custom version of Darktable that saves intermediate tap-outs (inputs and outputs to each image processing operation) in between each block. Therefore, our version must be built in order to access all of this codebase's functionality.
 
 ### Set Darktable Path
 The various parameters and constants used throughout this repository are all stored in ```Darktable_constants.py```. One of these __must__ be set to match your system specifications before running. In the file, replace ```DARKTABLE_PATH``` with the correct, absolute path to ```darktable-cli.exe``` on your own system

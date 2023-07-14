@@ -1,13 +1,11 @@
 import math
 import numpy as np
-import sys
-import os
 import struct
 import subprocess
 import tempfile
 import rawpy
 from dataclasses import dataclass, field, fields
-import Darktable_constants as c
+import Constants as c
 
 # Point me to darktable-cli for 3.8.
 #_DARKTABLE_CLI = "/Applications/darktable.app/Contents/MacOS/darktable-cli"
@@ -193,14 +191,53 @@ _FMT_STR = '''<?xml version="1.0" encoding="UTF-8"?>
       darktable:multi_name=""
       darktable:multi_priority="0"
       darktable:blendop_version="11"
-      darktable:blendop_params="000000000400000018000000000000000000c84200000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000000000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f0000000000000000000000000000000000000000000000000000000000000000789ad4c0789ad4c00000000000000000789ad4c0789ad4c000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>  
+      darktable:blendop_params="000000000400000018000000000000000000c84200000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000000000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f00000000000000000000803f0000803f0000000000000000000000000000000000000000000000000000000000000000789ad4c0789ad4c00000000000000000789ad4c0789ad4c000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
+      <rdf:li
+      darktable:num="16"
+      darktable:operation="graduatednd"
+      darktable:enabled="{enable_graduateddensity}"
+      darktable:modversion="1"
+      darktable:params="{graduateddensity_params}"
+      darktable:multi_name=""
+      darktable:multi_priority="0"
+      darktable:blendop_version="11"
+      darktable:blendop_params="gz10eJxjYGBgYAFiCQYYOOHEgAZY0QVwggZ7CB6pfOygYtaVAyCMi08IAAB/xiOk"/>
+      <rdf:li
+      darktable:num="17"
+      darktable:operation="bloom"
+      darktable:enabled="{enable_bloom}"
+      darktable:modversion="1"
+      darktable:params="{bloom_params}"
+      darktable:multi_name=""
+      darktable:multi_priority="0"
+      darktable:blendop_version="11"
+      darktable:blendop_params="gz13eJxjYGBgYAJiCQYYOOHEgAZY0QVwggZ7CB6pfNoAAFJgGQo="/>
+      <rdf:li
+      darktable:num="18"
+      darktable:operation="colorize"
+      darktable:enabled="{enable_colorize}"
+      darktable:modversion="2"
+      darktable:params="{colorize_params}"
+      darktable:multi_name=""
+      darktable:multi_priority="0"
+      darktable:blendop_version="11"
+      darktable:blendop_params="gz13eJxjYGBgYAJiCQYYOOHEgAZY0QVwggZ7CB6pfNoAAFJgGQo="/>
+      <rdf:li
+      darktable:num="19"
+      darktable:operation="soften"
+      darktable:enabled="{enable_soften}"
+      darktable:modversion="1"
+      darktable:params="{soften_params}"
+      darktable:multi_name=""
+      darktable:multi_priority="0"
+      darktable:blendop_version="11"
+      darktable:blendop_params="gz10eJxjYGBgYAFiCQYYOOHEgAZY0QVwggZ7CB6pfOygYtaVAyCMi08IAAB/xiOk"/>
     </rdf:Seq>
    </darktable:history>
   </rdf:Description>
  </rdf:RDF>
 </x:xmpmeta>
 '''
-
 
 def to_hex_string(x):
     if type(x) == bytes:
@@ -238,10 +275,8 @@ class RawPrepareParams:
     def to_hex_string(self):
         return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
 
-
 def make_black_levels(bl_0, bl_1, bl_2, bl_3):
     return [np.uint16(bl_0), np.uint16(bl_1), np.uint16(bl_2), np.uint16(bl_3)]
-
 
 @dataclass
 class ColorBalanceRGBParams:
@@ -296,16 +331,15 @@ class ExposureParams:
     # DEFLICKER = 1  "automatic"
     mode: int = 0
 
-    black: float = 0.0
-    exposure: float = 0.0
-    deflicker_percentile: float = 50.0
-    deflicker_target_level: float = -4.0
+    black: float = 0.0 # $MIN: -1.0 $MAX: 1.0 $DEFAULT: 0.0 $DESCRIPTION: "black level correction"
+    exposure: float = 0.0 #  $MIN: -18.0 $MAX: 18.0 $DEFAULT: 0.0
+    deflicker_percentile: float = 50.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 50.0 $DESCRIPTION: "percentile"
+    deflicker_target_level: float = -4.0 # $MIN: -18.0 $MAX: 18.0 $DEFAULT: -4.0 $DESCRIPTION: "target level"
 
     compensate_exposure_bias: bool = False
 
     def to_hex_string(self):
         return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
-
 
 @dataclass
 class FilmicRGBParams:
@@ -354,8 +388,8 @@ class FilmicRGBParams:
     def to_hex_string(self):
         return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
 
-
 # dt_iop_highlights_params_t
+#TODO: Update to reflected updated params in Darktable highlights.c source code
 @dataclass
 class HighlightsParams:
     # In C, they are enums:
@@ -377,9 +411,9 @@ class HighlightsParams:
 
 @dataclass
 class SharpenParams:
-    radius: float = 8.0
-    amount: float = 0.5
-    threshold: float = 0.5
+    radius: float = 8.0 # $MIN: 0.0 $MAX: 99.0 $DEFAULT: 2.0
+    amount: float = 0.5 # $MIN: 0.0 $MAX: 2.0 $DEFAULT: 0.5
+    threshold: float = 0.5 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 0.5
 
     def to_hex_string(self):
         return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
@@ -469,6 +503,47 @@ class TemperatureParams:
 
     def to_hex_string(self):
         return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
+    
+@dataclass
+class ColorizeParams:
+    hue: float = 0.0 # $MIN: 0.0 $MAX: 1.0 $DEFAULT: 0.0
+    saturation: float = 0.5 # $MIN: 0.0 $MAX: 1.0 $DEFAULT: 0.5
+    source_lightness_mix: float = 50.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 50.0 $DESCRIPTION: "source mix"
+    lightness: float = 50.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 50.0
+
+    def to_hex_string(self):
+        return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
+
+@dataclass
+class GraduatedDensityParams:
+    density: float = 1.0 # $MIN: -8.0 $MAX: 8.0 $DEFAULT: 1.0 $DESCRIPTION: "density" The density of filter 0-8 EV
+    hardness: float = 0.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 0.0 $DESCRIPTION: "hardness" 0% = soft and 100% = hard
+    rotation: float = 0.0 # $MIN: -180.0 $MAX: 180.0 $DEFAULT: 0.0 $DESCRIPTION: "rotation" 2*PI -180 - +180
+    offset: float = 50.0 # $DEFAULT: 50.0 $DESCRIPTION: "offset" centered, can be offsetted...
+    hue: float = 0.0 # $MIN: 0.0 $MAX: 1.0 $DEFAULT: 0.0 $DESCRIPTION: "hue"
+    saturation: float = 0.0 # $MIN: 0.0 $MAX: 1.0 $DEFAULT: 0.0 $DESCRIPTION: "saturation"
+
+    def to_hex_string(self):
+        return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
+
+@dataclass
+class SoftenParams:
+    size: float = 50.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 50.0
+    saturation: float = 100.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 100.0
+    brightness: float = 0.33 # $MIN: -2.0 $MAX: 2.0 $DEFAULT: 0.33
+    amount: float = 50.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 50.0 $DESCRIPTION: "mix"
+
+    def to_hex_string(self):
+        return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
+    
+@dataclass
+class BloomParams:
+    size: float = 20.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 20.0
+    threshold: float = 90.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 90.0
+    strength: float = 25.0 # $MIN: 0.0 $MAX: 100.0 $DEFAULT: 25.0
+
+    def to_hex_string(self):
+        return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
 
 # Return temperature and rawprepare params for input DNG file
 def read_dng_params(dng_file):
@@ -487,89 +562,149 @@ def read_dng_params(dng_file):
         # temperature_params.g2 = float(raw.camera_whitebalance[3])
     return raw_prepare_params, temperature_params
 
+def fill(params_dict, proxy_type, params, values):
+    ops = {
+        "colorbalancergb": ColorBalanceRGBParams,
+        "highlights": HighlightsParams,
+        "sharpen": SharpenParams,
+        "exposure": ExposureParams,
+        "graduateddensity": GraduatedDensityParams,
+        "hazeremoval": HazeRemovalParams,
+        "denoiseprofile": DenoiseProfileParams,
+        "lowpass": LowpassParams,
+        "censorize": CensorizeParams,
+        "filmicrgb": FilmicRGBParams,
+        "bloom": BloomParams,
+        "colorize": ColorizeParams,
+        "soften": SoftenParams
+    }
+    params_class = ops[proxy_type]()
+
+    #TODO: replace enumerate w/ zip)() ??
+    for i, param in enumerate(params):
+        setattr(params_class, param, float(values[i]))
+
+    params_dict[f"{proxy_type}_params"] = params_class
+    return params_dict
+
+'''
 class functions:
     @staticmethod
-    def colorbalancergb(value, params_dict, param='contrast'):# should be colorbalancergb()
+    def colorbalancergb(params_dict, params, values):
         colorbalancergb_params = ColorBalanceRGBParams()
-        setattr(colorbalancergb_params, param, float(value))
-        #colorbalancergb_params.contrast = float(value)
+
+        for i, param in enumerate(params):
+            setattr(colorbalancergb_params, param, float(values[i]))
+        
         params_dict["colorbalancergb_params"] = colorbalancergb_params
         return params_dict
     
     @staticmethod
-    def sharpen(value, params_dict, param='amount'):
+    def highlights(params_dict, params, values):
+        highlights_params = HighlightsParams()
+
+        for i, param in enumerate(params):
+            setattr(highlights_params, param, float(values[i]))
+
+        params_dict["highlights_params"] = highlights_params
+        return params_dict
+    
+    @staticmethod
+    def sharpen(params_dict, params, values):
         sharpen_params = SharpenParams()
-        setattr(sharpen_params, param, float(value))
-        #sharpen_params.amount = float(value)
+
+        for i, param in enumerate(params):
+            setattr(sharpen_params, param, float(values[i]))
+
         params_dict["sharpen_params"] = sharpen_params
         return params_dict
     
     @staticmethod
-    def exposure(value, params_dict, param='exposure'):
+    def exposure(params_dict, params, values):
         exposure_params = ExposureParams()
-        setattr(exposure_params, param, float(value))
-        #exposure_params.exposure = float(value)
+
+        for i, param in enumerate(params):
+            setattr(exposure_params, param, float(values[i]))
+
         params_dict["exposure_params"] = exposure_params
         return params_dict
     
     @staticmethod
-    def hazeremoval(value, params_dict, param='strength'):
+    def hazeremoval(params_dict, params, values):
         hazeremoval_params = HazeRemovalParams()
-        setattr(hazeremoval_params, param, float(value))
-        #hazeremoval_params.strength = float(value)
+
+        for i, param in enumerate(params):
+            setattr(hazeremoval_params, param, float(values[i]))
+
         params_dict["hazeremoval_params"] = hazeremoval_params
         return params_dict
     
     @staticmethod
-    def denoiseprofile(value, params_dict, param='strength'):
+    def denoiseprofile(params_dict, params, values):
         denoiseprofile_params = DenoiseProfileParams()
-        setattr(denoiseprofile_params, param, float(value))
-        #denoiseprofile_params.strength = float(value)
+
+        for i, param in enumerate(params):
+            setattr(denoiseprofile_params, param, float(values[i]))
+
         params_dict["denoiseprofile_params"] = denoiseprofile_params
         return params_dict
     
     @staticmethod
-    def lowpass(value, params_dict, param='radius'):
+    def lowpass(params_dict, params, values):
         lowpass_params = LowpassParams()
-        setattr(lowpass_params, param, float(value))
-        #lowpass_params.radius = float(value)
+
+        for i, param in enumerate(params):
+            setattr(lowpass_params, param, float(values[i]))
+
         params_dict["lowpass_params"] = lowpass_params
         return params_dict
     
     @staticmethod
-    def censorize(value, params_dict, param='pixelate'):
+    def censorize(params_dict, params, values):
         censorize_params = CensorizeParams()
-        setattr(censorize_params, param, float(value))
+
+        for i, param in enumerate(params):
+            setattr(censorize_params, param, float(values[i]))
+
         params_dict["censorize_params"] = censorize_params
         return params_dict
-
+'''
+        
 # Pipeline order is as follows, * means it can be skipped and therefore has a bool param.
 # 0 rawprepare
-# 1 temperature      *
-# 2 highlights       *
+# 1 temperature       *
+# 2 highlights        *
 # 3 demosaic
-# 4 denoise(profiled)*
-# 5 hazeremoval      *
-# 6 flip             *
-# 7 exposure         *
-# 8 colorin
-# 9 censorize        *
-# 10 lowpass         *
-# 11 sharpen         *
-# 12 colorbalancergb *
-# 13 filmicrgb       *
-# 14 colorout
+# 4 denoise(profiled) *
+# 5 hazeremoval       *
+# 6 flip              *
+# 7 exposure          *
+# 8 graduated density *
+# 9 colorin
+# 10 censorize        *
+# 11 lowpass          *
+# 12 sharpen          *
+# 13 colorbalancergb  *
+# 14 filmicrgb        *
+# 15 bloom            *
+# 16 colorize         *
+# 17 soften           *
+# 1X colorout
 def get_pipe_xmp(raw_prepare_params=RawPrepareParams(),
                  temperature_params=TemperatureParams(),
                  highlights_params=HighlightsParams(),
                  denoiseprofile_params=DenoiseProfileParams(),
                  hazeremoval_params=HazeRemovalParams(),
                  exposure_params=ExposureParams(),
-                 lowpass_params=LowpassParams(),
+                 graduateddensity_params=GraduatedDensityParams(),
                  censorize_params=CensorizeParams(),
+                 lowpass_params=LowpassParams(),
                  sharpen_params=SharpenParams(),
                  colorbalancergb_params=ColorBalanceRGBParams(),
-                 filmicrgb_params=FilmicRGBParams()):
+                 filmicrgb_params=FilmicRGBParams(),
+                 bloom_params=BloomParams(),
+                 colorize_params=ColorizeParams(),
+                 soften_params=SoftenParams()):
     def zineo(x):
         return 0 if x is None else 1
 
@@ -591,6 +726,8 @@ def get_pipe_xmp(raw_prepare_params=RawPrepareParams(),
         hazeremoval_params=to_hex(hazeremoval_params, HazeRemovalParams()),
         enable_exposure=zineo(exposure_params),
         exposure_params=to_hex(exposure_params, ExposureParams()),
+        enable_graduateddensity=zineo(graduateddensity_params),
+        graduateddensity_params=to_hex(graduateddensity_params, GraduatedDensityParams()),
         enable_lowpass=zineo(lowpass_params),
         lowpass_params=to_hex(lowpass_params, LowpassParams()),
         enable_censorize=zineo(censorize_params),
@@ -601,8 +738,13 @@ def get_pipe_xmp(raw_prepare_params=RawPrepareParams(),
         colorbalancergb_params=to_hex(colorbalancergb_params,
                                       ColorBalanceRGBParams()),
         enable_filmicrgb=zineo(filmicrgb_params),
-        filmicrgb_params=to_hex(filmicrgb_params, FilmicRGBParams()))
-
+        filmicrgb_params=to_hex(filmicrgb_params, FilmicRGBParams()),
+        enable_bloom=zineo(bloom_params),
+        bloom_params=to_hex(bloom_params, BloomParams()),
+        enable_colorize=zineo(colorize_params),
+        colorize_params=to_hex(colorize_params, ColorizeParams()),
+        enable_soften=zineo(soften_params),
+        soften_params=to_hex(soften_params, SoftenParams()))
 
 def render(src_dng_path, dst_path, pipe_stage_flags):
     with tempfile.NamedTemporaryFile(mode="w+t", suffix=".xmp",
@@ -616,15 +758,19 @@ def render(src_dng_path, dst_path, pipe_stage_flags):
     print('Running:\n', ' '.join(args), '\n')
     subprocess.run(args)
 
-def get_params_dict(proxy_type, param, value, temperature_params, raw_prepare_params, dict=None):
+def get_params_dict(proxy_type, param_names, values, temperature_params, raw_prepare_params, dict=None):
 
     params_dict = {
+        'soften_params': None,
+        'colorize_params': None,
+        'bloom_params': None,
         'filmicrgb_params': None,
         'colorbalancergb_params': None,
         'sharpen_params': None,
         'censorize_params': None,
         'lowpass_params': None,
         'exposure_params': None,
+        'graduateddensity_params': None,
         'hazeremoval_params': None,
         'denoiseprofile_params': None,
         'highlights_params': None,
@@ -636,32 +782,17 @@ def get_params_dict(proxy_type, param, value, temperature_params, raw_prepare_pa
     if proxy_type is None:
         return params_dict
 
-    # If a dict is provided, use that instead
+    #TODO: is this necessary?
+    proxy = proxy_type
+    params = param_names
+
+    # If a dict is provided, use that instead of creating
+    # a new one from scratch
     if dict != None:
         params_dict = dict
 
     # Setting params
-    fill_dict = getattr(functions, proxy_type)
-    params_dict = fill_dict(value, params_dict, param=param)
-
+    #fill_dict = getattr(functions, proxy)
+    #params_dict = fill_dict(params_dict, params, values)
+    params_dict = fill(params_dict, proxy, params, values)
     return params_dict
-
-if __name__ == '__main__':
-    proxy_type, param = sys.argv[1].split('_')
-    value = float(sys.argv[2])
-    dng_path = sys.argv[3]
-    output_dir = sys.argv[4]
-
-    # Constants
-    image = dng_path.split('\\')[-1]
-    print('image: ' + image)
-
-    # Extracting necessary params from the source image
-    raw_prepare_params, temperature_params = read_dng_params(dng_path)
-
-    output_path = os.path.join(output_dir, f'{image}_{proxy_type}_{param}')
-    output_path = (repr(output_path).replace('\\\\', '/')).strip("'") + f'_{value}.png' # Dealing with Darktable CLI pickiness
-
-    params_dict = get_params_dict(proxy_type, param, value, temperature_params, raw_prepare_params)
-
-    render(dng_path, output_path, params_dict)

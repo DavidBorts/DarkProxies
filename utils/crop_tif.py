@@ -1,9 +1,10 @@
 '''
 Utility script to crop any .tif image such that it meets
-the dimensions laid out in Darktable_constants.py\
+the dimensions specified in Darktable_constants.py
 
-How to use: python ./utils/crop_tif.py [PATH TO .TIF FILE]  [PATH TO DIRECTORY AT WHICH TO SAVE CROPPED IMAGE]
+How to use: python ./utils/crop_tif.py [PATH TO .TIF FILE] [PATH TO DIRECTORY AT WHICH TO SAVE CROPPED IMAGE]
 '''
+# TODO: update to support Demosaic
 
 import os
 import sys
@@ -15,7 +16,7 @@ from torch.nn.functional import interpolate
 from torchvision import transforms
 
 # Local files
-import Darktable_constants as c
+import Constants as c
 
 # Command-line args
 path = sys.argv[1]

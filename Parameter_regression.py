@@ -16,9 +16,10 @@ from torch.autograd import Variable
 from torchvision import transforms
 
 # Local files
-import Darktable_constants as c
+import Constants as c
 from Models import UNet
-from Darktable_dataset import Darktable_Dataset
+from Dataset import Darktable_Dataset
+from Loss_functions import losses
 
 '''
 Returns an initial guess vector. The values of the initial guess are determined randomly uniformly.
@@ -194,17 +195,25 @@ def run_finetune_procedure(
     num_iters,
     use_gpu,
     proxy_type,
-    param,
-    interactive
+    param
 ):
 
     # Checking if user wants to finetune params
+    interactive = c.INTERACTIVE
     finetune = None
     while finetune is not 'n' and finetune is not 'y' and interactive:
         finetune = input('Proceed to finetuning? (y/n)\n')
     if finetune is 'n':
         print('quitting')
         quit()
+
+    # Checking that the given proxy is one that has input parameters
+    # (Models that do not take input parameters have nothing to regress
+    # over)
+    if proxy_type in c.NO_PARAMS:
+        print(f'{proxy_type} has no input parameters and therefore cannot be used for stage 2.')
+        print('Skipping stage 2.')
+        return
 
     # Getting model weights
     weights_list = os.listdir(weight_out_dir)
@@ -249,7 +258,8 @@ def run_finetune_procedure(
     if torch.cuda.device_count() > 1:
         unet = nn.DataParallel(unet)
 
-    criterion = nn.L1Loss()
+    #criterion = nn.L1Loss()
+    criterion = losses[c.WHICH_LOSS[proxy_type][1]]
 
     # Getting the range of each param
     param_ranges = []

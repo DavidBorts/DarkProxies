@@ -5,7 +5,7 @@
 # 
 # Sample ffmpeg command: ffmpeg -r 25 -f image2 -s 1920x1080 -i [image name]_[proxy type]_[parameter]_sweep_%04d.png -vcodec libx264 -crf 15  -pix_fmt yuv420p [VIDEO NAME].mp4
 #
-# How to use: python Darktable_sweep.py [proxy type]_[parameter] [path to .DNG image to use as input] [integer number of values to sweep over]
+# How to use: python Sweep.py [proxy type]_[parameter] [path to .DNG image to use as input] [integer number of values to sweep over]
 #TODO: Support multiple params per proxy
 
 import sys
@@ -18,8 +18,9 @@ import torch.optim as optim
 
 # Local files
 from Models import UNet, load_checkpoint, eval
-from Darktable_dataset import Darktable_Dataset
-import Darktable_constants as c
+from Dataset import Darktable_Dataset
+from Loss_functions import losses
+import Constants as c
 import PyDarktable as dt
 from npy_convert import convert
 
@@ -100,7 +101,8 @@ def model_init(model_out_dir, possible_params):
         unet = nn.DataParallel(unet)
         
     # criterion is the loss function, which can be nn.L1Loss() or nn.MSELoss()
-    criterion = nn.MSELoss()
+    #criterion = nn.MSELoss()
+    criterion = losses[c.WHICH_LOSS[proxy_type][0]]
     optimizer = optim.Adam(unet.parameters(), lr=learning_rate)
     
     print('Model initialized')

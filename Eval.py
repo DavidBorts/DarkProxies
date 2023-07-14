@@ -3,16 +3,16 @@
 # Evaluates any given model on any number of specified parameter values.
 # Handles both data generation and evaluation in one script.
 #
-# How to use: python Darktable_eval.py [proxy type]_[parameter] [path to .txt file with parameters to evaluate on]
+# How to use: python Eval.py [proxy type]_[parameter] [path to .txt file with parameters to evaluate on]
 
 import os
 import sys
 import torch
 
 # Local files
-from Darktable_generate_data import generate_eval
-from Darktable_train_proxy import run_eval_procedure
-import Darktable_constants as c
+from Generate_data import generate_eval
+from Train_proxy import run_eval_procedure
+import Constants as c
 
 # Command-line arguments
 proxy_type, param = sys.argv[1].split('_') # proxy type and parameter type

@@ -9,17 +9,18 @@ import sys
 import time
 import torch
 import torch.nn as nn
-import torch.optim as optim
+import torch.nn.functional as f
 import torchvision.models as models
 
 from collections import OrderedDict
-from torch.optim import lr_scheduler
 
 import matplotlib.pyplot as plt
+import tifffile
 import numpy as np
-import Darktable_constants as c
+import Constants as c
 
 DEFAULT_UNET_CHANNEL_LIST = [32, 64, 128, 256, 512] # Same as in 'Learning to see in the Dark'
+DEFAULT_DEMOSAICNET_CHANNEL_LIST = [32, 64, 128, 256, 512] # Same as in 'Learning to see in the Dark'
 DEFAULT_FCNET_CHANNEL_LIST = [32, 64, 128, 256, 256, 128, 64, 32, 1]
 
 def fc_relu(in_channels, out_channels):
@@ -68,10 +69,21 @@ def double_conv(in_channels, out_channels):
     )
 
 '''
+Basic building block of the DemosaicNet
+'''
+def double_conv_leaky(in_channels, out_channels):
+    return nn.Sequential(
+        nn.Conv2d(in_channels, out_channels, 3, padding=1),
+        nn.LeakyReLU(inplace=True, negative_slope=0.2),
+        nn.Conv2d(out_channels, out_channels, 3, padding=1),
+        nn.LeakyReLU(inplace=True, negative_slope=0.2)
+    )
+
+'''
 UNet implementation. This UNet allows for a single skip connection from input to output.
 '''
 class UNet(nn.Module):   
-    def __init__(self, num_input_channels, num_output_channels, skip_connect=True, add_params=True, clip_output=True, channel_list=DEFAULT_UNET_CHANNEL_LIST):
+    def __init__(self, num_input_channels, num_output_channels, skip_connect=True, add_params=True, clip_output=True, channel_list=DEFAULT_UNET_CHANNEL_LIST, num_params=None, params_size=None):
         super().__init__()
         if not len(channel_list) == 5:
             raise ValueError('channel_list argument should be a list of integers of size 5.')
@@ -79,6 +91,10 @@ class UNet(nn.Module):
         self.num_output_channels = num_output_channels
         self.skip_connect = skip_connect
         self.add_params = add_params
+        self.embedding_type = c.EMBEDDING_TYPES[c.EMBEDDING_TYPE]
+        self.embed = self.embedding_type != "none"
+        self.param_channels = num_input_channels - num_output_channels
+        self.params_size = params_size
         self.clip_output = clip_output
 
         if self.add_params:
@@ -86,18 +102,47 @@ class UNet(nn.Module):
             # Downsamples for param channels.
             in_channel_list = []
             for channel in channel_list:
-                self.down1 = nn.AvgPool2d(2)
-                self.down2 = nn.AvgPool2d(2)
-                self.down3 = nn.AvgPool2d(2) 
-                self.down4 = nn.AvgPool2d(2)
-                in_channel_list.append(channel + num_input_channels - num_output_channels) 
+                self.down1 = nn.MaxPool2d(2)
+                self.down2 = nn.MaxPool2d(2)
+                self.down3 = nn.MaxPool2d(2) 
+                self.down4 = nn.MaxPool2d(2)
+                # self.down1 = nn.AvgPool2d(2)
+                # self.down2 = nn.AvgPool2d(2)
+                # self.down3 = nn.AvgPool2d(2) 
+                # self.down4 = nn.AvgPool2d(2)
+                in_channel_list.append(channel + self.param_channels) 
         else:
-            in_channel_list = channel_list 
+            in_channel_list = channel_list
+        print("input channels: " + str(in_channel_list))
         
         if self.skip_connect:
             print('Adding skip connection from input to output.')
         if self.clip_output:
             print('Clipping output of model.')
+
+        # Param embedding
+        if self.embed:
+            print("Embedding input parameters.")
+            if self.embedding_type == "linear_to_channel":
+                final = int(self.param_channels*(c.IMG_SIZE * c.IMG_SIZE / 256))
+                intermediate = int(np.ceil((final + num_params)/2.0))
+                print("Embedding layer sizes: " + str((num_params, intermediate, final)))
+                self.param_embedding = nn.Sequential(
+                                            nn.Linear(num_params, intermediate),
+                                            nn.ReLU(inplace=True),
+                                            nn.Linear(intermediate, final),
+                                            nn.ReLU(inplace=True)
+                                        )
+            else: # embedding type is "linear_to_value"
+                final = self.param_channels
+                intermediate = int(np.ceil((num_params)*2))
+                print("Embedding layer sizes: " + str((num_params, intermediate, final)))
+                self.param_embedding = nn.Sequential(
+                                            nn.Linear(num_params, intermediate),
+                                            nn.ReLU(inplace=True),
+                                            nn.Linear(intermediate, final),
+                                            nn.ReLU(inplace=True)
+                                        )
             
         # Down
         self.conv_down_1 = double_conv(self.num_input_channels, channel_list[0])              # num_input_channels -> 32
@@ -132,14 +177,34 @@ class UNet(nn.Module):
         # is why the final convolution does not have any padding.
         self.conv_final = nn.Conv2d(channel_list[0], self.num_output_channels, 1, padding=0)  # 32  -> num_output_channels 
 
-    def forward(self, x):
+    def forward(self, x, params=None):
+        #print("params: " + str(params.shape))
         if self.add_params:
-            # Get param channels first.
-            param_half = self.down1(x[:,3:,:,:])
-            param_fourth = self.down2(param_half)
-            param_eighth = self.down3(param_fourth)
-            param_sixteenth = self.down4(param_eighth)
+            # Embedding params
+            if self.embed:
+                param = self.param_embedding(params)
+                if self.embedding_type == "linear_to_channel":
+                    param_sixteenth = torch.reshape(param, self.params_size)
+                    param = torch.tile(param_sixteenth, (16,16))
+                else: # embedding type is "linear_to_value"
+                    param = torch.ones(self.params_size).cuda() * param[:,:,None,None]
+                x = torch.cat((x, param), dim=1)
+            else:
+                param = x[:,3:,:,:]
+            #print("param size: " + str(param.shape))
 
+            # Getting param channels first.
+            if self.embedding_type == "linear_to_channel":
+                param_eighth = torch.tile(param_sixteenth, (2,2))
+                param_fourth = torch.tile(param_sixteenth, (4,4))
+                param_half = torch.tile(param_sixteenth, (8,8))
+            else:
+                param_half = self.down1(param)
+                param_fourth = self.down2(param_half)
+                param_eighth = self.down3(param_fourth)
+                param_sixteenth = self.down4(param_eighth)
+            #print("half param size: " + str(param_half.shape))
+            #print("fourth param size: " + str(param_fourth.shape))
         # Down
         conv1  = self.conv_down_1(x)
         pool1  = self.maxpool_1(conv1)
@@ -190,7 +255,8 @@ class UNet(nn.Module):
             out =  out + x[:,0:self.num_output_channels,:,:] # Skip connection from input to output
         
         if self.clip_output:
-            return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
+            #return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
+            return torch.min(torch.max(out, torch.full_like(out, c.CLIP_RANGE[0])), torch.full_like(out, c.CLIP_RANGE[1]))
         
         return out
     
@@ -309,10 +375,112 @@ class ChenNet(nn.Module):
         out    = self.pixel_shuffle(out)
         
         if self.clip_output:
-            return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
+            #return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
+            return torch.min(torch.max(out, torch.full_like(out, c.CLIP_RANGE[0])), torch.full_like(out, c.CLIP_RANGE[1]))
         
         return out
 
+class DemosaicNet(nn.Module):
+
+    def __init__(self, num_input_channels, num_output_channels, skip_connect=True, clip_output=True, channel_list=DEFAULT_DEMOSAICNET_CHANNEL_LIST):
+        super().__init__()
+        if not len(channel_list) == 5:
+            raise ValueError('channel_list argument should be a list of integers of size 5.')
+        self.num_input_channels = num_input_channels
+        self.num_output_channels = num_output_channels
+        self.skip_connect = skip_connect
+        self.clip_output = clip_output
+
+        in_channel_list = channel_list
+        
+        if self.skip_connect:
+            print('Adding skip connection from input to output.')
+        if self.clip_output:
+            print('Clipping output of model.')
+            
+        # Down
+        self.conv_down_1 = double_conv_leaky(self.num_input_channels, channel_list[0])              # num_input_channels -> 32
+        self.maxpool_1 = nn.MaxPool2d(2)
+        self.conv_down_2 = double_conv_leaky(in_channel_list[0], channel_list[1])                      # 32 (52)  -> 64
+        self.maxpool_2 = nn.MaxPool2d(2)
+        self.conv_down_3 = double_conv_leaky(in_channel_list[1], channel_list[2])                      # 64 (84) -> 128
+        self.maxpool_3 = nn.MaxPool2d(2)
+        self.conv_down_4 = double_conv_leaky(in_channel_list[2], channel_list[3])                      # 128 (148) -> 256
+        self.maxpool_4 = nn.MaxPool2d(2)
+        
+        # Bridge
+        self.bridge = double_conv_leaky(in_channel_list[3], channel_list[4])                           # 256 (276) -> 512
+        
+        # Up: Currently, we do not append hyperparameters on the upsampling portion.
+        # Can use this for upsample: self.upsample_4 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.upsample_4 = nn.ConvTranspose2d(channel_list[4], channel_list[3], 2, stride=2)   # 512 -> 256
+        self.conv_up_4 = double_conv_leaky(channel_list[4], channel_list[3])                     # 256 + 256 (+ 20) -> 256
+
+        self.upsample_3 = nn.ConvTranspose2d(channel_list[3], channel_list[2], 2, stride=2)   # 256 -> 128
+        self.conv_up_3 = double_conv_leaky(channel_list[3], channel_list[2])                     # 128 + 128 (+ 20) -> 128
+
+        self.upsample_2 = nn.ConvTranspose2d(channel_list[2], channel_list[1], 2, stride=2)   # 128 -> 64
+        self.conv_up_2 = double_conv_leaky(channel_list[2], channel_list[1])                     # 64 + 64 (+ 20) -> 64
+
+        self.upsample_1 = nn.ConvTranspose2d(channel_list[1], channel_list[0], 2, stride=2)   # 64  -> 32
+        self.conv_up_1 = double_conv_leaky(channel_list[1], channel_list[0])                     # 32 + 32 (+ 20) -> 32
+
+        # Final
+        # Note that in 'Learning to see in the Dark' the authors use the Tensorflow 'SAME' padding to ensure
+        # that output dimensions are maintained. However, here we need to determine the padding ourselves, which
+        # is why the final convolution does not have any padding.
+        self.conv_final = nn.Conv2d(channel_list[0], self.num_output_channels, 1, padding=0)  # 32  -> num_output_channels 
+
+    def forward(self, x):
+
+        # Down
+        #print("forward(x) size: " + str(x.size()))
+        conv1  = self.conv_down_1(x)
+        pool1  = self.maxpool_1(conv1)
+
+        conv2  = self.conv_down_2(pool1)
+        pool2  = self.maxpool_2(conv2)       
+
+        conv3  = self.conv_down_3(pool2)
+        pool3  = self.maxpool_3(conv3)
+        
+        conv4  = self.conv_down_4(pool3)
+        pool4  = self.maxpool_4(conv4)       
+
+        # Bridge
+        conv5  = self.bridge(pool4)
+        
+        # Up
+        up6    = self.upsample_4(conv5)
+
+        merge6 = torch.cat([conv4, up6], dim=1)
+        conv6  = self.conv_up_4(merge6)
+        
+        up7    = self.upsample_3(conv6)
+        merge7 = torch.cat([conv3, up7], dim=1)
+        conv7  = self.conv_up_3(merge7)
+        
+        up8    = self.upsample_2(conv7)
+        merge8 = torch.cat([conv2, up8], dim=1)
+        conv8  = self.conv_up_2(merge8)
+        
+        up9    = self.upsample_1(conv8)
+        merge9 = torch.cat([conv1, up9], dim=1)
+        conv9  = self.conv_up_1(merge9)
+        
+        # Final
+        out    = self.conv_final(conv9)
+        #if self.skip_connect:
+            #out =  out + x[:,0:self.num_output_channels,:,:] # Skip connection from input to output
+        
+        if self.clip_output:
+            #return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
+            return torch.min(torch.max(out, torch.full_like(out, c.CLIP_RANGE[0])), torch.full_like(out, c.CLIP_RANGE[1]))
+        
+        # Unpacking channels into 3-channel RGB image
+        out = f.pixel_shuffle(out, 2)
+        
+        return out
 
 class PerceptualLoss():
     def __init__(self, loss, use_gpu):
@@ -368,7 +536,7 @@ def load_checkpoint(model, model_weight_dir):
     for weight_filename in saved_weight_filenames:
         if '.pkl' in weight_filename:
             print('weight filename: ' + weight_filename)
-            epoch = int(weight_filename.split('_')[2][0:-4]) + 1
+            epoch = int(weight_filename.split('_')[-1][0:-4]) + 1
             if epoch > latest_epoch:
                 latest_epoch = epoch
                 latest_weight = weight_filename
@@ -383,9 +551,10 @@ def load_checkpoint(model, model_weight_dir):
     return latest_epoch
 
 '''
-Training routine for the model. For example of inputs, go to Darktable_train_proxy.py
+Training routine for the model. For example of inputs, go to Train_proxy.py
 '''
-def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, scheduler, weight_out_dir, num_epochs, start_epoch, use_gpu, proxy_type, param, save_every_epoch = True, save_outputs=True):
+#TODO: add function comment
+def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, scheduler, weight_out_dir, num_epochs, start_epoch, use_gpu, proxy_type, params, name, save_every_epoch = True, save_outputs=True):
     save_output_frequency = c.SAVE_OUTPUT_FREQ
     num_epochs = num_epochs + start_epoch
     dtype = torch.FloatTensor
@@ -398,11 +567,20 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
 
     if not os.path.exists(weight_out_dir):
         os.mkdir(weight_out_dir)
+
+    # Param Embeddings
+    embed = False
+    if c.EMBEDDING_TYPES[c.EMBEDDING_TYPE] != "none":
+        embed = True
     
     # Creating directory to store model predictions
-    predictions_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_' + param + '_'  + c.OUTPUT_PREDICTIONS_PATH)
+    predictions_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, name + c.OUTPUT_PREDICTIONS_PATH)
     if not os.path.exists(predictions_path):
         os.mkdir(predictions_path)
+        print('New directory created at: ' + predictions_path)
+
+    loss_log_path_train = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, f'{name}_loss_train.txt')
+    loss_log_path_val = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, f'{name}_loss_val.txt')
         
     for epoch in range(start_epoch, num_epochs):
         print('Epoch {}/{}'.format(epoch+1, num_epochs))
@@ -410,6 +588,10 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
         sys.stdout.flush()
         # Each epoch has a training and validation phase
         for phase in ['train', 'val']:
+
+            if dataset_sizes[phase] == 0:
+                continue
+
             if phase == 'train':
                 scheduler.step()
                 model.train()  # Set model to training mode
@@ -422,70 +604,126 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
             i = 0
             num_inputs_seen = 0
             
-            for names, inputs, labels in dataloaders[phase]:  
-                inputs = inputs.type(dtype)
-                labels = labels.type(dtype)
+            if embed:
+                for names, inputs, params, labels in dataloaders[phase]:  
+                    inputs = inputs.type(dtype)
+                    params = params.type(dtype)
+                    labels = labels.type(dtype)
 
-                # zero the parameter gradients
-                optimizer.zero_grad()
-                
-#                print("inputs {}".format(inputs.size()))
-#                print("labels {}".format(labels.size()))
-#                sys.stdout.flush()
-                
-                # forward
-                # track history if only in train
-                with torch.set_grad_enabled(phase == 'train'):
-                    outputs = model(inputs)
+                    # zero the parameter gradients
+                    optimizer.zero_grad()
+                    
+                    # forward
+                    # track history if only in train
+                    with torch.set_grad_enabled(phase == 'train'):
+                        outputs = model(inputs, params=params)
 
-                    # Saving model outputs during training
-                    if save_outputs and (epoch % save_output_frequency) == 0:
-                        outputs_ndarray = outputs[0].detach().cpu().numpy()
-                        outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
-                        outputs_path = os.path.join(predictions_path, f'{proxy_type}_{param}_pred_epoch-{epoch}_{names[0]}')
-                        plt.imsave(outputs_path, outputs_ndarray, format='png')
-
-                    
-#                    print("outputs {}".format(outputs.size()))
-#                    sys.stdout.flush()
-                    
-                    loss = criterion(outputs, labels)
-                    
-#                    print("loss {}".format(loss))
-#                    sys.stdout.flush()
-                    
-                    # backward + optimize only if in training phase
-                    if phase == 'train':
-                        loss.backward()
+                        # Saving model outputs during training
+                        if save_outputs and (epoch % save_output_frequency) == 0:
+                            outputs_ndarray = outputs[0].detach().cpu().numpy()
+                            outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
+                            outputs_path = os.path.join(predictions_path, f'{name}_pred_epoch-{epoch}_{names[0]}')
+                            #try:
+                                #plt.imsave(outputs_path, outputs_ndarray, format='png')
+                            #except:
+                                #tifffile.imwrite(outputs_path, outputs_ndarray)
+                            #print("Outputs shape: " + str(outputs_ndarray.shape))
+                            #sys.stdout.flush()
+                            #quit()
+                            tifffile.imwrite(outputs_path, outputs_ndarray)
                         
-#                        print("backward loss")
-#                        sys.stdout.flush()
+                        loss = criterion(outputs, labels)
                         
-                        optimizer.step()
-                        
-#                        print("step optimizer")
-#                        sys.stdout.flush()
+                        # backward + optimize only if in training phase
+                        if phase == 'train':
+                            loss.backward()
+                            
+                            optimizer.step()
 
-                # statistics
-                running_loss += loss.item() * inputs.size(0)
-                num_inputs_seen += inputs.size(0)
-                print("\tbatch {:d}/{:d}, Average Loss: {:3f}".format(
-                    i + 1, max_iter_per_epoch, running_loss/num_inputs_seen), end='\r')
-                sys.stdout.flush()
-                i += 1
+                    # statistics
+                    running_loss += loss.item() * inputs.size(0)
+                    num_inputs_seen += inputs.size(0)
+                    print("\tbatch {:d}/{:d}, Average Loss: {:3f}".format(
+                        i + 1, max_iter_per_epoch, running_loss/num_inputs_seen), end='\r')
+                    sys.stdout.flush()
+                    i += 1
+            else:
+                for names, inputs, labels in dataloaders[phase]:  
+                    inputs = inputs.type(dtype)
+                    labels = labels.type(dtype)
+
+                    # zero the parameter gradients
+                    optimizer.zero_grad()
+                    
+    #                print("inputs {}".format(inputs.size()))
+    #                print("labels {}".format(labels.size()))
+    #                sys.stdout.flush()
+                    
+                    # forward
+                    # track history if only in train
+                    with torch.set_grad_enabled(phase == 'train'):
+                        outputs = model(inputs)
+
+                        # Saving model outputs during training
+                        if save_outputs and (epoch % save_output_frequency) == 0:
+                            outputs_ndarray = outputs[0].detach().cpu().numpy()
+                            outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
+                            outputs_path = os.path.join(predictions_path, f'{name}_pred_epoch-{epoch}_{names[0]}')
+                            #try:
+                                #plt.imsave(outputs_path, outputs_ndarray, format='png')
+                            #except:
+                                #tifffile.imwrite(outputs_path, outputs_ndarray)
+                            print("Outputs shape: " + str(outputs_ndarray.shape))
+                            sys.stdout.flush()
+                            tifffile.imwrite(outputs_path, outputs_ndarray)
+                        
+    #                    print("outputs {}".format(outputs.size()))
+    #                    sys.stdout.flush()
+                        
+                        loss = criterion(outputs, labels)
+                        
+    #                    print("loss {}".format(loss))
+    #                    sys.stdout.flush()
+                        
+                        # backward + optimize only if in training phase
+                        if phase == 'train':
+                            loss.backward()
+                            
+    #                        print("backward loss")
+    #                        sys.stdout.flush()
+                            
+                            optimizer.step()
+                            
+    #                        print("step optimizer")
+    #                        sys.stdout.flush()
+
+                    # statistics
+                    running_loss += loss.item() * inputs.size(0)
+                    num_inputs_seen += inputs.size(0)
+                    print("\tbatch {:d}/{:d}, Average Loss: {:3f}".format(
+                        i + 1, max_iter_per_epoch, running_loss/num_inputs_seen), end='\r')
+                    sys.stdout.flush()
+                    i += 1
                 
             epoch_loss = running_loss / dataset_sizes[phase]
+            if phase == 'train':
+                losses_train = [str(epoch_loss)]
+                with open(loss_log_path_train, 'w') as file:
+                    file.write('\n'.join(losses_train))
+            else:
+                losses_val = [str(epoch_loss)]
+                with open(loss_log_path_val, 'w') as file:
+                    file.write('\n'.join(losses_val))
 
             print('\tDone with {} phase. Average Loss: {:.4f}'.format(
                 phase, epoch_loss))
             sys.stdout.flush()
             # deep copy the model
-            if phase == 'val' and ((epoch_loss < best_loss or epoch == (num_epochs-1)) or save_every_epoch):
+            if (phase == 'val' and ((epoch_loss < best_loss or epoch == (num_epochs-1)) or save_every_epoch)) or proxy_type == "demosaic":#TODO: Temporary hack - remove me!
                 best_loss = epoch_loss
                 best_model_wts = copy.deepcopy(model.state_dict())
-                print('Saved model')
-                torch.save(best_model_wts, os.path.join(weight_out_dir, proxy_type + '_' + param + '_' + '{:03d}.pkl'.format(epoch)))
-        print()
+                print('Saving model')
+                torch.save(best_model_wts, os.path.join(weight_out_dir, name + '{:03d}.pkl'.format(epoch)))
 
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
@@ -494,6 +732,7 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
 '''
 Evaluate the model on a any input(s)
 '''
+#TODO: bring up to speed with train()
 def eval(model, dataloader, criterion, optimizer, use_gpu, proxy_type, param, sweep=False, outputs_path=None):
     dtype = torch.FloatTensor
     if use_gpu:
