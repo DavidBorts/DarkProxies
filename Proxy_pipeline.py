@@ -113,6 +113,7 @@ class ProxyPipeline:
 
 def load_model(proxy_type, params, possible_values, weight_out_dir, use_gpu):
     
+    # TODO: rework to consider -c edge case
     if params[0] != 'full':
         print(f"Loading in model: {proxy_type}: " + "".join(f" {param}" for param in params))
     else:
@@ -120,9 +121,11 @@ def load_model(proxy_type, params, possible_values, weight_out_dir, use_gpu):
 
     # Getting model weights
     weights_list = os.listdir(weight_out_dir)
-    weights_list.sort(key=lambda x: float(x.strip(proxy_type + '_' + "".join(f"{param}_" for param in params)).strip('.pkl')))
+    if params[0].lower() != 'full':
+        weights_list.sort(key=lambda x: float(x.strip(proxy_type + '_' + "".join(f"{param}_" for param in params)).strip('.pkl')))
+    else:
+        weights_list.sort(key=lambda x: float(x.strip(proxy_type + '_').strip('.pkl')))
     final_weights = weights_list[-1]
-    #model_weight_file = os.path.join(weight_out_dir, final_weights)
     print(f'Using model weights from {final_weights}.')
 
     # Loading the weights into a Unet

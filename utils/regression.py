@@ -2,10 +2,10 @@ import math
 import random
 import numpy as np
 
-'''
-Returns an initial guess vector. The values of the initial guess are determined randomly uniformly.
-'''
 def initial_guess(possible_values):
+    '''
+    Returns an initial guess vector. The values of the initial guess are determined randomly uniformly.
+    '''
     x_0 = []
     for vals in possible_values:
         if type(vals) is list:
@@ -16,19 +16,19 @@ def initial_guess(possible_values):
             raise TypeError('Possible values must be given as list (discrete) or tuple (continuous)')
     return np.array(x_0)
     
-'''
-Projects parameter values so that they lie in the valid range.
-Inputs:
-    unprojected_param_values: Numpy array of parameter values before projection.
-    possible_values: List of possible values that parameters can take.
-    finalize: Applies to discrete parameters. Set to True if you want to round discrete parameters to 
-       to nearest valid integer. Set to False during training so that discrete parameters lie within
-       smallest and largest integer.
-    dtype: Datatype of the tensor. Either torch.FloatTensor, or torch.cuda.FloatTensor.
-Outputs:
-    projected_param_values: Numpy array of parameter values after projection.
-'''
 def project_param_values(unprojected_param_values, possible_values, finalize, dtype):
+    '''
+    Projects parameter values so that they lie in the valid range.
+    Inputs:
+        unprojected_param_values: Numpy array of parameter values before projection.
+        possible_values: List of possible values that parameters can take.
+        finalize: Applies to discrete parameters. Set to True if you want to round discrete parameters to 
+        to nearest valid integer. Set to False during training so that discrete parameters lie within
+        smallest and largest integer.
+        dtype: Datatype of the tensor. Either torch.FloatTensor, or torch.cuda.FloatTensor.
+    Outputs:
+        projected_param_values: Numpy array of parameter values after projection.
+    '''
     def _project_onto_discrete(value, vals_list):
         array = np.array(vals_list)
         idx = (np.abs(array - value)).argmin()
@@ -60,6 +60,10 @@ def project_param_values(unprojected_param_values, possible_values, finalize, dt
     return np.array(projected_param_values, dtype=np.float64)
 
 def decide(i, num_iters):
+    '''
+    Decide whether or not to save the given iteration
+    as a frame in an animation
+    '''
     if i == 0 or i == (num_iters - 1):
         return True
     

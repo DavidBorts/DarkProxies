@@ -37,14 +37,8 @@ def regress(
     # Starting off with an initial guess
     # NOTE: this is a list of lists
     best_params = [initial_guess(vals) for vals in possible_values]
-    #best_params = initial_guess(possible_values)
     print('Initial Parameters: ')
     print(best_params)
-
-    # Getting parameter ranges
-    # NOTE: this is a list of lists
-    param_ranges = [[np.absolute(v[-1] - v[0]) for v in vals] for vals in possible_values]
-    #param_ranges = [np.absolute(vals[-1] - vals[0]) for vals in possible_values]
     
     # Tracking loss
     loss = None
@@ -72,13 +66,12 @@ def regress(
 
         # Fill in the best guess into the hyper-param tensor
         for param_tensor, params in zip(param_tensors, best_params):
-            params_ndarray = np.array(params)
-            for param_idx in len(params):
-                param_tensor.data[:, param_idx, :, :] = params_ndarray[param_idx]
+            params_ndarray = np.array(params) #TODO: is this redundant?
+            for param_idx, param in enumerate(params_ndarray):
+                param_tensor.data[:, param_idx, :, :] = param
 
         # Assemble list of pipeline input tensors and fill them in
         # with the best guess for all hyper-parameter channels
-        #TODO: does this support multiple params per proxy?
         input_tensors = []
         for proxy_num in range(isp.num_proxies):
             input_tensor = torch.tensor((), \
@@ -87,7 +80,8 @@ def regress(
                                 width, height)).type(dtype)
             
             # Fill in hyper-parameter guesses
-            input_tensor.data[:, c.NUM_IMAGE_CHANNEL:, :, :] = param_tensors[proxy_num]
+            if param_tensors[proxy_num] is not None:
+                input_tensor.data[:, c.NUM_IMAGE_CHANNEL:, :, :] = param_tensors[proxy_num]
             input_tensors.append(input_tensor)
                 
         # forward
@@ -113,6 +107,8 @@ def regress(
             
         # Getting out current best param values
         for idx, param_tensor in enumerate(param_tensors):
+            if param_tensor is None:
+                continue
             _, num_params, _, _ = param_tensor.shape
             for param_idx in range(num_params):
                 if dtype == torch.cuda.FloatTensor:
@@ -135,7 +131,7 @@ def regress(
     print('Final Loss: {} \nFinal Parameters: {}\n'.format(loss.item(), best_params))
 
     if c.PIPELINE_CREATE_ANIMATION:       
-        print('Animation saved.')
+        print('Animation completed and saved.')
     
     best_params = [param for params in best_params for param in params]
     return best_params
@@ -190,29 +186,20 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
         name, orig_tensor, label_tensor = image_dataset[index]
         _, width, height = orig_tensor.size() 
 
-        # Creating a PyTorch Variable that contains every parameter guess
-        # It is N x B x C x W x H:
-        # N = Number of proxies in the ISP
-        # B = Batch size
-        # C = Number of hyper-parameter channels (currently this can only be 1)
-        # W = Width
-        # H = Height
-        # This is the tensor that will be regressed
-        # NOTE: B is always 1, as this is an evaluation method
-        param_tensor = Variable(torch.tensor((), dtype=torch.float).new_ones((isp.num_proxies, \
-                       1, 1, width, height)).type(dtype), requires_grad=True)
-        # A list of N PyTorch Variables that contains every parameter guess
-        # Each Variable is B x Cn x W x H:
-        # N = Number of proxies in the ISP
-        # B = Batch size
-        # Cn = Number of hyper-parameter channels for proxy n
-        # W = Width
-        # H = Height
-        # These are the tensors that will be regressed
-        # NOTE: B is always 1, as this is an evaluation method
+        '''
+        A list of N PyTorch Variables that contains every parameter guess
+        Each Variable is B x Cn x W x H:
+        N = Number of proxies in the ISP
+        B = Batch size
+        Cn = Number of hyper-parameter channels for proxy n
+        W = Width
+        H = Height
+        These are the tensors that will be regressed
+        NOTE: B is always 1, as this is an evaluation method
+        '''
         param_tensors = [Variable(torch.tensor((), dtype=torch.float).new_ones((\
                        1, len(params), width, height)).type(dtype), requires_grad=True) \
-                        for params in isp.possible_values]
+                        if len(params) > 0 else None for params in isp.possible_values]
 
         print("Optimizing Hyperparameters for {} index {}".format(name, str(index)))
         print("-"*40)

@@ -27,6 +27,9 @@ def get_possible_values(proxy_type, params):
     all_possible_values = c.POSSIBLE_VALUES[proxy_type]
     all_param_names = c.PARAM_NAMES[proxy_type]
 
+    if proxy_type in c.NO_PARAMS:
+        return []
+
     if params is None or params[0].lower() == 'full':
         return all_possible_values
     
