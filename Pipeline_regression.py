@@ -272,7 +272,10 @@ with open(config_path, 'r') as file:
 
 # Generating data
 if not skip_data:
+    print("Generating data.")
     generate_pipeline(proxy_order, input_path, label_path)
+else:
+    print("Skipping data generation.")
 
 # Running regression procedure
 regression_procedure(proxy_order, input_path, label_path, use_gpu)
