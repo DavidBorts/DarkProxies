@@ -20,7 +20,10 @@ def get_cfa(raw_file_path):
         [cfa]: string, corresponding to the image's CFA in raster order
                len(cfa) = 4
     '''
-    raw = rawpy.imread(raw_file_path)
+    try:
+        raw = rawpy.imread(raw_file_path)
+    except:
+        return "RGGB"
 
     cfa = "".join([chr(raw.color_desc[i]) for i in raw.raw_pattern.flatten()])
     return cfa
