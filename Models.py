@@ -330,6 +330,7 @@ class ChenNet(nn.Module):
             param_sixteenth = self.down4(param_eighth)
 
         # Down
+        print(f"test: {str(x.size())}")
         conv1  = self.conv_down_1(x)
         pool1  = self.maxpool_1(conv1)
         if self.add_params: 
