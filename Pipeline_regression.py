@@ -11,28 +11,22 @@ from torch.autograd import Variable
 
 # Local files
 import Constants as c
-from Models import UNet, ChenNet, DemosaicNet
 from Loss_functions import losses
 from Dataset import Darktable_Dataset
 from Proxy_pipeline import ProxyPipeline
 from Generate_data import generate_pipeline
-from Parameter_regression import initial_guess, decide, project_param_values
+from utils.regression import initial_guess, decide, project_param_values
 
 # Constants
 image_root_dir = c.IMAGE_ROOT_DIR
-num_iters = c.PIPELINE_REGRESSION_NUM_ITERS
 
 def regress(
             isp,
-            proxy_order,
             orig_tensor, 
-            label_tensor,
             param_tensors,
-            total_params_size,
             optimizer,
             scheduler,
             num_iters,
-            name,
             dtype,
             possible_values
             ):
@@ -68,7 +62,7 @@ def regress(
     orig_tensor = orig_tensor.type(dtype)
     tm_tensor = tm_tensor.type(dtype)
 
-    # Refining guess num_iters times
+    # Regressing guess num_iters times
     for i in range(num_iters):
 
         scheduler.step()
@@ -81,12 +75,8 @@ def regress(
             params_ndarray = np.array(params)
             for param_idx in len(params):
                 param_tensor.data[:, param_idx, :, :] = params_ndarray[param_idx]
-        # Fill in the best guess into the hyper-param tensor
-        #for param_idx in range(len(best_params)):
-            #best_param = np.array(best_params)[param_idx]
-            #param_tensor.data[param_idx, :, :, :, :] = best_param
 
-        # Create list of pipeline input tensors and fill them in
+        # Assemble list of pipeline input tensors and fill them in
         # with the best guess for all hyper-parameter channels
         #TODO: does this support multiple params per proxy?
         input_tensors = []
@@ -97,10 +87,7 @@ def regress(
                                 width, height)).type(dtype)
             
             # Fill in hyper-parameter guesses
-            #best_param = np.array(best_params)[proxy_num]
-            #input_tensor.data[:, c.NUM_IMAGE_CHANNEL, :, :] = param_tensor[proxy_num, :, :, :, :].squeeze(0)#FIXME ?
             input_tensor.data[:, c.NUM_IMAGE_CHANNEL:, :, :] = param_tensors[proxy_num]
-            
             input_tensors.append(input_tensor)
                 
         # forward
@@ -108,7 +95,7 @@ def regress(
             optimizer.zero_grad()
 
             # Processing through ISP
-            # Outputs is a list of every proxy output tensor
+            #NOTE: Outputs is a list of every proxy output tensor
             outputs = isp.process(orig_tensor, input_tensors)
 
             loss = criterion(outputs[-1], tm_tensor)
@@ -134,24 +121,17 @@ def regress(
                     param_temp = param_tensor.clone().detach()[:, param_idx, :, :]
                 
                 best_params[idx][param_idx] = param_temp.mean(0).mean(0).mean(0).numpy()
-        #for param_num in isp.num_proxies:
-            #if dtype == torch.cuda.FloatTensor:
-                #param_temp = param_tensors.cpu().clone().detach()[param_num, :, :, :, :]
-            #else:
-                #param_temp = param_tensors.clone().detach()[param_num, :, :, :, :]
-
-            #best_params[param_num] = param_temp.mean(0).mean(0).mean(0).mean(0).numpy()
         print('current params: ')
         print(best_params)
+        sys.stdout.flush()
                     
-        # statistics
+        # Statistics
         print("\tIter {:d}/{:d}, Current Loss: {:3f}".format(i + 1, num_iters, loss.item()),end='\r')
         sys.stdout.flush()
                 
     # At the end of finetuning, project onto acceptable parameters.
     for idx in range(isp.num_proxies):
         best_params[idx] = project_param_values(best_params[idx], possible_values[idx], finalize=False, dtype=dtype)
-    #best_params = project_param_values(best_params, possible_values, finalize=False, dtype=dtype)
     print('Final Loss: {} \nFinal Parameters: {}\n'.format(loss.item(), best_params))
 
     if c.PIPELINE_CREATE_ANIMATION:       
@@ -164,6 +144,7 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
 
     # Constants
     param_out_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, c.STAGE_3_PARAM_DIR)
+    num_iters = c.PIPELINE_REGRESSION_NUM_ITERS
     
     # Adjusting for GPU usage
     dtype = torch.FloatTensor
@@ -240,21 +221,16 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
         orig_tensor.unsqueeze_(0)
         label_tensor.unsqueeze_(0)
 
-        #optimizer = optim.Adam([param_tensor], lr=0.25)
         optimizer = optim.Adam(param_tensors, lr=0.25)
         scheduler = lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
 
         best_params_mat[:, index] = regress(
                                         isp,
-                                        proxy_order,
                                         orig_tensor, 
-                                        label_tensor,
-                                        param_tensors,#param_tensor
-                                        total_params_size,
+                                        param_tensors,
                                         optimizer,
                                         scheduler,
                                         num_iters,
-                                        name,
                                         dtype,
                                         possible_values
                                     )

@@ -62,35 +62,36 @@ STAGE_3_PATH = 'stage_3/'                #   Directory that stores all training 
 STAGE_3_INPUT_DIR = 'input/'             #   Directory that stores all training data
 STAGE_3_OUTPUT_DIR = 'output/'           #   Directory that stores all ground truth data
 STAGE_3_PARAM_DIR = 'params/'            #   Directory that stores optimized proxy params
+STAGE_3_LOSS_FN = 'MSE'                  #   Loss for Pipeline Regression (MSE, L1, Spatial, or Perceptual)
 CONFIG_FILE = 'pipeline_config.txt'      # X Path to file with pipeline conifugration
 PIPELINE_REGRESSION_NUM_ITERS = 2000     #   Number of regression iterations per image
 PIPELINE_CREATE_ANIMATION = True         #   If True, saves frames from regression to use for animations
 PIPE_REGRESSION_ANIMATION_FORMAT = 'png' #   Format to save frames as (Default: png)
 
 WHICH_LOSS = {
-    'highlights': ['MSE', 'L1', 'Perceptual'],
-    'demosaic': ['MSE', 'L1', 'Perceptual'],
-    'denoise': ['MSE', 'L1', 'Perceptual'],
-    'hazeremoval': ['MSE', 'L1', 'Perceptual'],
-    'exposure': ['MSE', 'L1', 'Perceptual'],
-    'graduateddensity': ['MSE', 'L1', 'Perceptual'],
-    'colorin': ['MSE', 'L1', 'Perceptual'],
-    'censorize': ['MSE', 'L1', 'Perceptual'],
-    'lowpass': ['MSE', 'L1', 'Perceptual'],
-    'sharpen': ['Spatial', 'Spatial', 'Perceptual'],
-    'colorbalancergb': ['MSE', 'L1', 'Perceptual'],
-    'filmicrgb': ['MSE', 'L1', 'Perceptual'],
-    'bloom': ['MSE', 'L1', 'Perceptual'],
-    'colorize': ['MSE', 'L1', 'Perceptual'],
-    'soften': ['MSE', 'L1', 'Perceptual'],
-    'colorout': ['MSE', 'L1', 'Perceptual']
+    'highlights': ['MSE', 'L1'],
+    'demosaic': ['MSE', 'L1'],
+    'denoise': ['MSE', 'L1'],
+    'hazeremoval': ['MSE', 'L1'],
+    'exposure': ['MSE', 'L1'],
+    'graduateddensity': ['MSE', 'L1'],
+    'colorin': ['MSE', 'L1'],
+    'censorize': ['MSE', 'L1'],
+    'lowpass': ['MSE', 'L1'],
+    'sharpen': ['Spatial', 'Spatial'],
+    'colorbalancergb': ['MSE', 'L1'],
+    'filmicrgb': ['MSE', 'L1'],
+    'bloom': ['MSE', 'L1'],
+    'colorize': ['MSE', 'L1'],
+    'soften': ['MSE', 'L1'],
+    'colorout': ['MSE', 'L1']
 }
 '''
 Dictionary to store which Darktable blocks will require which loss functions to train
 
 Options: MSE, L1, Spatial, Perceptual
 
-Format: [stage_1, stage_2, stage_3]
+Format: [stage_1, stage_2]
 '''
 
 # DO NOT MODIFY ANYTHING BELOW THIS LINE!!!
