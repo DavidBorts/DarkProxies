@@ -32,7 +32,7 @@ class Darktable_Dataset(Dataset):
     training of the proxy model, the fine-tuning of its parameters, and for ISP-tuning
     experiments.
     '''
-    def __init__(self, root_dir, stage, proxy_type, params, name=None, sampler=False, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, sweep=False, param_ranges=None, gt_list=None):
+    def __init__(self, root_dir, stage, proxy_type, params, name=None, sampler=False, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, sweep=False, param_ranges=None, gt_list=None, proxy_order=None):
         '''
         Initialize the object.
         Inputs:
@@ -69,6 +69,7 @@ class Darktable_Dataset(Dataset):
         self.embedding_type = c.EMBEDDING_TYPES[c.EMBEDDING_TYPE]
         self.param_ranges = param_ranges
         self.gt_list = gt_list
+        self.proxy_order = proxy_order
 
         if self.param_ranges is not None:
             self.param_lower_bounds = np.array([range[0] for range in param_ranges])
@@ -254,6 +255,7 @@ class Darktable_Dataset(Dataset):
             #pre_pack_input = (pre_pack_input * 255).astype(np.uint8)
             #print("pre pack shape: ")
             #print(np.shape(pre_pack_input))
+
             
         proxy_model_input = to_tensor_transform(input_image)
         if c.DOWNSAMPLE_IMAGES:
@@ -292,6 +294,15 @@ class Darktable_Dataset(Dataset):
             cfa = get_cfa(dng_path)
             proxy_model_input = np.squeeze(pack_input_demosaic(proxy_model_input, cfa))
             #print('proxy_model_input shape after packing: ' + str(proxy_model_input.shape))
+        if self.proxy_order is not None:
+            if self.proxy_order[0][0].split('_')[0] == "demosaic":
+                #TODO: add stage 3 images and uncomment me!
+                #dng_name = input_image_name.split('_')[0].split('.')[0] + '.dng'
+                #dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)
+                #cfa = get_cfa(dng_path)
+
+                cfa = get_cfa(None)
+                proxy_model_input = np.squeeze(pack_input_demosaic(proxy_model_input, cfa))
         
         if not self.sweep:
             try:

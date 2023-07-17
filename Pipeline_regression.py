@@ -173,7 +173,8 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
                                       proxy_type=None,
                                       params=None,
                                       input_dir=input_path,
-                                      output_dir=label_path
+                                      output_dir=label_path,
+                                      proxy_order=proxy_order
                                       )
 
     # Getting possible param values
