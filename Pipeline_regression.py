@@ -62,7 +62,6 @@ def regress(
 
         scheduler.step()
 
-        _, _, width, height = orig_tensor.size()
         num_input_channels = [num_img_channels + len(params) for num_img_channels, params in zip(isp.img_channels, best_params)]
         #num_input_channels = [c.NUM_IMAGE_CHANNEL + len(params) for params in best_params]
 
@@ -76,10 +75,11 @@ def regress(
         # with the best guess for all hyper-parameter channels
         input_tensors = []
         for proxy_num in range(isp.num_proxies):
+            width = isp.widths[proxy_num]
             input_tensor = torch.tensor((), \
                            dtype=torch.float).new_ones((1 , \
                             num_input_channels[proxy_num], \
-                                width, height)).type(dtype)
+                                width, width)).type(dtype)
             
             # Fill in hyper-parameter guesses
             if param_tensors[proxy_num] is not None:
@@ -190,15 +190,10 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
     for index in range(len(image_dataset)):
         
         name, orig_tensor, label_tensor = image_dataset[index]
-        try:
-            _, width, height = orig_tensor.size()
-        except: 
-            num_dims = len(orig_tensor.size())
-            if num_dims == 2:
-                width, height = orig_tensor.size()
-                orig_tensor = orig_tensor[None,:,:,]
-            else:
-                raise TypeError("Images in the dataset must be either H X W or 3 X H X W.")
+        if len(orig_tensor.size()) == 2:
+             orig_tensor = orig_tensor[None,:,:,]
+        elif len(orig_tensor.size()) != 3:
+            raise TypeError("Images in the dataset must be either H X W or 3 X H X W.")
 
         '''
         A list of N PyTorch Variables that contains every parameter guess
@@ -212,8 +207,8 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
         NOTE: B is always 1, as this is an evaluation method
         '''
         param_tensors = [Variable(torch.tensor((), dtype=torch.float).new_ones((\
-                       1, len(params), width, height)).type(dtype), requires_grad=True) \
-                        if len(params) > 0 else None for params in isp.possible_values]
+                       1, len(params), width, width)).type(dtype), requires_grad=True) \
+                        if len(params) > 0 else None for params, width in zip(isp.possible_values, isp.widths)]
 
         print("Optimizing Hyperparameters for {} index {}".format(name, str(index)))
         print("-"*40)

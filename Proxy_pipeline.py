@@ -65,6 +65,7 @@ class ProxyPipeline:
         proxies = []
         possible_values_list = []
         img_channels_list = []
+        width_list = []
         for proxy_name, params in proxies_list:
 
             proxy_type = proxy_name.split('_')[0]
@@ -75,10 +76,13 @@ class ProxyPipeline:
             possible_values_list.append(possible_values)
             if proxy_type in c.SINGLE_IMAGE_CHANNEL:
                 img_channels_list.append(1)
+                width_list.append(c.IMG_SIZE)
             elif proxy_type == "demosaic":
                 img_channels_list.append(4)
+                width_list.append(c.IMG_SIZE/2)
             else:
                 img_channels_list.append(c.NUM_IMAGE_CHANNEL)
+                width_list.append(c.IMG_SIZE)
 
             proxy_type = proxy_name
 
@@ -94,6 +98,7 @@ class ProxyPipeline:
         self.models = proxies
         self.possible_values = possible_values_list #NOTE: this is a list of lists
         self.img_channels = img_channels_list
+        self.widths = width_list
     
     def process(self, orig_tensor, input_tensors):
 
