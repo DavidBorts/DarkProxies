@@ -75,6 +75,8 @@ class ProxyPipeline:
             possible_values_list.append(possible_values)
             if proxy_type in c.SINGLE_IMAGE_CHANNEL:
                 img_channels_list.append(1)
+            elif proxy_type == "demosaic":
+                img_channels_list.append(4)
             else:
                 img_channels_list.append(c.NUM_IMAGE_CHANNEL)
 
