@@ -254,7 +254,7 @@ class Darktable_Dataset(Dataset):
             #print(np.shape(pre_pack_input))
             
         proxy_model_input = to_tensor_transform(input_image)
-        if c.TAPOUTS[self.proxy_type] is None and c.DOWNSAMPLE_IMAGES:
+        if c.DOWNSAMPLE_IMAGES:
             #print('Downsampling input tensor.')
             proxy_model_input = interpolate(proxy_model_input[None, :, :, :], scale_factor=0.25, mode='bilinear')
         proxy_model_input = torch.squeeze(proxy_model_input, dim=0)
@@ -292,9 +292,9 @@ class Darktable_Dataset(Dataset):
             #print('proxy_model_input shape after packing: ' + str(proxy_model_input.shape))
         
         if not self.sweep:
-            if c.TAPOUTS[self.proxy_type] is None:
+            try:
                 output_image = Image.open(os.path.join(self.output_image_dir, image_name))
-            else:
+            except:
                 output_image = imageio.imread(os.path.join(self.output_image_dir, image_name))	
             #output_image = output_image.astype(np.float32) #TODO: do we need this??	
             # output_image = Image.open(os.path.join(self.output_image_dir, image_name), mode='r', formats=None) FIXME: NOT WORKING!!
@@ -303,7 +303,7 @@ class Darktable_Dataset(Dataset):
                 output_image = self.transform(output_image)
             
             proxy_model_label = to_tensor_transform(output_image)
-            if c.TAPOUTS[self.proxy_type] is None and c.DOWNSAMPLE_IMAGES:
+            if c.DOWNSAMPLE_IMAGES:
                 #print('Downsampling ground truth tensor')
                 proxy_model_label = interpolate(proxy_model_label[None, :, :, :], scale_factor=0.25, mode='bilinear')
             proxy_model_label = torch.squeeze(proxy_model_label, dim=0)
