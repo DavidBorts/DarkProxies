@@ -62,7 +62,7 @@ def regress(
 
         scheduler.step()
 
-        _, width, height = orig_tensor.size()
+        _, _, width, height = orig_tensor.size()
         num_input_channels = [num_img_channels + len(params) for num_img_channels, params in zip(isp.img_channels, best_params)]
         #num_input_channels = [c.NUM_IMAGE_CHANNEL + len(params) for params in best_params]
 
@@ -194,10 +194,9 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
             num_dims = len(orig_tensor.size())
             if num_dims == 2:
                 width, height = orig_tensor.size()
-                #orig_tensor = orig_tensor[None,:,:,]
+                orig_tensor = orig_tensor[None,:,:,]
             else:
                 raise TypeError("Images in the dataset must be either H X W or 3 X H X W.")
-        print("Input tensor size: " + str(orig_tensor.size()))
 
         '''
         A list of N PyTorch Variables that contains every parameter guess
@@ -220,6 +219,7 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
 
         orig_tensor.unsqueeze_(0)
         label_tensor.unsqueeze_(0)
+        print("Input tensor size: " + str(orig_tensor.size()))
 
         optimizer = optim.Adam([param_tensor for param_tensor in param_tensors if param_tensor is not None], lr=0.25)
         scheduler = lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
