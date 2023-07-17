@@ -186,7 +186,14 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
     for index in range(len(image_dataset)):
         
         name, orig_tensor, label_tensor = image_dataset[index]
-        _, width, height = orig_tensor.size() 
+        try:
+            _, width, height = orig_tensor.size()
+        except: 
+            num_dims = orig_tensor.size()
+            if num_dims == 2:
+                width, height = orig_tensor.size()
+            else:
+                raise TypeError("Images in the dataset must be either H X W or 3 X H X W.")
 
         '''
         A list of N PyTorch Variables that contains every parameter guess
