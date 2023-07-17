@@ -58,13 +58,12 @@ def regress(
     tm_tensor = tm_tensor.type(dtype)
 
     # Regressing guess num_iters times
-    img_channels = isp.img_channels
     for i in range(num_iters):
 
         scheduler.step()
 
         _, width, height = orig_tensor.size()
-        num_input_channels = [num_img_channels + len(params) for num_img_channels, params in zip(img_channels, best_params)]
+        num_input_channels = [num_img_channels + len(params) for num_img_channels, params in zip(isp.img_channels, best_params)]
         #num_input_channels = [c.NUM_IMAGE_CHANNEL + len(params) for params in best_params]
 
         # Fill in the best guess into the hyper-param tensor
@@ -93,7 +92,7 @@ def regress(
 
             # Processing through ISP
             #NOTE: Outputs is a list of every proxy output tensor
-            outputs = isp.process(orig_tensor, input_tensors, img_channels)
+            outputs = isp.process(orig_tensor, input_tensors)
 
             loss = criterion(outputs[-1], tm_tensor)
             loss.backward()
@@ -195,9 +194,10 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
             num_dims = len(orig_tensor.size())
             if num_dims == 2:
                 width, height = orig_tensor.size()
-                orig_tensor = orig_tensor[None,:,:,]
+                #orig_tensor = orig_tensor[None,:,:,]
             else:
                 raise TypeError("Images in the dataset must be either H X W or 3 X H X W.")
+        print("Input tensor size: " + str(orig_tensor.size()))
 
         '''
         A list of N PyTorch Variables that contains every parameter guess
