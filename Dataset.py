@@ -32,7 +32,7 @@ class Darktable_Dataset(Dataset):
     training of the proxy model, the fine-tuning of its parameters, and for ISP-tuning
     experiments.
     '''
-    def __init__(self, root_dir, stage, proxy_type, params, sampler, name, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, sweep=False, param_ranges=None, gt_list=None):
+    def __init__(self, root_dir, stage, proxy_type, params, name=None, sampler=False, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, sweep=False, param_ranges=None, gt_list=None):
         '''
         Initialize the object.
         Inputs:

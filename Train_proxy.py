@@ -112,8 +112,8 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
                                         1,
                                         proxy_type,
                                         params,
-                                        not append_params,
-                                        dataset_name,
+                                        name=dataset_name,
+                                        sampler= not append_params,
                                         param_ranges=possible_params,
                                         gt_list=gt_list)
     else:
@@ -121,8 +121,8 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
                                         1,
                                         proxy_type,
                                         params,
-                                        not append_params,
-                                        name,
+                                        name=name,
+                                        sampler= not append_params,
                                         param_ranges=possible_params,
                                         gt_list=gt_list)
     train_loader = torch.utils.data.DataLoader(image_dataset,

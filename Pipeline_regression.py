@@ -166,7 +166,9 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
     sys.stdout.flush()
     image_dataset = Darktable_Dataset(
                                       root_dir = c.IMAGE_ROOT_DIR, 
-                                      stage=3, 
+                                      stage=3,
+                                      proxy_type=None,
+                                      params=None,
                                       input_dir=input_path,
                                       output_dir=label_path
                                       )
