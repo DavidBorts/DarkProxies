@@ -1,4 +1,4 @@
 demosaic full 1
 colorin full 1
 bloom full 1
-colorout full 1
+colorout full 0
