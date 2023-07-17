@@ -83,7 +83,8 @@ def regress(
             
             # Fill in hyper-parameter guesses
             if param_tensors[proxy_num] is not None:
-                input_tensor.data[:, c.NUM_IMAGE_CHANNEL:, :, :] = param_tensors[proxy_num]
+                input_tensor.data[:, isp.img_channels[proxy_num]:, :, :] = param_tensors[proxy_num]
+            print(f"Input tensor #{proxy_num}, size: {str(input_tensor.size())}")
             input_tensors.append(input_tensor)
                 
         # forward
