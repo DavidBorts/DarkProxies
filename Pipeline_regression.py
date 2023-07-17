@@ -189,7 +189,7 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
         try:
             _, width, height = orig_tensor.size()
         except: 
-            num_dims = orig_tensor.size()
+            num_dims = len(orig_tensor.size())
             if num_dims == 2:
                 width, height = orig_tensor.size()
             else:
