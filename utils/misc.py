@@ -24,11 +24,11 @@ def get_possible_values(proxy_type, params):
     return the corresponding ranges of possible values
     of those parameters
     '''
-    all_possible_values = c.POSSIBLE_VALUES[proxy_type]
-    all_param_names = c.PARAM_NAMES[proxy_type]
-
     if proxy_type in c.NO_PARAMS:
         return []
+    
+    all_possible_values = c.POSSIBLE_VALUES[proxy_type]
+    all_param_names = c.PARAM_NAMES[proxy_type]
 
     if params is None or params[0].lower() == 'full':
         return all_possible_values
