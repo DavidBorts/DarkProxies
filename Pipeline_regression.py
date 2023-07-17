@@ -22,7 +22,8 @@ image_root_dir = c.IMAGE_ROOT_DIR
 
 def regress(
             isp,
-            orig_tensor, 
+            orig_tensor,
+            tm_tensor,
             param_tensors,
             optimizer,
             scheduler,
@@ -222,7 +223,8 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
 
         best_params_mat[:, index] = regress(
                                         isp,
-                                        orig_tensor, 
+                                        orig_tensor,
+                                        label_tensor,
                                         param_tensors,
                                         optimizer,
                                         scheduler,
