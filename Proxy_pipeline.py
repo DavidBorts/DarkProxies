@@ -107,6 +107,7 @@ class ProxyPipeline:
         for num in range(self.num_proxies):
             model = self.models[num]
             input = input_tensors[num]
+            print(f"proxy #{num+1}, input size: {str(input.size())}")
 
             output = model(input)
 
