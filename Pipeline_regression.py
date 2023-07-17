@@ -217,7 +217,7 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
         orig_tensor.unsqueeze_(0)
         label_tensor.unsqueeze_(0)
 
-        optimizer = optim.Adam(param_tensors, lr=0.25)
+        optimizer = optim.Adam([param_tensor for param_tensor in param_tensors if param_tensor is not None], lr=0.25)
         scheduler = lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
 
         best_params_mat[:, index] = regress(
