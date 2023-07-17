@@ -96,6 +96,8 @@ class Darktable_Dataset(Dataset):
             self.image_name_list = os.listdir(self.output_image_dir)
             if self.proxy_type == "demosaic" or self.proxy_type == "colorin":#TODO: temporary hack - delete me!
                 self.image_name_list.sort()
+            elif self.stage == 3:
+                self.image_name_list.sort()
             else:
                 self.image_name_list.sort(key=lambda x: (x.split(".")[0], float(x.split("_")[3].split(".tif")[0])))
             if self.gt_list is not None:
