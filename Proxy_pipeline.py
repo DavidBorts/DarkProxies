@@ -64,6 +64,7 @@ class ProxyPipeline:
         # in the correct order
         proxies = []
         possible_values_list = []
+        img_channels_list = []
         for proxy_name, params in proxies_list:
 
             proxy_type = proxy_name.split('_')[0]
@@ -72,6 +73,10 @@ class ProxyPipeline:
             params = params.split('_')
             possible_values = get_possible_values(proxy_type, params)
             possible_values_list.append(possible_values)
+            if proxy_type in c.SINGLE_IMAGE_CHANNEL:
+                img_channels_list.append(1)
+            else:
+                img_channels_list.append(c.NUM_IMAGE_CHANNEL)
 
             proxy_type = proxy_name
 
@@ -86,11 +91,14 @@ class ProxyPipeline:
             proxies.append(load_model(proxy_type, params, possible_values, weight_out_dir, self.use_gpu))
         self.models = proxies
         self.possible_values = possible_values_list #NOTE: this is a list of lists
+        self.img_channels = img_channels_list
     
-    def process(self, orig_tensor, input_tensors):#, params_list):
+    def process(self, orig_tensor, input_tensors):
+
+        img_channels = self.img_channels
 
         # Filling in the image for the input to the first proxy
-        input_tensors[0].data[:, 0:c.NUM_IMAGE_CHANNEL, :, :] = orig_tensor[:, 0:c.NUM_IMAGE_CHANNEL, :, :]
+        input_tensors[0].data[:, 0:img_channels[0], :, :] = orig_tensor[:, 0:img_channels[0], :, :]
 
         # Storing the pipeline outputs
         outputs = []
@@ -105,7 +113,7 @@ class ProxyPipeline:
             # Filling in the output of the previous proxy into the input tensor of the
             # following proxy
             if (num + 1) < self.num_proxies:
-                input_tensors[num + 1].data[:, 0:c.NUM_IMAGE_CHANNEL, :, :] = output
+                input_tensors[num + 1].data[:, 0:img_channels[num], :, :] = output
 
             outputs.append(output)
 

@@ -153,6 +153,12 @@ NO_PARAMS = ['colorin','colorout', 'demosaic']
 List of Darktable blocks that do not require input parameters
 '''
 
+SINGLE_IMAGE_CHANNEL = ['demosaic']
+'''
+List of Darktable blocks that only have one image channel
+(in other words, this is all blocks up to and including demosaic)
+'''
+
 SAMPLER_BLOCKS = {
     'colorin': 'exposure_exposure',
     'colorout': 'colorbalancergb_contrast',
