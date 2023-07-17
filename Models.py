@@ -719,7 +719,7 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                 phase, epoch_loss))
             sys.stdout.flush()
             # deep copy the model
-            if (phase == 'val' and ((epoch_loss < best_loss or epoch == (num_epochs-1)) or save_every_epoch)) or proxy_type == "demosaic":#TODO: Temporary hack - remove me!
+            if (phase == 'val' and ((epoch_loss < best_loss or epoch == (num_epochs-1)) or save_every_epoch)) or proxy_type == "demosaic" or proxy_type == "colorin":#TODO: Temporary hack - remove me!
                 best_loss = epoch_loss
                 best_model_wts = copy.deepcopy(model.state_dict())
                 print('Saving model')
