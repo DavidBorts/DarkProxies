@@ -79,7 +79,7 @@ class ProxyPipeline:
                 width_list.append(c.IMG_SIZE)
             elif proxy_type == "demosaic":
                 img_channels_list.append(4)
-                width_list.append(c.IMG_SIZE/2)
+                width_list.append(int(c.IMG_SIZE/2))
             else:
                 img_channels_list.append(c.NUM_IMAGE_CHANNEL)
                 width_list.append(c.IMG_SIZE)
