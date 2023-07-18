@@ -109,6 +109,7 @@ def regress(
             if save_output and c.PIPELINE_CREATE_ANIMATION:
                 frame += 1
                 outputs_ndarray = outputs[-1].detach().cpu().clone().numpy()
+                outputs_ndarray = np.squeeze(outputs_ndarray, axis=0)
                 outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
                 print(f"Outputs ndarray shape: {str(outputs_ndarray.shape)}")
                 outputs_path = os.path.join(animations_path, f'pipeline_frame_{frame:04}.tif')
