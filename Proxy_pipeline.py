@@ -76,7 +76,7 @@ class ProxyPipeline:
             params = params.split('_')
             possible_values = get_possible_values(proxy_type, params)
             possible_values_list.append(possible_values)
-            if len(possible_values) > 0:
+            if len(possible_values) == 0:
                 params_lower_bounds_list.append(None)
                 params_diff_list.append(None)
             else:
