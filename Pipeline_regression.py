@@ -51,6 +51,12 @@ def regress(
 
     # Tracking the number of frames in the saved animation
     frame = 0
+
+    # Path to save all model outputs
+    outputs_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, 'model_outputs')
+    if not os.path.exists(outputs_dir):
+        os.mkdir(outputs_dir)
+        print('Directory created at: ' + outputs_dir)
     
     # Path to save animation
     animations_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, 'pipeline_' + c.ANIMATIONS_DIR)
@@ -108,9 +114,16 @@ def regress(
             optimizer.step()
 
             # Saving outputs
-            save_output = decide(i, num_iters)
-            if save_output and c.PIPELINE_CREATE_ANIMATION:
-                frame += 1
+            frame += 1
+            if c.SAVE_ALL_OUTPUTS:
+                for output_num, output in enumerate(outputs):
+                    output_ndarray = output.detach().cpu().clone().numpy()
+                    output_ndarray = np.squeeze(output_ndarray, axis=0)
+                    output_ndarray = np.moveaxis(output_ndarray, 0, -1)
+                    output_path = os.path.join(outputs_dir, f'proxy_{output_num}_frame_{frame:04}.tif')
+                    tifffile.imwrite(output_path, output_ndarray)
+            #save_output = decide(i, num_iters)
+            if c.PIPELINE_CREATE_ANIMATION:
                 outputs_ndarray = outputs[-1].detach().cpu().clone().numpy()
                 outputs_ndarray = np.squeeze(outputs_ndarray, axis=0)
                 outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)

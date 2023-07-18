@@ -64,9 +64,9 @@ STAGE_3_OUTPUT_DIR = 'output/'           #   Directory that stores all ground tr
 STAGE_3_PARAM_DIR = 'params/'            #   Directory that stores optimized proxy params
 STAGE_3_LOSS_FN = 'MSE'                  #   Loss for Pipeline Regression (MSE, L1, Spatial, or Perceptual)
 CONFIG_FILE = 'pipeline_config.txt'      # X Path to file with pipeline conifugration
+SAVE_ALL_OUTPUTS = True                      #   Toggles saving of all intermediary model outputs in the pipeline
 PIPELINE_REGRESSION_NUM_ITERS = 2000     #   Number of regression iterations per image
 PIPELINE_CREATE_ANIMATION = True         #   If True, saves frames from regression to use for animations
-PIPE_REGRESSION_ANIMATION_FORMAT = 'png' #   Format to save frames as (Default: png)
 
 WHICH_LOSS = {
     'highlights': ['MSE', 'L1'],
