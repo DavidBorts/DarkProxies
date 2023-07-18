@@ -145,13 +145,15 @@ def load_model(proxy_type, params, possible_values, weight_out_dir, use_gpu):
 
     # Loading the weights into a Unet
     num_input_channels = c.NUM_IMAGE_CHANNEL + len(possible_values)
+    add_params = proxy_type not in c.NO_PARAMS
     state_dict = generic_load(weight_out_dir, final_weights)
     if proxy_type == "demosaic":
         model = ChenNet(0, clip_output=True, add_params=False)
     else:
         model = UNet(
                     num_input_channels=num_input_channels,
-                    num_output_channels=c.NUM_IMAGE_CHANNEL
+                    num_output_channels=c.NUM_IMAGE_CHANNEL,
+                    add_params=add_params
                     )
     model.load_state_dict(state_dict)
     
