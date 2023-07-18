@@ -106,7 +106,7 @@ class ProxyPipeline:
         self.models = proxies
         self.possible_values = possible_values_list #NOTE: this is a list of lists
         self.param_lower_bounds = params_lower_bounds_list #NOTE: this is a list of lists
-        self.param_diff = params_diff_list #NOTE: this is a list of lists
+        self.param_diffs = params_diff_list #NOTE: this is a list of lists
         self.img_channels = img_channels_list
         self.widths = width_list
     
