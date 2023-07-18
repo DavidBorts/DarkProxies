@@ -73,6 +73,8 @@ def regress(
         # Fill in the best guess into the hyper-param tensor
         for param_tensor, params, lower_bounds, diffs in zip(param_tensors, best_params, isp.param_lower_bounds, isp.param_diffs):
             params_ndarray = np.array(params) #TODO: is this redundant?
+            if param_tensor is None:
+                continue
             for param_idx, param in enumerate(params_ndarray):
                 param_normalized = (param + lower_bounds[param_idx]) / diffs[param_idx]
                 param_tensor.data[:, param_idx, :, :] = param_normalized
