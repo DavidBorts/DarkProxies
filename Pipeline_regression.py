@@ -32,8 +32,12 @@ def regress(
             possible_values,
             ):
 
-    # MAE loss
-    criterion = losses[c.STAGE_3_LOSS_FN]
+    #loss
+    criterion = None	
+    if c.STAGE_3_LOSS_FN == "Perceptual":	
+        criterion = losses["Perceptual"](losses["MSE"](), use_gpu)	
+    else:	
+        criterion = losses[c.STAGE_3_LOSS_FN]()
     
     # Starting off with an initial guess
     # NOTE: this is a list of lists
