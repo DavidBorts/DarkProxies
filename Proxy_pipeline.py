@@ -64,6 +64,8 @@ class ProxyPipeline:
         # in the correct order
         proxies = []
         possible_values_list = []
+        params_lower_bounds_list = []
+        params_diff_list = []
         img_channels_list = []
         width_list = []
         for proxy_name, params in proxies_list:
@@ -74,6 +76,12 @@ class ProxyPipeline:
             params = params.split('_')
             possible_values = get_possible_values(proxy_type, params)
             possible_values_list.append(possible_values)
+            if len(possible_values) != 2:
+                params_lower_bounds_list.append(None)
+                params_diff_list.append(None)
+            else:
+                params_lower_bounds_list.append([values[0] for values in possible_values])
+                params_diff_list.append([values[1] - values[0] for values in possible_values])
             if proxy_type in c.SINGLE_IMAGE_CHANNEL:
                 img_channels_list.append(1)
                 width_list.append(c.IMG_SIZE)
@@ -97,6 +105,8 @@ class ProxyPipeline:
             proxies.append(load_model(proxy_type, params, possible_values, weight_out_dir, self.use_gpu))
         self.models = proxies
         self.possible_values = possible_values_list #NOTE: this is a list of lists
+        self.param_lower_bounds = params_lower_bounds_list #NOTE: this is a list of lists
+        self.param_diff = params_diff_list #NOTE: this is a list of lists
         self.img_channels = img_channels_list
         self.widths = width_list
     

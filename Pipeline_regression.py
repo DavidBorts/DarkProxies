@@ -53,7 +53,7 @@ def regress(
     frame = 0
     
     # Path to save animation
-    animations_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, 'pipeline' + c.ANIMATIONS_DIR)
+    animations_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, 'pipeline_' + c.ANIMATIONS_DIR)
     if not os.path.exists(animations_path):
         os.mkdir(animations_path)
         print('Animation directory created at: ' + animations_path)
@@ -71,10 +71,11 @@ def regress(
         #num_input_channels = [c.NUM_IMAGE_CHANNEL + len(params) for params in best_params]
 
         # Fill in the best guess into the hyper-param tensor
-        for param_tensor, params in zip(param_tensors, best_params):
+        for param_tensor, params, lower_bounds, diffs in zip(param_tensors, best_params, isp.param_lower_bounds, isp.param_diffs):
             params_ndarray = np.array(params) #TODO: is this redundant?
             for param_idx, param in enumerate(params_ndarray):
-                param_tensor.data[:, param_idx, :, :] = param
+                param_normalized = (param + lower_bounds[param_idx]) / diffs[param_idx]
+                param_tensor.data[:, param_idx, :, :] = param_normalized
 
         # Assemble list of pipeline input tensors and fill them in
         # with the best guess for all hyper-parameter channels
@@ -100,7 +101,7 @@ def regress(
             #NOTE: Outputs is a list of every proxy output tensor
             outputs = isp.process(orig_tensor, input_tensors)
             for idx, output in enumerate(outputs):
-                print(f"Output tensor {idx}: ")
+                print(f"Output tensor {idx}, with size: {str(output.size())}")
                 print(output)
 
             loss = criterion(outputs[-1], tm_tensor)
@@ -121,7 +122,8 @@ def regress(
                 #plt.imsave(outputs_path, outputs_ndarray, format=c.PIPE_REGRESSION_ANIMATION_FORMAT)
             
         # Getting out current best param values
-        for idx, param_tensor in enumerate(param_tensors):
+        for idx, lists in enumerate(zip(param_tensors, isp.param_lower_bounds, isp.param_diffs)):
+            param_tensor, lower_bounds, diffs = lists
             if param_tensor is None:
                 continue
             _, num_params, _, _ = param_tensor.shape
@@ -131,7 +133,9 @@ def regress(
                 else:
                     param_temp = param_tensor.clone().detach()[:, param_idx, :, :]
                 
-                best_params[idx][param_idx] = param_temp.mean(0).mean(0).mean(0).numpy()
+                best_param = param_temp.mean(0).mean(0).mean(0).numpy()
+                best_param_expanded = (best_param * diffs[param_idx]) - lower_bounds(param_idx)
+                best_params[idx][param_idx] = best_param_expanded
         print('current params: ')
         print(best_params)
         sys.stdout.flush()
