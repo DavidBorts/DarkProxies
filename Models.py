@@ -673,8 +673,8 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                                 #plt.imsave(outputs_path, outputs_ndarray, format='png')
                             #except:
                                 #tifffile.imwrite(outputs_path, outputs_ndarray)
-                            print("Outputs shape: " + str(outputs_ndarray.shape))
-                            sys.stdout.flush()
+                            #print("Outputs shape: " + str(outputs_ndarray.shape))
+                            #sys.stdout.flush()
                             tifffile.imwrite(outputs_path, outputs_ndarray)
                         
     #                    print("outputs {}".format(outputs.size()))
