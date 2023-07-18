@@ -136,8 +136,8 @@ def regress(
                     param_temp = param_tensor.clone().detach()[:, param_idx, :, :]
                 
                 best_param = param_temp.mean(0).mean(0).mean(0).numpy()
-                best_param_expanded = (best_param * diffs[param_idx]) - lower_bounds(param_idx)
-                best_params[idx][param_idx] = best_param_expanded
+                best_param_rescaled = (best_param * diffs[param_idx]) - lower_bounds[param_idx]
+                best_params[idx][param_idx] = best_param_rescaled
         print('current params: ')
         print(best_params)
         sys.stdout.flush()
