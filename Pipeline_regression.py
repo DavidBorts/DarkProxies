@@ -99,6 +99,9 @@ def regress(
             # Processing through ISP
             #NOTE: Outputs is a list of every proxy output tensor
             outputs = isp.process(orig_tensor, input_tensors)
+            for idx, output in enumerate(outputs):
+                print(f"Output tensor {idx}: ")
+                print(output)
 
             loss = criterion(outputs[-1], tm_tensor)
             loss.backward()
@@ -111,7 +114,7 @@ def regress(
                 outputs_ndarray = outputs[-1].detach().cpu().clone().numpy()
                 outputs_ndarray = np.squeeze(outputs_ndarray, axis=0)
                 outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
-                print(f"Outputs ndarray shape: {str(outputs_ndarray.shape)}")
+                #print(f"Outputs ndarray shape: {str(outputs_ndarray.shape)}")
                 outputs_path = os.path.join(animations_path, f'pipeline_frame_{frame:04}.tif')
                 tifffile.imwrite(outputs_path, outputs_ndarray, photometric='rgb')
                 #outputs_path = os.path.join(animations_path, f'pipeline_frame_{frame:04}.png')
