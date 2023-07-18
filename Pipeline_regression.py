@@ -3,7 +3,8 @@ sys.path.append('../')
 import numpy as np
 import os
 import argparse
-import matplotlib.pyplot as plt
+import tifffile
+#import matplotlib.pyplot as plt
 import torch
 import torch.optim as optim
 from torch.optim import lr_scheduler
@@ -109,8 +110,10 @@ def regress(
                 frame += 1
                 outputs_ndarray = outputs[-1].detach().cpu().clone().numpy()
                 outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
-                outputs_path = os.path.join(animations_path, f'pipeline_frame_{frame:04}.png')
-                plt.imsave(outputs_path, outputs_ndarray, format=c.PIPE_REGRESSION_ANIMATION_FORMAT)
+                outputs_path = os.path.join(animations_path, f'pipeline_frame_{frame:04}.tif')
+                tifffile.imwrite(outputs_path, outputs_ndarray)
+                #outputs_path = os.path.join(animations_path, f'pipeline_frame_{frame:04}.png')
+                #plt.imsave(outputs_path, outputs_ndarray, format=c.PIPE_REGRESSION_ANIMATION_FORMAT)
             
         # Getting out current best param values
         for idx, param_tensor in enumerate(param_tensors):
