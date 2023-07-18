@@ -102,9 +102,6 @@ def regress(
             # Processing through ISP
             #NOTE: Outputs is a list of every proxy output tensor
             outputs = isp.process(orig_tensor, input_tensors)
-            for idx, output in enumerate(outputs):
-                print(f"Output tensor {idx}, with size: {str(output.size())}")
-                print(output)
 
             loss = criterion(outputs[-1], tm_tensor)
             loss.backward()
