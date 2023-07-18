@@ -110,6 +110,7 @@ def regress(
                 frame += 1
                 outputs_ndarray = outputs[-1].detach().cpu().clone().numpy()
                 outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
+                print(f"Outputs ndarray shape: {str(outputs_ndarray.shape)}")
                 outputs_path = os.path.join(animations_path, f'pipeline_frame_{frame:04}.tif')
                 tifffile.imwrite(outputs_path, outputs_ndarray)
                 #outputs_path = os.path.join(animations_path, f'pipeline_frame_{frame:04}.png')
