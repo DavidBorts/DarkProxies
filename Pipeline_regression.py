@@ -113,7 +113,7 @@ def regress(
                 outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
                 print(f"Outputs ndarray shape: {str(outputs_ndarray.shape)}")
                 outputs_path = os.path.join(animations_path, f'pipeline_frame_{frame:04}.tif')
-                tifffile.imwrite(outputs_path, outputs_ndarray)
+                tifffile.imwrite(outputs_path, outputs_ndarray, photometric='rgb')
                 #outputs_path = os.path.join(animations_path, f'pipeline_frame_{frame:04}.png')
                 #plt.imsave(outputs_path, outputs_ndarray, format=c.PIPE_REGRESSION_ANIMATION_FORMAT)
             
