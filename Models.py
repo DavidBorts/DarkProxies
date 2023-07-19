@@ -554,7 +554,7 @@ def load_checkpoint(model, model_weight_dir):
 Training routine for the model. For example of inputs, go to Train_proxy.py
 '''
 #TODO: add function comment
-def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, scheduler, weight_out_dir, num_epochs, start_epoch, use_gpu, proxy_type, params, name, save_every_epoch = True, save_outputs=True):
+def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, scheduler, weight_out_dir, num_epochs, start_epoch, use_gpu, proxy_type, params, name, writer, save_every_epoch = True, save_outputs=True):
     save_output_frequency = c.SAVE_OUTPUT_FREQ
     num_epochs = num_epochs + start_epoch
     dtype = torch.FloatTensor
@@ -609,6 +609,8 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                     inputs = inputs.type(dtype)
                     params = params.type(dtype)
                     labels = labels.type(dtype)
+                    writer.add_images(f"inputs/{str(i)}", inputs, epoch)
+                    writer.add_images(f"labels/{str(i)}", labels, epoch)
 
                     # zero the parameter gradients
                     optimizer.zero_grad()
@@ -617,6 +619,7 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                     # track history if only in train
                     with torch.set_grad_enabled(phase == 'train'):
                         outputs = model(inputs, params=params)
+                        writer.add_images(f"outputs/{str(i)}", outputs, epoch)
 
                         # Saving model outputs during training
                         if save_outputs and (epoch % save_output_frequency) == 0:
@@ -651,6 +654,8 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                 for names, inputs, labels in dataloaders[phase]:  
                     inputs = inputs.type(dtype)
                     labels = labels.type(dtype)
+                    writer.add_images(f"inputs/{str(i)}", inputs, epoch)
+                    writer.add_images(f"labels/{str(i)}", labels, epoch)
 
                     # zero the parameter gradients
                     optimizer.zero_grad()
@@ -663,6 +668,7 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                     # track history if only in train
                     with torch.set_grad_enabled(phase == 'train'):
                         outputs = model(inputs)
+                        writer.add_images(f"outputs/{str(i)}", outputs, epoch)
 
                         # Saving model outputs during training
                         if save_outputs and (epoch % save_output_frequency) == 0:
@@ -706,14 +712,16 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                     i += 1
                 
             epoch_loss = running_loss / dataset_sizes[phase]
-            if phase == 'train':
-                losses_train = [str(epoch_loss)]
-                with open(loss_log_path_train, 'w') as file:
-                    file.write('\n'.join(losses_train))
-            else:
-                losses_val = [str(epoch_loss)]
-                with open(loss_log_path_val, 'w') as file:
-                    file.write('\n'.join(losses_val))
+            writer.add_scalar(f"Loss/{phase}", epoch_loss, epoch)
+
+            # if phase == 'train':
+            #     losses_train = [str(epoch_loss)]
+            #     with open(loss_log_path_train, 'w') as file:
+            #         file.write('\n'.join(losses_train))
+            # else:
+            #     losses_val = [str(epoch_loss)]
+            #     with open(loss_log_path_val, 'w') as file:
+            #         file.write('\n'.join(losses_val))
 
             print('\tDone with {} phase. Average Loss: {:.4f}'.format(
                 phase, epoch_loss))
@@ -728,6 +736,7 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
     sys.stdout.flush()
+    writer.flush()
 
 '''
 Evaluate the model on a any input(s)

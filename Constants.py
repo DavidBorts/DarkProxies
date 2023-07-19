@@ -11,6 +11,7 @@ DARKTABLE_PATH = "/home/dborts/programs/darktable/build/bin/darktable-cli" # CHA
 
 # Global constants
 IMAGE_ROOT_DIR = '.'                     #   Root directory from which to construct all file paths
+LOG_DIR  = 'runs'                        #   Directory name in which to dump TensorBoard logs
 INTERACTIVE = False                      #   Toggle interactive prompts between stages
 NUM_IMAGE_CHANNEL = 3                    # X Number of channels in each image (3 for RGB)
 IMG_SIZE = 736                           # X Dimensions to crop all images to (IMG_SIZE x IMG_SIZE)
@@ -64,7 +65,7 @@ STAGE_3_OUTPUT_DIR = 'output/'           #   Directory that stores all ground tr
 STAGE_3_PARAM_DIR = 'params/'            #   Directory that stores optimized proxy params
 STAGE_3_LOSS_FN = 'MSE'                  #   Loss for Pipeline Regression (MSE, L1, Spatial, or Perceptual)
 CONFIG_FILE = 'pipeline_config.txt'      # X Path to file with pipeline conifugration
-SAVE_ALL_OUTPUTS = True                      #   Toggles saving of all intermediary model outputs in the pipeline
+SAVE_ALL_OUTPUTS = True                  #   Toggles saving of all intermediary model outputs in the pipeline
 PIPELINE_REGRESSION_NUM_ITERS = 2000     #   Number of regression iterations per image
 PIPELINE_CREATE_ANIMATION = True         #   If True, saves frames from regression to use for animations
 
