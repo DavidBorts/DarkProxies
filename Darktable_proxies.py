@@ -37,7 +37,9 @@ args = parser.parse_args()
 proxy_type = args.proxy
 params = args.params
 custom = args.custom
-dataset_name = args.dataset + '_'
+dataset_name = args.dataset
+if dataset_name is not None:
+    dataset_name += '_'
 num = int(args.number)
 num_regression = int(args.regression)
 
