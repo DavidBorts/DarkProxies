@@ -76,9 +76,6 @@ def generate(proxy_type, params, stage, possible_values, num, name):
         os.mkdir(output_path)
         print('Directory created at: ' + output_path)
 
-    # Information about tapout requirement for the given proxy
-    tapouts = c.TAPOUTS[proxy_type]
-
     # Which parameter spaces to sample
     # (by default, proxies with input parameters sample their own
     # paramater spaces. Howvever, for proxies without input paramaters,
@@ -89,7 +86,7 @@ def generate(proxy_type, params, stage, possible_values, num, name):
     #TODO: is this still necessary?
     proxy_type_gt = proxy_type
     params_gt = params
-    if tapouts is not None and proxy_type != "demosaic" and proxy_type != "exposure":#TODO: temporary hack, remove me!!
+    if proxy_type in c.NO_PARAMS and proxy_type != "demosaic" and proxy_type != "exposure":#TODO: temporary hack, remove me!!
         proxy_type_gt, params_gt = c.SAMPLER_BLOCKS[proxy_type].split('_')
         params_gt = [params_gt] # NOTE: params_gt, like params, must be a list
 
@@ -102,7 +99,7 @@ def generate(proxy_type, params, stage, possible_values, num, name):
 
     # Temporary hack: not sweeping parameter spaces for demosaic
     if possible_values[0][0] is None or possible_values[0][1] is None:
-        generate_single(proxy_type, dng_path, src_images, input_path, output_path, tapouts)
+        generate_single(proxy_type, dng_path, src_images, input_path, output_path, None)
         print(f"Training data generated: stage {stage}")
         return
     
@@ -125,23 +122,21 @@ def generate(proxy_type, params, stage, possible_values, num, name):
         # Extracting necessary params from the source image
         raw_prepare_params, temperature_params = dt.read_dng_params(src_path)
 
-        # No need to render input image separately when using ISP tap-outs
-        if tapouts is None:
-            # Getting path of the input image
-            input_file_path = os.path.join(input_path, image.split('.')[0])
-            input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
+        # Getting path of the input image
+        input_file_path = os.path.join(input_path, image.split('.')[0])
+        input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
 
-            # Checking if input image already exists
-            # (this can happen if a previous data generation job was interrupted)
-            input_exists = os.path.exists(input_file_path)
-            
-            # Assembling a dictionary of all of the original params for the source image
-            # (used to render proxy input)
-            original_params = dt.get_params_dict(None, None, None, temperature_params, raw_prepare_params)
+        # Checking if input image already exists
+        # (this can happen if a previous data generation job was interrupted)
+        input_exists = os.path.exists(input_file_path)
+        
+        # Assembling a dictionary of all of the original params for the source image
+        # (used to render proxy input)
+        original_params = dt.get_params_dict(None, None, None, temperature_params, raw_prepare_params)
 
-            # Rendering an unchanged copy of the source image for model input
-            if not input_exists:
-                dt.render(src_path, input_file_path, original_params)
+        # Rendering an unchanged copy of the source image for model input
+        if not input_exists:
+            dt.render(src_path, input_file_path, original_params)
 
         # Parameter value sweep
         # (to generate ground truth images)
@@ -166,27 +161,6 @@ def generate(proxy_type, params, stage, possible_values, num, name):
 
             # Rendering the output image
             dt.render(src_path, gt_file_path, params_dict)
-
-            # Checking if input & ground truth images need to be replaced with tapouts
-            if tapouts is not None:
-                
-                # Getting file path of the tapout
-                input_tapout_path = tapouts[0] + '.tmp'
-                gt_tapout_path = tapouts[1] + '.tmp'
-                #print('input tapout path: ' + input_tapout_path)
-                #print('ground truth tapout path: ' + gt_tapout_path)
-
-                # Getting path of the input image
-                input_file_path = os.path.join(input_path, image.split('.')[0])
-                input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
-
-                # Deleting final output image
-                os.remove(gt_file_path)
-                print('replacing: ' + gt_file_path)
-
-                # Read in the tapouts and save them as tiffs
-                tmp2tiff(input_tapout_path, input_file_path)
-                tmp2tiff(gt_tapout_path, gt_file_path)
     print(f"Training data generated: stage {stage}")
     return gt_imgs
 
