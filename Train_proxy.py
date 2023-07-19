@@ -87,7 +87,7 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
     image_root_dir = c.IMAGE_ROOT_DIR
 
     # Tensorboard
-    writer = SummaryWriter(log_dir=os.path.join(c.IMAGE_ROOT_DIR, c.LOG_DIR + '_' + name))
+    writer = SummaryWriter(log_dir=os.path.join(c.IMAGE_ROOT_DIR, c.LOG_DIR, name))
 
     # Checking if user wants to train a proxy
     interactive = c.INTERACTIVE
