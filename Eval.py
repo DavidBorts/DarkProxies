@@ -37,6 +37,7 @@ params_file = args.params_file
 # Constants
 #TODO: add support for proxies w/out params
 weight_out_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, name + '_' + c.MODEL_WEIGHTS_PATH)
+print(f"Loading weights from: {weight_out_dir}")
 use_gpu = torch.cuda.is_available()
 possible_values = get_possible_values(proxy_type, params)
 
