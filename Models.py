@@ -654,7 +654,10 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                 for names, inputs, labels in dataloaders[phase]:  
                     inputs = inputs.type(dtype)
                     labels = labels.type(dtype)
-                    writer.add_images(f"inputs/{str(i)}", inputs, epoch)
+                    if proxy_type in c.NO_PARAMS:
+                        writer.add_images(f"inputs/{str(i)}", inputs, epoch)
+                    else:
+                        writer.add_images(f"inputs/{str(i)}", inputs[:,0:c.NUM_IMAGE_CHANNEL,:], epoch)
                     writer.add_images(f"labels/{str(i)}", labels, epoch)
 
                     # zero the parameter gradients
