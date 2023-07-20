@@ -285,8 +285,8 @@ def generate_eval(proxy_type, params, params_file, name, possible_values):
                 gt_file_path = os.path.join(output_path, f'{image}_{name}')
                 for val in values.split(','):
                     gt_file_path += '_' + str(val)
-                output_file_path = (repr(output_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
-                dt.render(src_path, output_file_path, params_dict)
+                gt_file_path = (repr(gt_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
+                dt.render(src_path, gt_file_path, params_dict)
 
     print("Data for evaluation generated.")
     return params_mat
