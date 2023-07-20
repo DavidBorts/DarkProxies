@@ -110,7 +110,7 @@ class Darktable_Dataset(Dataset):
         if self.stage == 1 and proxy_type not in c.NO_PARAMS:
             if params_file is None:
                 self.param_mat = np.load(os.path.join(root_dir, self.stage_path, self.name + 'params.npy'))
-            else: # For sweep mode
+            else:
                 self.param_mat = np.load(params_file)
             if self.sweep:
                 self.num_params = len(self.param_mat)

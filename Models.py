@@ -742,7 +742,8 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
 Evaluate the model on a any input(s)
 '''
 #TODO: bring up to speed with train()
-def eval(model, dataloader, criterion, optimizer, use_gpu, proxy_type, param, sweep=False, outputs_path=None):
+#FIXME: fix sweep 
+def eval(model, dataloader, criterion, optimizer, use_gpu, proxy_type, params, name, sweep=False, outputs_path=None):
     dtype = torch.FloatTensor
     if use_gpu:
         dtype = torch.cuda.FloatTensor
@@ -807,15 +808,15 @@ def eval(model, dataloader, criterion, optimizer, use_gpu, proxy_type, param, sw
                 # zero the parameter gradients
                 optimizer.zero_grad()
 
-
                 with torch.set_grad_enabled(False):
                     outputs = model(inputs)
 
                     # Saving model output
                     outputs_ndarray = outputs[0].detach().cpu().numpy()
                     outputs_ndarray = np.moveaxis(outputs_ndarray, 0, -1)
-                    outputs_path = os.path.join(c.IMAGE_ROOT_DIR, c.EVAL_PATH, f'{proxy_type}_{param}_eval_{names[0]}')
-                    plt.imsave(outputs_path, outputs_ndarray, format=c.OUTPUT_PREDICTIONS_FORMAT)
+                    outputs_path = os.path.join(c.IMAGE_ROOT_DIR, c.EVAL_PATH, f'{name}_eval_{names[0]}.tif')
+                    #plt.imsave(outputs_path, outputs_ndarray, format=c.OUTPUT_PREDICTIONS_FORMAT)
+                    tifffile.imwrite(outputs_path, outputs_ndarray)
 
                 loss = criterion(outputs, labels)
 
@@ -834,7 +835,7 @@ def eval(model, dataloader, criterion, optimizer, use_gpu, proxy_type, param, sw
     running_loss))
 
     # Printing image statistics
+    print("Summary:")
     for info in eval_info:
         print(info)
-
     sys.stdout.flush()

@@ -211,17 +211,15 @@ def generate_single(proxy_type, dng_path, src_images, input_path, output_path, t
             tmp2tiff(tapout_path_input, input_file_path, color='minisblack')
             tmp2tiff(tapout_path_gt, output_file_path)
 
-#TODO: UPDATE ME TO ONLY GENERATE ONE INPUT IMAGE PER DNG!!
-#FIXME: bring up to speed with generate()
-def generate_eval(proxy_type, param, params_file):
+def generate_eval(proxy_type, params, params_file, name, possible_values):
     
     # Getting path of the params matrix file
     eval_path = os.path.join(c.IMAGE_ROOT_DIR, c.EVAL_PATH)
-    params_mat = os.path.join(eval_path, f'{proxy_type}_{param}_eval_params.npy')
+    params_mat = os.path.join(eval_path, f'{name}_eval_params.npy')
 
     # Getting paths of input and output directories
-    input_path = os.path.join(eval_path, f'{proxy_type}_{param}_input')
-    output_path = os.path.join(eval_path, f'{proxy_type}_{param}_output')
+    input_path = os.path.join(eval_path, f'{name}_input')
+    output_path = os.path.join(eval_path, f'{name}_output')
 
     # Creating any directories that don't already exist
     if not os.path.exists(eval_path):
@@ -234,24 +232,27 @@ def generate_eval(proxy_type, param, params_file):
         os.mkdir(output_path)  
         print('Directory created at: ' + output_path) 
 
-    # Checking that given input and output directories are empty
-    if ((len(os.listdir(input_path)) > 0 or len(os.listdir(output_path)) > 0) and c.CHECK_DIRS):
-        print(f'ERROR: {proxy_type}: {param} eval directories already contain data.')
-        return params_mat
-
-    # List of all slider values
-    vals = []
-
     # Getting path of source DNG files
     dng_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_DNG_PATH)
     src_images = os.listdir(dng_path)
 
     # Reading through the params .txt file and generating data accordingly
     with open(params_file, 'r') as file:
-        values = file.readlines()
+        values_list = file.readlines()
 
-        for value in values:
-            for image in src_images:
+        if len(possible_values) > 1:
+            values_list_ndarray = np.zeros((len(possible_values), len(values_list)))
+            for idx, values in enumerate(values_list):
+                values_list_ndarray[:, idx] = np.array(values)
+            samples_concatenated = np.concatenate([values_list_ndarray for _ in range(len(src_images))], axis=1)
+        else:
+            values_list_float = [float(value) for value in values_list]
+            samples_concatenated = np.concatenate([values_list_float for _ in range(len(src_images))])
+        convert(samples_concatenated, params_mat, ndarray=True)
+        print("Params file saved.")
+
+        for image in src_images:
+            for values in values_list:
 
                 # Getting path of individual source DNG file
                 src_path = os.path.join(dng_path, image)
@@ -259,27 +260,32 @@ def generate_eval(proxy_type, param, params_file):
                 # Extracting necessary params from the source image
                 raw_prepare_params, temperature_params = dt.read_dng_params(src_path)
 
+                # Getting path of the input image
+                input_file_path = os.path.join(input_path, image.split('.')[0])
+                input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
+
+                # Checking if input image already exists
+                # (this can happen if a previous data generation job was interrupted)
+                input_exists = os.path.exists(input_file_path)
+                
                 # Assembling a dictionary of all of the original params for the source image
                 # (used to render proxy input)
                 original_params = dt.get_params_dict(None, None, None, temperature_params, raw_prepare_params)
 
-                # Rendering the input image
-                input_file_path = os.path.join(input_path, f'{image}_{proxy_type}_{param}')
-                input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
-                dt.render(src_path, input_file_path, original_params)
+                # Rendering an unchanged copy of the source image for model input
+                if not input_exists:
+                    dt.render(src_path, input_file_path, original_params)
 
                 # Assembling a dictionary of all of the parameters to apply to the source DNG
                 # Temperature and rawprepare params must be maintained in order to produce expected results
-                params_dict = dt.get_params_dict(proxy_type, param, value, temperature_params, raw_prepare_params)
-                vals.append(float(value)) # Adding to params list
+                params_dict = dt.get_params_dict(proxy_type, params, values.split(','), temperature_params, raw_prepare_params)
 
                 # Rendering the output image
-                output_file_path = os.path.join(output_path, f'{image}_{proxy_type}_{param}') #f'./stage_1/contrast_input/contrast_{contrast}.tif'
-                output_file_path = (repr(output_file_path).replace('\\\\', '/')).strip("'") + f'_{value}.tif' # Dealing with Darktable CLI pickiness
+                gt_file_path = os.path.join(output_path, f'{image}_{name}')
+                for val in values.split(','):
+                    gt_file_path += '_' + str(val)
+                output_file_path = (repr(output_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
                 dt.render(src_path, output_file_path, params_dict)
-
-    # Converting param list to numpy array and saving to file
-    convert(vals, params_mat)
 
     print("Data for evaluation generated.")
     return params_mat

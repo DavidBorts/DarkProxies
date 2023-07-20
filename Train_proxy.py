@@ -215,14 +215,12 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
 '''
 Evaluate the model on a any input(s)
 '''
-# TODO: add suppport for colorin & colorout (+ demosaic)
 # TODO: move this to eval file?
-# TODO: bring up to speed with run_training_procedure
-def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, params_file, possible_params, proxy_type, param, append_params):
+def run_eval_procedure(model_out_dir, use_gpu, params_file, possible_params, proxy_type, params, name, append_params=True):
 
     # Constants
-    input_path = os.path.join(c.IMAGE_ROOT_DIR, c.EVAL_PATH, f'{proxy_type}_{param}_input')
-    output_path = os.path.join(c.IMAGE_ROOT_DIR, c.EVAL_PATH, f'{proxy_type}_{param}_output')
+    input_path = os.path.join(c.IMAGE_ROOT_DIR, c.EVAL_PATH, f'{name}_input')
+    output_path = os.path.join(c.IMAGE_ROOT_DIR, c.EVAL_PATH, f'{name}_output')
 
     # Creating input and output directories, if they do not already exist
     if not os.path.exists(input_path):
@@ -234,34 +232,65 @@ def run_eval_procedure(image_root_dir, model_out_dir, use_gpu, params_file, poss
     
     # Set up data loading.
     since = time.time()
-    image_dataset = Darktable_Dataset(root_dir = image_root_dir, stage=1, proxy_type=proxy_type, param=param, input_dir=input_path, output_dir=output_path, params_file=params_file)
+    image_dataset = Darktable_Dataset(c.IMAGE_ROOT_DIR,
+                                      1,
+                                      proxy_type,
+                                      params,
+                                      input_dir=input_path,
+                                      output_dir=output_path,
+                                      params_file=params_file,
+                                      param_ranges=possible_params)
     eval_loader = torch.utils.data.DataLoader(image_dataset, batch_size=1, num_workers=1)
     time_elapsed = time.time() - since
     print('Data Loader prepared in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
     sys.stdout.flush()
     
     # Set up model.
-    unet = UNet(num_input_channels=c.NUM_IMAGE_CHANNEL + len(possible_params),
-                num_output_channels=c.NUM_IMAGE_CHANNEL, skip_connect=skip_connect, add_params=append_params, clip_output=clip_output)
+    # Setting up model
+    num_channels, params_size = get_num_input_channels(proxy_type, possible_params, append_params)
+    model = None
+    if proxy_type == "demosaic":
+        print("model: ChenNet")
+        #model = DemosaicNet(num_input_channels=num_channels, num_output_channels=12,
+                            #skip_connect=skip_connect, clip_output=clip_output)
+        model = ChenNet(0, clip_output=clip_output, add_params=False)
+    else:
+        print("model: UNET")
+        channel_list = [32, 64, 128, 256, 512]
+        if c.NPF_BASELINE:
+            channel_list = [16, 32, 64, 128, 256]
+        if append_params:
+            model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
+                    skip_connect=skip_connect, add_params=append_params, clip_output=clip_output,
+                    num_params=len(possible_params), params_size=params_size, channel_list=channel_list)
+        else:
+             model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
+                    skip_connect=skip_connect, add_params=append_params, clip_output=clip_output,
+                    channel_list=channel_list)
     if use_checkpoint:
-        start_epoch = load_checkpoint(unet, model_out_dir) #weight_out_dir
+        start_epoch = load_checkpoint(model, model_out_dir) #weight_out_dir
+
+    # GPU & DataParallel configuration
     if use_gpu:
-        unet.cuda()
+        model.cuda()
     if torch.cuda.device_count() > 1:
-        unet = nn.DataParallel(unet)
+        model = nn.DataParallel(model)
         
     # Set up training regime.
     # criterion is the loss function, which can be nn.L1Loss() or nn.MSELoss()
-    #criterion = nn.MSELoss()
-    criterion = losses[c.WHICH_LOSS[proxy_type]]()
-    optimizer = optim.Adam(unet.parameters(), lr=learning_rate)
+    if c.WHICH_LOSS[proxy_type][0] == "Perceptual":	
+        criterion = losses[c.WHICH_LOSS[proxy_type][0]](nn.MSELoss(), use_gpu)	
+    else:	
+        criterion = losses[c.WHICH_LOSS[proxy_type][0]]()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     eval(
-        unet, 
+        model, 
         eval_loader, 
         criterion, 
         optimizer, 
         use_gpu, 
         proxy_type,
-        param
+        params,
+        name
     )
