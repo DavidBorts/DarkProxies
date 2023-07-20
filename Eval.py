@@ -41,7 +41,7 @@ use_gpu = torch.cuda.is_available()
 possible_values = get_possible_values(proxy_type, params)
 
 # Generating data for evaluation
-params_mat = generate_eval(proxy_type, params, params_file, name)
+params_mat = generate_eval(proxy_type, params, params_file, name, possible_values)
 
 # Evaluating on generated data
 run_eval_procedure(weight_out_dir, use_gpu, params_mat, possible_values, proxy_type, params, name)
