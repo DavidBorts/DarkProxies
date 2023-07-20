@@ -84,8 +84,8 @@ def regress(
             for param_idx, param in enumerate(params_ndarray):
                 param_normalized = (param + lower_bounds[param_idx]) / diffs[param_idx]
                 param_tensor.data[:, param_idx, :, :] = param_normalized
-            print("Normalized param tensor:")
-            print(param_tensor)
+            #print("Normalized param tensor:")
+            #print(param_tensor)
 
         # Assemble list of pipeline input tensors and fill them in
         # with the best guess for all hyper-parameter channels
