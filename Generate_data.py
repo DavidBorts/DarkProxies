@@ -244,7 +244,7 @@ def generate_eval(proxy_type, params, params_file, name, possible_values):
             values_list_ndarray = np.zeros((len(possible_values), len(values_list)))
             for idx, values in enumerate(values_list):
                 values_float = [float(value) for value in values.split(',')]
-                values_list_ndarray[:, idx] = np.array(values)
+                values_list_ndarray[:, idx] = np.array(values_float)
             samples_concatenated = np.concatenate([values_list_ndarray for _ in range(len(src_images))], axis=1)
         else:
             values_list_float = [float(value) for value in values_list]
