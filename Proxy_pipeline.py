@@ -95,11 +95,7 @@ class ProxyPipeline:
             proxy_type = proxy_name
 
             # Location of model weights
-            #TODO: refactor to get rid of 'full' checks
-            if params[0].lower() != 'full':
-                weight_out_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_' + ''.join([f'{param}_' for param in params]) + c.MODEL_WEIGHTS_PATH)
-            else:
-                weight_out_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_type + '_' + c.MODEL_WEIGHTS_PATH)
+            weight_out_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_name + '_' + c.MODEL_WEIGHTS_PATH)
 
             # Loding proxy
             proxies.append(load_model(proxy_type, params, possible_values, weight_out_dir, self.use_gpu))
