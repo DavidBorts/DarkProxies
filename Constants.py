@@ -23,6 +23,7 @@ EMBEDDING_RATIO = 2                      # X Number of input parameters to map t
 EMBED_TO_SINGLE = False                  # X If True, input paramaters are mapped to a single latent parameter
 DOWNSAMPLE_IMAGES = False                # X Toggles downsampling of training data w/ bilinear interpolation
 NPF_BASELINE = False                     # X Toggles NPF (Tseng et al. 2022) model architecture
+SKIP_CONNECT = True                      # X Toggles skip connections in the neural networks
 
 # Data generation constants (Stage 0)
 GENERATE_STAGE_1 = False                  #   Toggles new data generation for proxy training (stage 1)

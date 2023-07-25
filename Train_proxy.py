@@ -19,7 +19,7 @@ import Constants as c
 
 # Constants
 # TODO: move these into Constants.py
-skip_connect = True
+skip_connect = c.SKIP_CONNECT
 clip_output = c.CLIP_OUTPUT
 num_epoch = c.PROXY_MODEL_NUM_EPOCH
 use_checkpoint = True
