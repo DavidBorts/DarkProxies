@@ -315,10 +315,13 @@ class ColorBalanceRGBParams:
     # v3 params: 1 deprecated param
     mask_grey_fulcrum: float = 0.1845
 
-    # v4 params (current)
+    # v4 params
     vibrance: float = 0.0  # $MIN: -1.0 $MAX: 1.0 $DEFAULT: 0 $DESCRIPTION: "global vibrance"
     grey_fulcrum: float = 0.1845  # $MIN:  0.0 $MAX: 1.0 $DEFAULT: 0.1845 $DESCRIPTION: "contrast gray fulcrum"
     contrast: float = 0.0  # $MIN: -1.0 $MAX: 1.0 $DEFAULT: 0. $DESCRIPTION: "contrast"
+
+    # v5 params (current)
+    saturation_formula: int = 1 # $DEFAULT: 1 $DESCRIPTION: "saturation formula"
 
     def to_hex_string(self):
         return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
