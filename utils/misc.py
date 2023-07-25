@@ -14,10 +14,10 @@ def sort_params(proxy_type, params):
     if params is None or params[0].lower() == 'full':
         return c.PARAM_NAMES[proxy_type]
 
-    names = c.PARAM_NAMES[proxy_type]
-    params_upper = [param.upper() for param in params]
+    names_lower = [name.lower() for name in c.PARAM_NAMES[proxy_type]]
+    params_lower = [param.lower() for param in params]
 
-    sorted = [name.lower() for name in names if name.upper() in params_upper]
+    sorted = [name for name in names_lower if name in params_lower]
     return sorted
 
 def get_possible_values(proxy_type, params):
