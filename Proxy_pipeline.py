@@ -98,7 +98,7 @@ class ProxyPipeline:
             weight_out_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, proxy_name + '_' + c.MODEL_WEIGHTS_PATH)
 
             # Loding proxy
-            proxies.append(load_model(proxy_type, params, possible_values, weight_out_dir, self.use_gpu))
+            proxies.append(load_model(proxy_type, params, proxy_name, possible_values, weight_out_dir, self.use_gpu))
         self.models = proxies
         self.possible_values = possible_values_list #NOTE: this is a list of lists
         self.param_lower_bounds = params_lower_bounds_list #NOTE: this is a list of lists
@@ -132,20 +132,21 @@ class ProxyPipeline:
 
         return outputs
 
-def load_model(proxy_type, params, possible_values, weight_out_dir, use_gpu):
+def load_model(proxy_type, params, name, possible_values, weight_out_dir, use_gpu):
     
     # TODO: rework to consider -c edge case
     if params[0] != 'full':
-        print(f"Loading in model: {proxy_type}: " + "".join(f" {param}" for param in params))
+        print(f"Loading in model: {name} " + "(".join(f" {param}" for param in params) + ')')
     else:
-        print(f"Loading in model: {proxy_type}")
+        print(f"Loading in model: {name}")
 
     # Getting model weights
     weights_list = os.listdir(weight_out_dir)
-    if params[0].lower() != 'full':
-        weights_list.sort(key=lambda x: float(x.strip(proxy_type + '_' + "".join(f"{param}_" for param in params)).strip('.pkl')))
-    else:
-        weights_list.sort(key=lambda x: float(x.strip(proxy_type + '_').strip('.pkl')))
+    # if params[0].lower() != 'full':
+    #     weights_list.sort(key=lambda x: float(x.strip(proxy_type + '_' + "".join(f"{param}_" for param in params)).strip('.pkl')))
+    # else:
+    #     weights_list.sort(key=lambda x: float(x.strip(proxy_type + '_').strip('.pkl')))
+    weights_list.sort(key=lambda x: float(x.strip(name + '_').strip('.pkl')))
     final_weights = weights_list[-1]
     print(f'Using model weights from {final_weights}.')
 
