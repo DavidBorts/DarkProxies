@@ -155,9 +155,9 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
     model = None
     if proxy_type == "demosaic":
         print("model: ChenNet")
-        #model = DemosaicNet(num_input_channels=num_channels, num_output_channels=12,
-                            #skip_connect=skip_connect, clip_output=clip_output)
-        model = ChenNet(0, clip_output=clip_output, add_params=False)
+        model = DemosaicNet(num_input_channels=num_channels, num_output_channels=12,
+                            skip_connect=skip_connect, clip_output=clip_output)
+        #model = ChenNet(0, clip_output=clip_output, add_params=False)
     else:
         print("model: UNET")
         channel_list = [32, 64, 128, 256, 512]
@@ -251,9 +251,9 @@ def run_eval_procedure(model_out_dir, use_gpu, params_file, possible_params, pro
     model = None
     if proxy_type == "demosaic":
         print("model: ChenNet")
-        #model = DemosaicNet(num_input_channels=num_channels, num_output_channels=12,
-                            #skip_connect=skip_connect, clip_output=clip_output)
-        model = ChenNet(0, clip_output=clip_output, add_params=False)
+        model = DemosaicNet(num_input_channels=num_channels, num_output_channels=12,
+                            skip_connect=skip_connect, clip_output=clip_output)
+        #model = ChenNet(0, clip_output=clip_output, add_params=False)
     else:
         print("model: UNET")
         channel_list = [32, 64, 128, 256, 512]

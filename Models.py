@@ -382,6 +382,24 @@ class ChenNet(nn.Module):
 
 class DemosaicNet(nn.Module):
 
+    def partial_skip(self, output, input):
+
+        # Separating input Bayer mosaic into R, G1, G2, and B pixels
+        H = input.shape[2]
+        W = input.shape[3]
+        TL = input[:, :, 0:H:2, 0:W:2]
+        TR = input[:, :, 0:H:2, 1:W:2]
+        BL = input[:, :, 1:H:2, 0:W:2]
+        BR = input[:, :, 1:H:2, 1:W:2]
+
+        # Copying original pixel values into model output
+        output[:, 0, 0:H:2, 0:W:2] = TL
+        output[:, 1, 0:H:2, 1:W:2] = TR
+        output[:, 1, 1:H:2, 0:W:2] = BL
+        output[:, 2, 1:H:2, 1:W:2] = BR
+
+        return output
+
     def __init__(self, num_input_channels, num_output_channels, skip_connect=True, clip_output=True, channel_list=DEFAULT_DEMOSAICNET_CHANNEL_LIST):
         super().__init__()
         if not len(channel_list) == 5:
@@ -431,6 +449,11 @@ class DemosaicNet(nn.Module):
         # is why the final convolution does not have any padding.
         self.conv_final = nn.Conv2d(channel_list[0], self.num_output_channels, 1, padding=0)  # 32  -> num_output_channels 
 
+        # Partial Skip Connection
+        # If the target demosaicking algorithm does not modify recorded CFA values, these
+        # should be directly copied over from the input image to the model output
+        #self.skip_connection = partial_skip()
+
     def forward(self, x):
 
         # Down
@@ -470,8 +493,10 @@ class DemosaicNet(nn.Module):
         
         # Final
         out    = self.conv_final(conv9)
-        #if self.skip_connect:
+        if self.skip_connect:
             #out =  out + x[:,0:self.num_output_channels,:,:] # Skip connection from input to output
+            #out = self.skip_connection(out, x)
+            out = self.partial_skip(out, x)
         
         if self.clip_output:
             #return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
