@@ -493,10 +493,6 @@ class DemosaicNet(nn.Module):
         
         # Final
         out    = self.conv_final(conv9)
-        if self.skip_connect:
-            #out =  out + x[:,0:self.num_output_channels,:,:] # Skip connection from input to output
-            #out = self.skip_connection(out, x)
-            out = self.partial_skip(out, x)
         
         if self.clip_output:
             #return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
@@ -504,6 +500,11 @@ class DemosaicNet(nn.Module):
         
         # Unpacking channels into 3-channel RGB image
         out = f.pixel_shuffle(out, 2)
+
+        if self.skip_connect:
+            #out =  out + x[:,0:self.num_output_channels,:,:] # Skip connection from input to output
+            #out = self.skip_connection(out, x)
+            out = self.partial_skip(out, x)
         
         return out
 
