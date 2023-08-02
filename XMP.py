@@ -12,11 +12,11 @@ parser.add_argument("destination", help="Path to destination folder to which the
                     XMP file will be written")
 parser.add_argument("blocks", help="comma-seprated list of Darktable blocks for \
                     which to set parameters. All other non-core blocks will be \
-                    disabled")
+                    disabled", default="")
 parser.add_argument("params", help="list of parameters to set for the provided \
                     blocks. parameters within the same block are seprated by dashes, \
                     while parameters for different blocks are separated by commas. \
-                    Example: Block1Param1-Block1Param2,Block2Param1")
+                    Example: Block1Param1-Block1Param2,Block2Param1", default="")
 args = parser.parse_args()
 source = args.source
 destination = args.destination
