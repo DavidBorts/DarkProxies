@@ -385,6 +385,9 @@ class Darktable_Dataset(Dataset):
                     return image_name, proxy_model_input, params, proxy_model_label
 
                 proxy_model_input = _format_input_with_parameters(proxy_model_input, params)
+
+            if self.proxy_type == "demosaic":
+                return image_name, [proxy_model_input, pre_pack_input], proxy_model_label
             
         if self.sweep:
             return image_name, proxy_model_input

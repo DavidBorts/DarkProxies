@@ -454,7 +454,7 @@ class DemosaicNet(nn.Module):
         # should be directly copied over from the input image to the model output
         #self.skip_connection = partial_skip()
 
-    def forward(self, x):
+    def forward(self, x, x_unpacked):
 
         # Down
         #print("forward(x) size: " + str(x.size()))
@@ -500,7 +500,7 @@ class DemosaicNet(nn.Module):
         if self.skip_connect:
             #out =  out + x[:,0:self.num_output_channels,:,:] # Skip connection from input to output
             #out = self.skip_connection(out, x)
-            out = self.partial_skip(out, x)
+            out = self.partial_skip(out, x_unpacked)
 
         if self.clip_output:
             #return torch.min(torch.max(out, torch.zeros_like(out)), torch.ones_like(out))
@@ -676,8 +676,11 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                     sys.stdout.flush()
                     i += 1
             else:
-                for names, inputs, labels in dataloaders[phase]:  
-                    inputs = inputs.type(dtype)
+                for names, inputs_list, labels in dataloaders[phase]:  
+                    if proxy_type == "demosaic":
+                        inputs = inputs_list[0].type(dtype)
+                    else:
+                        inputs = inputs_list.type(dtype)
                     labels = labels.type(dtype)
                     writer.add_images(f"labels/{str(i)}", labels, epoch)
 
@@ -691,7 +694,11 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                     # forward
                     # track history if only in train
                     with torch.set_grad_enabled(phase == 'train'):
-                        outputs = model(inputs)
+                        if proxy_type == "demosaic":
+                            inputs_unpacked = inputs_list[1].type(dtype)
+                            outputs = model(inputs, inputs_unpacked)
+                        else:
+                            outputs = model(inputs)
                         writer.add_images(f"outputs/{str(i)}", outputs, epoch)
 
                         # Saving model outputs during training
