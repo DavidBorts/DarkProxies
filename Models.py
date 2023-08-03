@@ -387,10 +387,10 @@ class DemosaicNet(nn.Module):
         # Separating input Bayer mosaic into R, G1, G2, and B pixels
         H = input.shape[2]
         W = input.shape[3]
-        TL = input[:, :, 0:H:2, 0:W:2]
-        TR = input[:, :, 0:H:2, 1:W:2]
-        BL = input[:, :, 1:H:2, 0:W:2]
-        BR = input[:, :, 1:H:2, 1:W:2]
+        TL = input[:, 0, 0:H:2, 0:W:2]
+        TR = input[:, 0, 0:H:2, 1:W:2]
+        BL = input[:, 0, 1:H:2, 0:W:2]
+        BR = input[:, 0, 1:H:2, 1:W:2]
 
         # Copying original pixel values into model output
         output[:, 0, 0:H:2, 0:W:2] = TL
