@@ -248,14 +248,13 @@ class Darktable_Dataset(Dataset):
             print("Performing additional image transform.")
             input_image = self.transform(input_image)
 
-        if self.proxy_type == "demosaic":
-            #pre_pack_input = np.squeeze(np.array(input_image).copy(), axis=2)
-            pre_pack_input = to_tensor_transform(input_image)
-            pre_pack_input = torch.squeeze(pre_pack_input, dim=0)
+        # if self.proxy_type == "demosaic":
+        #     #pre_pack_input = np.squeeze(np.array(input_image).copy(), axis=2)
+        #     pre_pack_input = to_tensor_transform(input_image)
+        #     pre_pack_input = torch.squeeze(pre_pack_input, dim=0)
             #pre_pack_input = (pre_pack_input * 255).astype(np.uint8)
             #print("pre pack shape: ")
             #print(np.shape(pre_pack_input))
-
             
         proxy_model_input = to_tensor_transform(input_image)
         if c.DOWNSAMPLE_IMAGES:
@@ -292,6 +291,7 @@ class Darktable_Dataset(Dataset):
             dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)
             #print('dng path: ' + str(dng_path))
             cfa = get_cfa(dng_path)
+            pre_pack_input = proxy_model_input.clone()
             proxy_model_input = np.squeeze(pack_input_demosaic(proxy_model_input, cfa))
             #print('proxy_model_input shape after packing: ' + str(proxy_model_input.shape))
         if self.proxy_order is not None:
