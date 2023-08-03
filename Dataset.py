@@ -291,7 +291,7 @@ class Darktable_Dataset(Dataset):
             dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)
             #print('dng path: ' + str(dng_path))
             cfa = get_cfa(dng_path)
-            pre_pack_input = proxy_model_input.clone()
+            pre_pack_input = proxy_model_input.clone().unsqueeze(dim=1)
             proxy_model_input = np.squeeze(pack_input_demosaic(proxy_model_input, cfa))
             #print('proxy_model_input shape after packing: ' + str(proxy_model_input.shape))
         if self.proxy_order is not None:
