@@ -151,6 +151,8 @@ def regress(
                 best_param_rescaled = (best_param * diffs[param_idx]) - lower_bounds[param_idx]
                 best_params[idx][param_idx] = best_param_rescaled
         print('current params: ')
+        for idx in range(isp.num_proxies):
+            best_params[idx] = project_param_values(best_params[idx], possible_values[idx], finalize=False, dtype=dtype)
         print(best_params)
         sys.stdout.flush()
                     
