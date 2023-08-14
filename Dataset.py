@@ -296,12 +296,11 @@ class Darktable_Dataset(Dataset):
             #print('proxy_model_input shape after packing: ' + str(proxy_model_input.shape))
         if self.proxy_order is not None:
             if self.proxy_order[0][0].split('_')[0] == "demosaic":
-                #TODO: add stage 3 images and uncomment me!
-                #dng_name = input_image_name.split('_')[0].split('.')[0] + '.dng'
-                #dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)
-                #cfa = get_cfa(dng_path)
+                dng_name = input_image_name.split('_')[0].split('.')[0] + '.dng'
+                dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)
+                cfa = get_cfa(dng_path)
 
-                cfa = get_cfa(None)
+                #cfa = get_cfa(None)
                 proxy_model_input = np.squeeze(pack_input_demosaic(proxy_model_input, cfa))
         
         if not self.sweep:
