@@ -14,9 +14,9 @@ parser.add_argument("blocks", help="comma-seprated list of Darktable blocks for 
                     which to set parameters. All other non-core blocks will be \
                     disabled", default="")
 parser.add_argument("params", help="list of parameters to set for the provided \
-                    blocks. parameters within the same block are seprated by dashes, \
-                    while parameters for different blocks are separated by commas. \
-                    Example: Block1Param1-Block1Param2,Block2Param1", default="")
+                    blocks. parameters within the same block are seprated by commas, \
+                    while parameters for different blocks are separated by semicolons. \
+                    Example: Block1Param1,Block1Param2;Block2Param1", default="")
 args = parser.parse_args()
 source = args.source
 destination = args.destination
@@ -25,8 +25,8 @@ params_list = args.params
 
 # Separating out blocks and params into lists
 blocks = blocks.split(',')
-params_list = params_list.split(',')
-params_list = [params.split('-') for params in params_list] #NOTE: params_list is a list of lists
+params_list = params_list.split(';')
+params_list = [params.split(',') for params in params_list] #NOTE: params_list is a list of lists
 params_list = [ [float(param) for param in params] for params in params_list]
 # params_list = [float(param) for params in params_list for param in params]
 
