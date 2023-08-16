@@ -146,7 +146,7 @@ _FMT_STR = '''<?xml version="1.0" encoding="UTF-8"?>
       darktable:num="11"
       darktable:operation="colorbalancergb"
       darktable:enabled="{enable_colorbalancergb}"
-      darktable:modversion="4"
+      darktable:modversion="5"
       darktable:params="{colorbalancergb_params}"
       darktable:multi_name=""
       darktable:multi_priority="0"
