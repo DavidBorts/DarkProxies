@@ -94,6 +94,7 @@ class UNet(nn.Module):
         self.embedding_type = c.EMBEDDING_TYPES[c.EMBEDDING_TYPE]
         self.embed = self.embedding_type != "none"
         self.param_channels = num_input_channels - num_output_channels
+        print(f"param channels: {str(self.param_channels)}")
         self.params_size = params_size
         self.clip_output = clip_output
 
@@ -454,7 +455,7 @@ class DemosaicNet(nn.Module):
         # should be directly copied over from the input image to the model output
         #self.skip_connection = partial_skip()
 
-    def forward(self, x, x_unpacked):
+    def forward(self, x, x_unpacked=None):
 
         # Down
         #print("forward(x) size: " + str(x.size()))
