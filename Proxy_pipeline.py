@@ -155,7 +155,8 @@ def load_model(proxy_type, params, name, possible_values, weight_out_dir, use_gp
     add_params = proxy_type not in c.NO_PARAMS
     state_dict = generic_load(weight_out_dir, final_weights)
     if proxy_type == "demosaic":
-        model = ChenNet(0, clip_output=True, add_params=False)
+        model = DemosaicNet(num_input_channels=4, num_output_channels=12,
+                            skip_connect=False, clip_output=True)
     else:
         model = UNet(
                     num_input_channels=num_input_channels,
