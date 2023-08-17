@@ -1,4 +1,5 @@
 demosaic full 1
 colorin full 1
-bloom full 1
+colorbalancergb_no_grey vibrance_contrast 1
+bloom full 0
 colorout full 0
