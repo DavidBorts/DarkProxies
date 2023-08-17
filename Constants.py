@@ -39,8 +39,8 @@ TAPOUTS = False
 # Training the proxies (Stage 1)
 TRAIN_PROXY = True                       #   Toggles proxy training
 STAGE_1_PATH = 'stage_1/'                #   Directory that stores all training data, model weights, and predictions
-PROXY_MODEL_BATCH_SIZE = 1               #   Batch size for proxy training
-PROXY_MODEL_NUM_EPOCH = 500              #   Number of epochs for which to train
+PROXY_MODEL_BATCH_SIZE = 2               #   Batch size for proxy training
+PROXY_MODEL_NUM_EPOCH = 4500              #   Number of epochs for which to train
 MODEL_WEIGHTS_PATH = 'model_weights/'    #   Name of directories where model weights are stored
 SAVE_OUTPUT_FREQ = 10                    #   Frequency at which to save model predictions (in terms of epochs)
 OUTPUT_PREDICTIONS_PATH = 'predictions/' #   Name of directories where model predictions are stored
