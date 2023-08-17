@@ -1,3 +1,5 @@
+import io
+import os
 import math
 import numpy as np
 import struct
@@ -499,9 +501,9 @@ class CensorizeParams:
 
 @dataclass
 class TemperatureParams:
-    red: float = 1.420689582824707
-    green: float = 1.0
-    blue: float = 2.0
+    red: float = 1.420689582824707 # $MIN: 0.0 $MAX: 8.0
+    green: float = 1.0 # $MIN: 0.0 $MAX: 8.0
+    blue: float = 2.0 # $MIN: 0.0 $MAX: 8.0
     g2: float = math.nan
 
     def to_hex_string(self):
@@ -749,18 +751,38 @@ def get_pipe_xmp(raw_prepare_params=RawPrepareParams(),
         enable_soften=zineo(soften_params),
         soften_params=to_hex(soften_params, SoftenParams()))
 
-def render(src_dng_path, dst_path, pipe_stage_flags):
+def extract_pfm(log, module):
+    log_text = io.TextIOWrapper(log.stdout, encoding="utf-8")
+    for line in log_text:
+            tmp_dir = line.split('\'')[-1]
+            pfm_files = os.listdir(tmp_dir)
+            module_tapouts = [pfm_file for pfm_file in pfm_files 
+                              if pfm_file.contains(str(module)) 
+                              and not pfm_file.contains("diff")]
+            return module_tapouts
+
+def pfm_to_tif(pfm_path, dest_path):
+    args = [c.MAGICK_COMMAND, pfm_path, dest_path]
+    print('Running:\n', ' '.join(args), '\n')
+    subprocess.run(args)
+
+def render(src_dng_path, dst_path, pipe_stage_flags, tapout, module=None):
     with tempfile.NamedTemporaryFile(mode="w+t", suffix=".xmp",
                                      delete=False) as f:
         f.write(get_pipe_xmp(**pipe_stage_flags))
         xmp_path = f.name
-    #TODO: add --dump-pipe arg
     args = [
         _DARKTABLE_CLI, src_dng_path, xmp_path, dst_path, "--hq", "true", "--core",
         "--disable-opencl", "-d", "perf"
     ]
+    if tapout:
+        args += ["--dump-pipe", str(module)]
     print('Running:\n', ' '.join(args), '\n')
-    subprocess.run(args)
+    result = subprocess.run(args)
+    if tapout:
+        tapout_in, tapout_out = extract_pfm(result, module)
+        return (tapout_in, tapout_out)
+        
 
 def get_params_dict(proxy_type, param_names, values, temperature_params, raw_prepare_params, dict=None):
 
@@ -796,7 +818,5 @@ def get_params_dict(proxy_type, param_names, values, temperature_params, raw_pre
         params_dict = dict
 
     # Setting params
-    #fill_dict = getattr(functions, proxy)
-    #params_dict = fill_dict(params_dict, params, values)
     params_dict = fill(params_dict, proxy, params, values)
     return params_dict

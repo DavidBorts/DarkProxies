@@ -13,6 +13,7 @@ DARKTABLE_PATH = "/home/dborts/programs/darktable/build/bin/darktable-cli" # CHA
 IMAGE_ROOT_DIR = '.'                     #   Root directory from which to construct all file paths
 LOG_DIR  = 'runs'                        #   Directory name in which to dump TensorBoard logs
 INTERACTIVE = False                      #   Toggle interactive prompts between stages
+MAGICK_COMMAND = "Convert"
 NUM_IMAGE_CHANNEL = 3                    # X Number of channels in each image (3 for RGB)
 IMG_SIZE = 736                           # X Dimensions to crop all images to (IMG_SIZE x IMG_SIZE)
 CLIP_OUTPUT = True                       # X Toggle clipping of proxy outputs
@@ -33,6 +34,7 @@ OUTPUT_DIR = 'output/'                   #   Name of directories that store grou
 STAGE_1_DNG_PATH = 'images/stage_1/'     # X Path to folder with all DNG files for proxy training
 STAGE_2_DNG_PATH = 'images/stage_2/'     # X Path to folder with all DNG files for slider regression
 STAGE_3_DNG_PATH = 'images/stage_3/'     # X Path to folder with all DNG files for pipeline regression
+TAPOUTS = False
 
 # Training the proxies (Stage 1)
 TRAIN_PROXY = True                       #   Toggles proxy training
@@ -115,6 +117,7 @@ POSSIBLE_VALUES = {
     'bloom': [(0.0, 100.0), (0.0, 100.0), (0.0, 100.0)],
     'colorize': [(0.0, 1.0), (0.0, 1.0), (0.0, 100.0), (0.0, 100.0)],
     'soften': [(0.0, 100.0), (0.0, 100.0), (-2.0, 2.0), (0.0, 100.0)],
+    'temperature': [(0.0, 8.0), (0.0, 8.0), (0.0, 8.0)],
     'highlights': [None]
 }
 '''
@@ -139,6 +142,7 @@ PARAM_NAMES= {
     'colorize': ['hue', 'saturation', 'source_lightness_mix',
                  'lightness'],
     'soften': ['size', 'saturation', 'brightness','amount'],
+    'temperature': ['red', 'green', 'blue'],
     'highlights': [None]
 }
 '''
