@@ -6,7 +6,6 @@ import numpy as np
 # Local files
 import Constants as c
 import PyDarktable as dt
-from Tapouts import tmp2tiff
 from utils.npy_convert import convert
 from utils.lhs import lhs
 from utils.misc import get_possible_values, sort_params
@@ -136,7 +135,15 @@ def generate(proxy_type, params, stage, possible_values, num, name):
 
         # Rendering an unchanged copy of the source image for model input
         if not input_exists:
-            dt.render(src_path, input_file_path, original_params)
+            tapouts = dt.render(src_path, input_file_path, original_params, c.TAPOUTS, proxy_type_gt)
+
+            # Converting PFM tapouts to usable TIFF files
+            if c.TAPOUTS:
+                os.remove(input_file_path)
+                os.remove(tapouts[1])
+                #TODO: move pfm to input_path folder.
+                dt.pfm_to_tif(tapouts[0], input_file_path)
+                os.remove(tapouts[0])
 
         # Parameter value sweep
         # (to generate ground truth images)
@@ -160,7 +167,15 @@ def generate(proxy_type, params, stage, possible_values, num, name):
             params_dict = dt.get_params_dict(proxy_type_gt, params_gt, values, temperature_params, raw_prepare_params)
 
             # Rendering the output image
-            dt.render(src_path, gt_file_path, params_dict)
+            tapouts = dt.render(src_path, gt_file_path, params_dict, c.TAPOUTS, proxy_type_gt)
+
+            # Converting PFM tapouts to usable TIFF files
+            if c.TAPOUTS:
+                os.remove(gt_file_path)
+                os.remove(tapouts[0])
+                #TODO: move pfm to input_path folder.
+                dt.pfm_to_tif(tapouts[1], gt_file_path)
+                os.remove(tapouts[1])
     print(f"Training data generated: stage {stage}")
     return gt_imgs
 
@@ -191,25 +206,6 @@ def generate_single(proxy_type, dng_path, src_images, input_path, output_path, t
         output_file_path = os.path.join(output_path, f'{image}_{proxy_type}')
         output_file_path = (repr(output_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
         dt.render(src_path, output_file_path, original_params)
-
-        # If the given proxy is colorin, colorout, or any proxy that appears before colorin,
-        # The rendered image needs to be replaced with an intermediary tapout from
-        # the Darktable CLI (This is because colorin converts to a different
-        # colorspace, which would leave the rendered image in a different colorspace
-        # from what the given proxy requires as input)
-        if tapouts is not None:
-            
-            # Getting file path of the tapouts
-            tapout_path_input = tapouts[0] + '.tmp'
-            tapout_path_gt = tapouts[1] + '.tmp'
-
-            # Deleting final output image
-            os.remove(input_file_path)
-            os.remove(output_file_path)
-
-            # Read in the tapout and save as a tiff
-            tmp2tiff(tapout_path_input, input_file_path, color='minisblack')
-            tmp2tiff(tapout_path_gt, output_file_path)
 
 def generate_eval(proxy_type, params, params_file, name, possible_values):
     
@@ -474,28 +470,4 @@ def generate_finetune(proxy_type, param, finetune, param_finetune, possible_valu
 
                 # Rendering the output image
                 dt.render(src_path, gt_file_path, params_dict)   
-
-                # Checking if input & ground truth images need to be replaced with tapouts
-                if tapouts is not None:
-                    
-                    # Getting file path of the tapout
-                    input_tapout_path = tapouts[0] + '.tmp'
-                    gt_tapout_path = tapouts[1] + '.tmp'
-                    #print('input tapout path: ' + input_tapout_path)
-                    #print('ground truth tapout path: ' + gt_tapout_path)
-
-                    # Getting path of the input image
-                    input_file_path = os.path.join(input_path, image.split('.')[0])
-                    input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") # Dealing with Darktable CLI pickiness
-                    for val in values_finetune:
-                        input_file_path += '_' + str(val) #TODO: will this format correctly?
-                    input_file_path += '.tif'
-
-                    # Deleting final output image
-                    os.remove(gt_file_path)
-                    print('replacing: ' + gt_file_path)
-
-                    # Read in the tapouts and save them as tiffs
-                    tmp2tiff(input_tapout_path, input_file_path)
-                    tmp2tiff(gt_tapout_path, gt_file_path)
     print("Finetuning data generated.")
