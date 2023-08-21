@@ -7,7 +7,8 @@ File to store script constants/parameters
  IMPORTANT NOTE: Before running any code, make sure to replace the
  following string with the correct path to darktable-cli.exe
  '''
-DARKTABLE_PATH = "/home/dborts/programs/darktable/build/bin/darktable-cli" # CHANGE ME!
+#DARKTABLE_PATH = "/home/dborts/programs/darktable/build/bin/darktable-cli" # CHANGE ME!
+DARKTABLE_PATH = "/home/dborts/programs/testing/nt-darktable/darktable/build/bin/darktable-cli"
 
 # Global constants
 IMAGE_ROOT_DIR = '.'                     #   Root directory from which to construct all file paths
