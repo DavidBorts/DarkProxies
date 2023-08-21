@@ -29,8 +29,7 @@ class ParamSamplerIterator():
             if len(self.params) > 1:
                 vals = np.squeeze(self.list[:, self.idx])
             else:
-                self.idx += 1
-                return [self.list[self.idx]]
+                vals = [self.list[self.idx]]
 
             self.idx += 1
             return vals
