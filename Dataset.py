@@ -32,7 +32,24 @@ class Darktable_Dataset(Dataset):
     training of the proxy model, the fine-tuning of its parameters, and for ISP-tuning
     experiments.
     '''
-    def __init__(self, root_dir, stage, proxy_type, params, name=None, sampler=False, val_split=0.25, shuffle_seed=0, input_dir=None, output_dir=None, params_file=None, transform=None, sweep=False, param_ranges=None, gt_list=None, proxy_order=None):
+    def __init__(self,
+                 root_dir,
+                 stage,
+                 proxy_type,
+                 params,
+                 param_ranges,
+                 name=None,
+                 sampler=False,
+                 val_split=0.25,
+                 shuffle_seed=0,
+                 input_dir=None,
+                 output_dir=None,
+                 params_file=None,
+                 transform=None,
+                 sweep=False,
+                 gt_list=None,
+                 proxy_order=None
+                 ):
         '''
         Initialize the object.
         Inputs:
@@ -41,16 +58,18 @@ class Darktable_Dataset(Dataset):
                      or finetuning hyperparameters (stage_2)
             [proxy_type]: proxy type of data
             [params]: list of parameters that vary across data
-            [sampler]:
+            [param_ranges]:
             [name]:
+            [sampler]:
             [val_split]: fraction of variables to put into validation set.
             [shuffle_seed]: Random seed that determines the train/val split.
             [input_dir]: path to the directory of input images
             [otuput_dir]: path to the directory of the output images
             [params_file]: path to the .npy file with parameter values
             [transform]: Transforms to be applied onto PIL Image.
-            [sweep]: Toggles sweep mode of the dataloader for Darktable_sweep.py
-            [param_ranges]: 
+            [sweep]: Toggles sweep mode of the dataloader for Darktable_sweep.py 
+            [gt_list]:
+            [proxy_order]:
         '''
         
         if stage not in [1, 2, 3]:
@@ -71,10 +90,9 @@ class Darktable_Dataset(Dataset):
         self.gt_list = gt_list
         self.proxy_order = proxy_order
 
-        if self.param_ranges is not None:
-            self.param_lower_bounds = np.array([range[0] for range in param_ranges])
-            self.param_upper_bounds = np.array([range[1] for range in param_ranges])
-            self.param_diff = self.param_upper_bounds - self.param_lower_bounds
+        self.param_lower_bounds = np.array([range[0] for range in param_ranges])
+        self.param_upper_bounds = np.array([range[1] for range in param_ranges])
+        self.param_diff = self.param_upper_bounds - self.param_lower_bounds
         
         # Configuring input & output directories
         if input_dir is None:
@@ -89,20 +107,17 @@ class Darktable_Dataset(Dataset):
         # Getting image name list
         if sweep:
             # Sweep mode
+            #TODO: add gt_list arg for sweep mode
             self.image_name_list = os.listdir(self.input_image_dir)
             print("Sweeping for: ")
             print(self.image_name_list)
         else:
-            # Sorting image list
-            self.image_name_list = os.listdir(self.output_image_dir)
-            if self.proxy_type == "demosaic" or self.proxy_type == "colorin":#TODO: temporary hack - delete me!
-                self.image_name_list.sort()
-            elif self.stage == 3:
-                self.image_name_list.sort()
-            else:
-                self.image_name_list.sort(key=lambda x: (x.split(".")[0], float(x.split("_")[3].split(".tif")[0])))
+            #TODO: implement gt_list universally to get rid of if checks
             if self.gt_list is not None:
                 self.image_name_list = self.gt_list
+            else:
+                self.image_name_list = os.listdir(self.output_image_dir)
+                self.image_name_list.sort()
             print('Images in the dataset:')
             print(self.image_name_list)
 
@@ -142,7 +157,65 @@ class Darktable_Dataset(Dataset):
     def __getitem__(self, indexValue):
         '''
         By default, appends parameter channels to the image tensor. Note that image is already a tensor in this case. 
-        '''        
+
+        '''   
+        def get_crop_indices(tensor):
+            '''
+            Return the correct indices to crop a tensor to a square shape 
+            (Constants.IMG_SIZE X Constants.IMG_SIZE)
+            '''
+            if c.IMG_SIZE % 4 != 0:
+                raise ValueError("IMG_SIZE in Constants.py must be a multiple of 4 (default is 736).")
+            
+            if len(tensor.size()) == 3:
+                _, width, height = tensor.size()
+            else:
+                width, height = tensor.size()
+
+            mid_width = width // 2
+            width_low = int(mid_width - (c.IMG_SIZE / 2))
+            while width_low % 4 != 0: # Ensuring that image crops are along mosaic boundaries
+                width_low -= 1
+            width_high = width_low + c.IMG_SIZE
+
+            mid_height = height // 2
+            height_low = int(mid_height - (c.IMG_SIZE / 2))
+            while height_low % 4 != 0:
+                height_low -= 1
+            height_high = height_low + c.IMG_SIZE
+
+            return width_low, width_high, height_low, height_high
+
+        def save_cropped_tensors(input_tensor, gt_tensor, gt_image_name, model_name):
+            '''
+            Saving cropped input and ground truth tensors as TIFF images
+            '''
+            crop_gt_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, model_name.name + c.CROPPED_OUTPUT_DIR)
+            crop_gt_path = os.path.join(crop_gt_dir, f'crop_{gt_image_name}')
+            if os.path.exists(crop_gt_path):
+                return
+            if not os.path.exists(crop_gt_dir):
+                os.mkdir(crop_gt_dir)
+                print('directory created at: ' + crop_gt_dir)
+
+            gt_ndarray = gt_tensor.numpy()
+            gt_ndarray = np.moveaxis(gt_ndarray, 0, -1).copy(order='C')
+            tifffile.imwrite(crop_gt_path, gt_ndarray)
+            print('crop saved: ground truth')
+
+            crop_input_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, model_name.name + c.CROPPED_INPUT_DIR)
+            crop_input_path = os.path.join(crop_input_dir, f'crop_{gt_image_name}')
+            if os.path.exists(crop_input_path):
+                return
+            if not os.path.exists(crop_input_dir):
+                os.mkdir(crop_input_dir)
+                print('directory created at: ' + crop_input_dir)
+
+            input_ndarray = input_tensor.numpy()
+            input_ndarray = np.moveaxis(input_ndarray, 0, -1).copy(order='C')
+            tifffile.imwrite(crop_input_path, input_ndarray)
+            print('crop saved: input')
+
         def _format_input_with_parameters(image, params):
             '''
             Concatentate image and parameter tensors.
@@ -222,175 +295,92 @@ class Darktable_Dataset(Dataset):
         else:
             index = indexValue
         
-        image_name = self.image_name_list[index].strip('\n')
-        #if not self.sweep:
-            #print('ground truth image name: ' + image_name)
-        input_image_name = image_name.split(".")[0] + '.tif'
+        gt_image_name = self.image_name_list[index].strip('\n')
+        input_image_name = gt_image_name.split(".")[0] + '.tif'
         if self.sampler: # colorin/colorout/demosaic
-            input_image_name = image_name
-            #input_image_name = image_name.split(".")[0] + '_' + str(image_name.split('_')[3]) # Temporary hack - rename colorin data and delete me!
-            if self.proxy_type == "demosaic": # TODO: Temporary hack - delete me!
-                input_image_name = image_name.split('.')[0] + '.tif'
-        #print('input image name: ' + input_image_name)
-        #input_image = imageio.imread(os.path.join(self.input_image_dir, input_image_name))	
-        #input_image = tifffile.imread(os.path.join(self.input_image_dir, input_image_name))	
+            input_image_name = gt_image_name
+
+        # Loading in input tensor
         try:
             input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
             input_image = ImageOps.exif_transpose(input_image)
         except:
             input_image = imageio.imread(os.path.join(self.input_image_dir, input_image_name))
-        #input_image = ImageOps.exif_transpose(input_image)
-        #print("input image shape:")	
-        #print(input_image.shape)
-        #input_image = input_image.astype(np.float32) #TODO: do we need this??
         
+        # Reformatting input tensor
         if self.transform is not None:
             print("Performing additional image transform.")
             input_image = self.transform(input_image)
-
-        # if self.proxy_type == "demosaic":
-        #     #pre_pack_input = np.squeeze(np.array(input_image).copy(), axis=2)
-        #     pre_pack_input = to_tensor_transform(input_image)
-        #     pre_pack_input = torch.squeeze(pre_pack_input, dim=0)
-            #pre_pack_input = (pre_pack_input * 255).astype(np.uint8)
-            #print("pre pack shape: ")
-            #print(np.shape(pre_pack_input))
-            
         proxy_model_input = to_tensor_transform(input_image)
         if c.DOWNSAMPLE_IMAGES:
-            #print('Downsampling input tensor.')
+            print('Downsampling input tensor.')
             proxy_model_input = interpolate(proxy_model_input[None, :, :, :], scale_factor=0.25, mode='bilinear')
         proxy_model_input = torch.squeeze(proxy_model_input, dim=0)
         
-        if len(proxy_model_input.size()) == 3:
-            _, width, height = proxy_model_input.size()
-        else:
-            width, height = proxy_model_input.size()
-        
         # Cropping input tensor
-        if c.IMG_SIZE % 4 != 0:
-            raise ValueError("IMG_SIZE in Constants.py must be a multiple of 4 (default is 736).")
-        mid_width = width // 2
-        width_low = int(mid_width - (c.IMG_SIZE / 2))
-        while width_low % 4 != 0: # Ensuring that image crops are along mosaic boundaries
-            width_low -= 1
-        width_high = width_low + c.IMG_SIZE
-        mid_height = height // 2
-        height_low = int(mid_height - (c.IMG_SIZE / 2))
-        while height_low % 4 != 0:
-            height_low -= 1
-        height_high = height_low + c.IMG_SIZE
-
+        width_low, width_high, height_low, height_high = get_crop_indices(proxy_model_input)
         if len(proxy_model_input.size()) == 3:
             proxy_model_input = proxy_model_input[:, width_low:width_high, height_low:height_high]
         else:	
             proxy_model_input = proxy_model_input[width_low:width_high, height_low:height_high]
         
-        if self.proxy_type == 'demosaic':
+        # Extracting cfa and packing input for demosaic proxy
+        if self.proxy_type == 'demosaic' or (self.proxy_order is not None and self.proxy_order[0][0].split('_')[0] == "demosaic"):
             dng_name = input_image_name.split('_')[0].split('.')[0] + '.dng'
             dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)
-            #print('dng path: ' + str(dng_path))
             cfa = get_cfa(dng_path)
             pre_pack_input = proxy_model_input.clone().unsqueeze(dim=0)
             proxy_model_input = np.squeeze(pack_input_demosaic(proxy_model_input, cfa))
-            #print('proxy_model_input shape after packing: ' + str(proxy_model_input.shape))
-        if self.proxy_order is not None:
-            if self.proxy_order[0][0].split('_')[0] == "demosaic":
-                dng_name = input_image_name.split('_')[0].split('.')[0] + '.dng'
-                dng_path = os.path.join(c.IMAGE_ROOT_DIR, getattr(c, 'STAGE_' + str(self.stage) + '_DNG_PATH'), dng_name)
-                cfa = get_cfa(dng_path)
-
-                #cfa = get_cfa(None)
-                proxy_model_input = np.squeeze(pack_input_demosaic(proxy_model_input, cfa))
         
-        if not self.sweep:
+        # Loading in and reformatting/cropping ground truth tensor
+        if not self.sweep: # NOTE: this is not necessary when sweeping a proxy model
             try:
-                output_image = Image.open(os.path.join(self.output_image_dir, image_name))
+                output_image = Image.open(os.path.join(self.output_image_dir, gt_image_name))
             except:
-                output_image = imageio.imread(os.path.join(self.output_image_dir, image_name))	
-            #output_image = output_image.astype(np.float32) #TODO: do we need this??	
-            # output_image = Image.open(os.path.join(self.output_image_dir, image_name), mode='r', formats=None) FIXME: NOT WORKING!!
+                output_image = imageio.imread(os.path.join(self.output_image_dir, gt_image_name))	
             
             if self.transform is not None:
                 output_image = self.transform(output_image)
-            
             proxy_model_label = to_tensor_transform(output_image)
             if c.DOWNSAMPLE_IMAGES:
-                #print('Downsampling ground truth tensor')
+                print('Downsampling ground truth tensor')
                 proxy_model_label = interpolate(proxy_model_label[None, :, :, :], scale_factor=0.25, mode='bilinear')
             proxy_model_label = torch.squeeze(proxy_model_label, dim=0)
             proxy_model_label = proxy_model_label[:, width_low:width_high, height_low:height_high]
-        
-        if self.stage == 1:
-            # Saving crops
-            if c.SAVE_CROPS and self.sweep == False:
 
-                if self.proxy_type != "demosaic":
-                    input_ndarray = proxy_model_input.detach().cpu().numpy()
-                else:
-                    input_ndarray = pre_pack_input.detach().cpu().numpy()
-                input_ndarray = np.moveaxis(input_ndarray, 0, -1).copy(order='C')
+        if not self.stage == 1:
+            return gt_image_name, proxy_model_input, proxy_model_label
+        # NOTE: everything below this point is for stage 1 (model training) only!
 
-                crop_input_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, self.name + c.CROPPED_INPUT_DIR)
-                if not os.path.exists(crop_input_path):
-                    os.mkdir(crop_input_path)
-                    print('directory created at: ' + crop_input_path)
+        # Saving crops
+        if c.SAVE_CROPS and self.sweep == False:
+            if self.proxy_type != "demosaic":
+                save_cropped_tensors(proxy_model_input.detach().cpu(), proxy_model_label.detach().cpu(), gt_image_name, self.name)
+            else:
+                save_cropped_tensors(pre_pack_input.detach().cpu(), proxy_model_label.detach().cpu(), gt_image_name, self.name)
 
-                input_path = os.path.join(crop_input_path, f'crop_{image_name}')
-                if self.proxy_type == "demosaic" and not os.path.exists(input_path):
-                    #Image.fromarray(input_ndarray).save(input_path, c.CROP_FORMAT)
-                    #imageio.imwrite(input_path, input_ndarray, format=c.CROP_FORMAT)
-                    tifffile.imwrite(input_path, input_ndarray)
-                    #print('crop saved: input')
-                elif not os.path.exists(input_path):
-                    plt.imsave(input_path, input_ndarray, format=c.CROP_FORMAT)
-                    #print('crop saved: input')
+        # Appending parameter tensor to input tensor
+        if self.append_params: # NOTE: this is only necessary if the model has input parameters
+            params = self.param_mat[:,index]
+            if self.sweep:
+                params = self.param_mat[:, param_num]
 
-                label_ndarray = proxy_model_label.detach().cpu().numpy()
-                label_ndarray = np.moveaxis(label_ndarray, 0, -1).copy(order='C')
-
-                crop_label_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_1_PATH, self.name + c.CROPPED_OUTPUT_DIR)
-                if not os.path.exists(crop_label_path):
-                    os.mkdir(crop_label_path)
-                    print('directory created at: ' + crop_label_path)
-
-                label_path = os.path.join(crop_label_path, f'crop_{image_name}')
-                if not os.path.exists(label_path):
-                    #TODO - switch to .tif crops only
-                    try:
-                        plt.imsave(label_path, label_ndarray, format=c.CROP_FORMAT)
-                    except:
-                        tifffile.imwrite(label_path, label_ndarray)
-                    #print('crop saved: ground truth')
-
-            # Appending parameter tensor
-            if self.append_params:
-                params = self.param_mat[:,index]
-                #params = float(params) # TODO: is this necessary? does it work??
-
-                if self.sweep:
-                    params = self.param_mat[:, param_num]
-
-                #print("image name + params: " + image_name + str(params))
-                sys.stdout.flush()
-
-                # Normalizing param values to [0, 1] range
-                if len(params) != len(self.param_lower_bounds):
-                    raise ValueError("ERROR: param possible ranges should be the same length as params")
-                if self.param_ranges is not None:
-                    params = (params + self.param_lower_bounds) / self.param_diff
-                
-                if self.embedding_type != "none":
-                    return image_name, proxy_model_input, params, proxy_model_label
-
-                proxy_model_input = _format_input_with_parameters(proxy_model_input, params)
-
-            if self.proxy_type == "demosaic":
-                return image_name, [proxy_model_input, pre_pack_input], proxy_model_label
+            # Normalizing param values to [0, 1] range
+            #if len(params) != len(self.param_lower_bounds):
+                #raise ValueError("ERROR: param possible ranges should be the same length as params")
+            if self.param_ranges is not None:
+                params = (params + self.param_lower_bounds) / self.param_diff
             
-        if self.sweep:
-            return image_name, proxy_model_input
-        return image_name, proxy_model_input, proxy_model_label
+            if self.embedding_type != "none": # Params will be appended later if embedding is necessary
+                return gt_image_name, proxy_model_input, params, proxy_model_label
+
+            proxy_model_input = _format_input_with_parameters(proxy_model_input, params)
+
+        if self.proxy_type == "demosaic": # Demosaic model needs pre-packed input
+            return gt_image_name, [proxy_model_input, pre_pack_input], proxy_model_label    
+        if self.sweep: # Not returning a label tensor for sweep mode
+            return gt_image_name, proxy_model_input
+        return gt_image_name, proxy_model_input, proxy_model_label
 
     def __len__(self):
         return len(self.image_name_list)
