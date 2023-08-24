@@ -14,7 +14,7 @@ DARKTABLE_PATH = "/home/dborts/programs/testing/nt-darktable/darktable/build/bin
 IMAGE_ROOT_DIR = '.'                     #   Root directory from which to construct all file paths
 LOG_DIR  = 'runs'                        #   Directory name in which to dump TensorBoard logs
 INTERACTIVE = False                      #   Toggle interactive prompts between stages
-MAGICK_COMMAND = "Convert"
+MAGICK_COMMAND = "convert"
 NUM_IMAGE_CHANNEL = 3                    # X Number of channels in each image (3 for RGB)
 IMG_SIZE = 736                           # X Dimensions to crop all images to (IMG_SIZE x IMG_SIZE)
 CLIP_OUTPUT = True                       # X Toggle clipping of proxy outputs
@@ -89,7 +89,8 @@ WHICH_LOSS = {
     'bloom': ['MSE', 'L1'],
     'colorize': ['MSE', 'L1'],
     'soften': ['MSE', 'L1'],
-    'colorout': ['MSE', 'L1']
+    'colorout': ['MSE', 'L1'],
+    'temperature': ['MSE', 'L1']
 }
 '''
 Dictionary to store which Darktable blocks will require which loss functions to train
