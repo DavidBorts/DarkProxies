@@ -351,7 +351,7 @@ class Darktable_Dataset(Dataset):
                 proxy_model_label = proxy_model_label[:, width_low:width_high, height_low:height_high]
             else:
                 proxy_model_label = proxy_model_label[width_low:width_high, height_low:height_high]
-                proxy_model_label = proxy_model_input.unsqueeze(0)
+                proxy_model_label = proxy_model_label.unsqueeze(0)
 
         if not self.stage == 1:
             return gt_image_name, proxy_model_input, proxy_model_label

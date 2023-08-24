@@ -179,7 +179,6 @@ class UNet(nn.Module):
         self.conv_final = nn.Conv2d(channel_list[0], self.num_output_channels, 1, padding=0)  # 32  -> num_output_channels 
 
     def forward(self, x, params=None):
-        #print("params: " + str(params.shape))
         if self.add_params:
             # Embedding params
             if self.embed:
@@ -191,8 +190,7 @@ class UNet(nn.Module):
                     param = torch.ones(self.params_size).cuda() * param[:,:,None,None]
                 x = torch.cat((x, param), dim=1)
             else:
-                param = x[:,3:,:,:]
-            #print("param size: " + str(param.shape))
+                param = x[:,self.num_input_channels:,:,:]
 
             # Getting param channels first.
             if self.embedding_type == "linear_to_channel":
