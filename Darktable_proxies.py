@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("proxy", help="Name of the Darktable block for which to train a proxy network", 
                     choices = ['colorbalancergb', 'sharpen', 'exposure', 'colorin', 'colorout', 
                                'demosaic', 'filmic', 'colorize', 'bloom', 'soften', 'graduateddensity',
-                               "lowpass"])
+                               "lowpass, temperature"])
 parser.add_argument("-p", "--params", help="[OPTIONAL] Specify a list of _ separated input parameters\
                     on which to train a proxy, keeping all others fixed (i.e. \
                     -p contrast_radius_brightness)", default=None)
@@ -61,7 +61,6 @@ if custom is not None:
 if params is None and proxy_type not in c.NO_PARAMS:
     params = c.PARAM_NAMES[proxy_type]
 
-#TODO: these are likely redundant - can be moved into respective scripts
 # Stage 1 constants
 generate_stage_1 = c.GENERATE_STAGE_1
 stage_1_batch_size = c.PROXY_MODEL_BATCH_SIZE
@@ -135,8 +134,8 @@ if c.TRAIN_PROXY:
         gt_list = read_img_list(name, 1)
     Train_proxy.run_training_procedure(
         weight_out_dir,
-        stage_1_batch_size,
-        num_epoch,
+        stage_1_batch_size,#TODO: remove me
+        num_epoch,#TODO: remove me
         use_gpu,
         possible_values,
         proxy_type,
