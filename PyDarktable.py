@@ -674,7 +674,7 @@ def extract_pfm(log, module):
             tmp_dir = line.split('\'')[-2]
             tmp_dir = os.path.join(tmp_dir, 'export')
             pfm_files = os.listdir(tmp_dir)
-            module_tapouts = [pfm_file for pfm_file in pfm_files 
+            module_tapouts = [os.path.join(tmp_dir, pfm_file) for pfm_file in pfm_files 
                               if str(module) in pfm_file 
                               and "diff" not in pfm_file]
             return module_tapouts
