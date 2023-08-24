@@ -190,7 +190,7 @@ class UNet(nn.Module):
                     param = torch.ones(self.params_size).cuda() * param[:,:,None,None]
                 x = torch.cat((x, param), dim=1)
             else:
-                param = x[:,self.num_input_channels:,:,:]
+                param = x[:,(self.num_input_channels-self.param_channels):,:,:]
 
             # Getting param channels first.
             if self.embedding_type == "linear_to_channel":
