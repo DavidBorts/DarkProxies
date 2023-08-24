@@ -670,8 +670,7 @@ def get_pipe_xmp(raw_prepare_params=RawPrepareParams(),
         soften_params=to_hex(soften_params, SoftenParams()))
 
 def extract_pfm(log, module):
-    log_text = io.TextIOWrapper(log.stdout.decode('utf-8'), encoding="utf-8")
-    for line in log_text:
+    for line in log.stdout.split('\n'):
             tmp_dir = line.split('\'')[-1]
             pfm_files = os.listdir(tmp_dir)
             module_tapouts = [pfm_file for pfm_file in pfm_files 
@@ -696,7 +695,7 @@ def render(src_dng_path, dst_path, pipe_stage_flags, tapout, module=None):
     if tapout:
         args += ["--dump-pipe", str(module)]
     print('Running:\n', ' '.join(args), '\n')
-    result = subprocess.run(args, capture_output=True)
+    result = subprocess.run(args, capture_output=True, text=True)
     if tapout:
         tapout_in, tapout_out = extract_pfm(result, module)
         return (tapout_in, tapout_out)
