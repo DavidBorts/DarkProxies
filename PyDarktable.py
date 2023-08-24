@@ -670,7 +670,7 @@ def get_pipe_xmp(raw_prepare_params=RawPrepareParams(),
         soften_params=to_hex(soften_params, SoftenParams()))
 
 def extract_pfm(log, module):
-    log_text = io.TextIOWrapper(log.stdout, encoding="utf-8")
+    log_text = io.TextIOWrapper(log.stdout.decode('utf-8'), encoding="utf-8")
     for line in log_text:
             tmp_dir = line.split('\'')[-1]
             pfm_files = os.listdir(tmp_dir)
