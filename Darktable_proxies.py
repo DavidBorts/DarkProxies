@@ -21,9 +21,9 @@ parser.add_argument("proxy", help="Name of the Darktable block for which to trai
                     choices = ['colorbalancergb', 'sharpen', 'exposure', 'colorin', 'colorout', 
                                'demosaic', 'filmic', 'colorize', 'bloom', 'soften', 'graduateddensity',
                                "lowpass", "temperature"])
-parser.add_argument("-p", "--params", help="[OPTIONAL] Specify a list of _ separated input parameters\
-                    on which to train a proxy, keeping all others fixed (i.e. \
-                    -p contrast_radius_brightness)", default=None)
+parser.add_argument("-p", "--params", help="[OPTIONAL] Specify a list of comma-separated input\
+                    parameters on which to train a proxy, keeping all others fixed (i.e. \
+                    -p contrast,radius,brightness)", default=None)
 parser.add_argument("-n", "--number", help="Number of training examples to generate for each \
                     source DNG image", required=True, default=0)
 parser.add_argument("-c", "--custom", help="[OPTIONAL] A custom name for the given proxy - overrides \
@@ -48,7 +48,7 @@ image_root_dir = c.IMAGE_ROOT_DIR
 
 # Sorting params list for consistency
 if params is not None:
-    params = params.split('_')
+    params = params.split(',')
     params = sort_params(proxy_type, params)
 
 # Getting proxy name (unique ID for this training job)
