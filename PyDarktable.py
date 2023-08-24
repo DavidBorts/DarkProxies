@@ -695,7 +695,7 @@ def render(src_dng_path, dst_path, pipe_stage_flags, tapout, module=None):
     if tapout:
         args += ["--dump-pipe", str(module)]
     print('Running:\n', ' '.join(args), '\n')
-    result = subprocess.run(args)
+    result = subprocess.run(args, capture_output=True, text=True)
     if tapout:
         tapout_in, tapout_out = extract_pfm(result, module)
         return (tapout_in, tapout_out)
