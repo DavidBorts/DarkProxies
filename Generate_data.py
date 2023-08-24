@@ -141,7 +141,6 @@ def generate(proxy_type, params, stage, possible_values, num, name):
             if c.TAPOUTS:
                 os.remove(input_file_path)
                 os.remove(tapouts[1])
-                #TODO: move pfm to input_path folder.
                 dt.pfm_to_tif(tapouts[0], input_file_path)
                 os.remove(tapouts[0])
 
@@ -173,7 +172,6 @@ def generate(proxy_type, params, stage, possible_values, num, name):
             if c.TAPOUTS:
                 os.remove(gt_file_path)
                 os.remove(tapouts[0])
-                #TODO: move pfm to input_path folder.
                 dt.pfm_to_tif(tapouts[1], gt_file_path)
                 os.remove(tapouts[1])
     print(f"Training data generated: stage {stage}")
