@@ -302,7 +302,7 @@ class ColorBalanceRGBParams:
     chroma_highlights: float = 0.0
     chroma_global: float = 0.0
     chroma_midtones: float = 0.0
-    saturation_global: float = 0.0
+    saturation_global: float = 0.0 # $MIN: -1.0 $MAX:   1.0 $DEFAULT: 0.0 $DESCRIPTION: "global saturation"
     saturation_highlights: float = 0.0
     saturation_midtones: float = 0.0
     saturation_shadows: float = 0.0
