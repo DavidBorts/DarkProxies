@@ -105,7 +105,7 @@ Format: [stage_1, stage_2]
 
 # TODO: Add support for highlights
 POSSIBLE_VALUES = {
-    'colorbalancergb': [(-1.0, 1.0), (0.0, 1.0), (-0.9, 0.9)],
+    'colorbalancergb': [(-1.0, 1.0), (-1.0, 1.0), (0.0, 1.0), (-0.9, 0.9)],
     'sharpen': [(0.0, 99.0), (0.0, 2.0), (0.0, 100.0)],# FIXME: amount was 0.0 - 10.0 ??
     'exposure': [(-1.0, 1.0), (-2.0, 4.0), (0.0, 100.0), 
                  (-18.0, 18.0)],# FIXME: exposure is actually -18.0 - 18.0??
@@ -128,7 +128,7 @@ parameter of all supported Darktable blocks
 '''
 
 PARAM_NAMES= {
-    'colorbalancergb': ['vibrance', 'grey_fulcrum', 'contrast'],
+    'colorbalancergb': ['saturation_global', 'vibrance', 'grey_fulcrum', 'contrast'],
     'sharpen': ['radius', 'amount', 'threshold'],
     'exposure': ['black', 'exposure', 'deflicker_percentile', 
                  'deflicker_target_level'],
@@ -161,7 +161,7 @@ NO_PARAMS = ['colorin','colorout', 'demosaic']
 List of Darktable blocks that do not require input parameters
 '''
 
-SINGLE_IMAGE_CHANNEL = []
+SINGLE_IMAGE_CHANNEL = ['temperature', 'demosaic']
 '''
 List of Darktable blocks that only have one image channel
 (in other words, this is all blocks up to demosaic)

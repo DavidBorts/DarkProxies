@@ -234,8 +234,8 @@ class Darktable_Dataset(Dataset):
             '''
             Packs image tensor into a smaller 4-channel image. For neural demosaicing.
             '''
-
-            mosaic = torch.unsqueeze(image, 2)	
+            mosaic = torch.squeeze(image, 0)
+            mosaic = torch.unsqueeze(mosaic, 2)
             H, W, _ = mosaic.size()
 
             # Checking for 2x2 Bayer pattern
@@ -323,6 +323,7 @@ class Darktable_Dataset(Dataset):
             proxy_model_input = proxy_model_input[:, width_low:width_high, height_low:height_high]
         else:	
             proxy_model_input = proxy_model_input[width_low:width_high, height_low:height_high]
+            proxy_model_input = proxy_model_input.unsqueeze(0)
         
         # Extracting cfa and packing input for demosaic proxy
         if self.proxy_type == 'demosaic' or (self.proxy_order is not None and self.proxy_order[0][0].split('_')[0] == "demosaic"):
@@ -346,7 +347,11 @@ class Darktable_Dataset(Dataset):
                 print('Downsampling ground truth tensor')
                 proxy_model_label = interpolate(proxy_model_label[None, :, :, :], scale_factor=0.25, mode='bilinear')
             proxy_model_label = torch.squeeze(proxy_model_label, dim=0)
-            proxy_model_label = proxy_model_label[:, width_low:width_high, height_low:height_high]
+            if len(proxy_model_label.size()) == 3:
+                proxy_model_label = proxy_model_label[:, width_low:width_high, height_low:height_high]
+            else:
+                proxy_model_label = proxy_model_label[width_low:width_high, height_low:height_high]
+                proxy_model_label = proxy_model_input.unsqueeze(0)
 
         if not self.stage == 1:
             return gt_image_name, proxy_model_input, proxy_model_label

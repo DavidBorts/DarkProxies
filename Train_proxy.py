@@ -27,17 +27,20 @@ learning_rate = 0.0001 # was 0.0001
 gamma = 0.1 # was 0.1
 step_size = 1000 # was 7
 
-def get_num_input_channels(proxy_type, possible_params, append_params):
+def get_num_channels(proxy_type, possible_params, append_params):
     '''
     TODO: add comment
     '''
     # Bayer mosaics are always unpacked into 4 channels,
     # with no appended parameter channels
     if proxy_type == "demosaic":
-        return 4, 0
+        return 4, 0, 12
 
-    num_channels = c.NUM_IMAGE_CHANNEL # input tensor
+    num_input_channels = c.NUM_IMAGE_CHANNEL # input tensor
+    if proxy_type in c.SINGLE_IMAGE_CHANNEL:
+        num_input_channels = 1
     params_size = (len(possible_params), c.IMG_SIZE, c.IMG_SIZE) # tuple size of the appended params
+    num_output_channels = num_input_channels
 
     # Depending on c.EMBEDDING_TYPE, some number of parameter
     # channels might be appended to the input tensor
@@ -47,22 +50,22 @@ def get_num_input_channels(proxy_type, possible_params, append_params):
         embedding_type = c.EMBEDDING_TYPES[c.EMBEDDING_TYPE]
 
         if embedding_type == "none":
-            num_channels += len(possible_params)
+            num_input_channels += len(possible_params)
 
         elif embedding_type == "linear_to_channel":
             channels = int(np.ceil(float(num_params) / c.EMBEDDING_RATIO))
             if c.EMBED_TO_SINGLE:
                 channels = 1
             params_size = (c.PROXY_MODEL_BATCH_SIZE, channels, int(c.IMG_SIZE/16), int(c.IMG_SIZE/16))
-            num_channels += channels
+            num_input_channels += channels
 
         else: # embedding type is "linear_to_value"
             final = int(np.ceil(num_params*1.0 / c.EMBEDDING_RATIO))
             if c.EMBED_TO_SINGLE:
                 final = 1
             params_size = (c.PROXY_MODEL_BATCH_SIZE, final, c.IMG_SIZE, c.IMG_SIZE)
-            num_channels += final
-    return num_channels, params_size
+            num_input_channels += final
+    return num_input_channels, params_size, num_output_channels
 
 
 def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, params, append_params, name, dataset_name, gt_list=None):
@@ -151,11 +154,11 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
     }
     
     # Setting up model
-    num_channels, params_size = get_num_input_channels(proxy_type, possible_params, append_params)
+    num_input_channels, params_size, num_output_channels = get_num_channels(proxy_type, possible_params, append_params)
     model = None
     if proxy_type == "demosaic":
         print("model: ChenNet")
-        model = DemosaicNet(num_input_channels=num_channels, num_output_channels=12,
+        model = DemosaicNet(num_input_channels=num_input_channels, num_output_channels=num_output_channels,
                             skip_connect=skip_connect, clip_output=clip_output)
         #model = ChenNet(0, clip_output=clip_output, add_params=False)
     else:
@@ -164,11 +167,11 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
         if c.NPF_BASELINE:
             channel_list = [16, 32, 64, 128, 256]
         if append_params:
-            model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
+            model = UNet(num_input_channels=num_input_channels, num_output_channels=num_output_channels, 
                     skip_connect=skip_connect, add_params=append_params, clip_output=clip_output,
                     num_params=len(possible_params), params_size=params_size, channel_list=channel_list)
         else:
-             model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
+             model = UNet(num_input_channels=num_input_channels, num_output_channels=num_output_channels, 
                     skip_connect=skip_connect, add_params=append_params, clip_output=clip_output,
                     channel_list=channel_list)
     if use_checkpoint:
@@ -247,11 +250,11 @@ def run_eval_procedure(model_out_dir, use_gpu, params_file, possible_params, pro
     
     # Set up model.
     # Setting up model
-    num_channels, params_size = get_num_input_channels(proxy_type, possible_params, append_params)
+    num_input_channels, params_size, num_output_channels = get_num_channels(proxy_type, possible_params, append_params)
     model = None
     if proxy_type == "demosaic":
         print("model: ChenNet")
-        model = DemosaicNet(num_input_channels=num_channels, num_output_channels=12,
+        model = DemosaicNet(num_input_channels=num_input_channels, num_output_channels=num_output_channels,
                             skip_connect=skip_connect, clip_output=clip_output)
         #model = ChenNet(0, clip_output=clip_output, add_params=False)
     else:
@@ -260,11 +263,11 @@ def run_eval_procedure(model_out_dir, use_gpu, params_file, possible_params, pro
         if c.NPF_BASELINE:
             channel_list = [16, 32, 64, 128, 256]
         if append_params:
-            model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
+            model = UNet(num_input_channels=num_input_channels, num_output_channels=num_output_channels, 
                     skip_connect=skip_connect, add_params=append_params, clip_output=clip_output,
                     num_params=len(possible_params), params_size=params_size, channel_list=channel_list)
         else:
-             model = UNet(num_input_channels=num_channels, num_output_channels=c.NUM_IMAGE_CHANNEL, 
+             model = UNet(num_input_channels=num_input_channels, num_output_channels=num_output_channels, 
                     skip_connect=skip_connect, add_params=append_params, clip_output=clip_output,
                     channel_list=channel_list)
     if use_checkpoint:
