@@ -675,7 +675,7 @@ def extract_pfm(log, module):
             pfm_files = os.listdir(tmp_dir)
             module_tapouts = [pfm_file for pfm_file in pfm_files 
                               if str(module) in pfm_file 
-                              and not "diff" in pfm_file]
+                              and "diff" not in pfm_file]
             return module_tapouts
 
 def pfm_to_tif(pfm_path, dest_path):
