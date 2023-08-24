@@ -86,8 +86,7 @@ if append_params:
 else:
     # Proxy has no input parameters - use inputs of a "sampler" block instead
     sampler_block, sampler_param = c.SAMPLER_BLOCKS[proxy_type].split('_')
-    if proxy_type != 'demosaic':#FIXME: remove
-        possible_values = get_possible_values(sampler_block, [sampler_param])
+    possible_values = get_possible_values(sampler_block, [sampler_param])
 
 # Creating stage 1 and 2 directories if they do not already exist
 stage_1_path = os.path.join(image_root_dir, c.STAGE_1_PATH)

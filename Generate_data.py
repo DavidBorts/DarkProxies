@@ -135,7 +135,7 @@ def generate(proxy_type, params, stage, possible_values, num, name):
 
         # Rendering an unchanged copy of the source image for model input
         if not input_exists:
-            tapouts = dt.render(src_path, input_file_path, original_params, c.TAPOUTS, proxy_type_gt)
+            tapouts = dt.render(src_path, input_file_path, original_params, c.TAPOUTS, proxy_type)
 
             # Converting PFM tapouts to usable TIFF files
             if c.TAPOUTS:
@@ -166,7 +166,7 @@ def generate(proxy_type, params, stage, possible_values, num, name):
             params_dict = dt.get_params_dict(proxy_type_gt, params_gt, values, temperature_params, raw_prepare_params)
 
             # Rendering the output image
-            tapouts = dt.render(src_path, gt_file_path, params_dict, c.TAPOUTS, proxy_type_gt)
+            tapouts = dt.render(src_path, gt_file_path, params_dict, c.TAPOUTS, proxy_type)
 
             # Converting PFM tapouts to usable TIFF files
             if c.TAPOUTS:

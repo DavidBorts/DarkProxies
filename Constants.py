@@ -170,7 +170,7 @@ List of Darktable blocks that only have one image channel
 SAMPLER_BLOCKS = {
     'colorin': 'exposure_exposure',
     'colorout': 'colorbalancergb_contrast',
-    'demosaic': 'highlights_strength'
+    'demosaic': 'temperature_green'
 }
 '''
 Dict of which blocks to sample parameters from for parameter-less
