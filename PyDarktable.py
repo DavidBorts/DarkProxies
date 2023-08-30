@@ -698,8 +698,8 @@ def pfm_to_tif(pfm_path, dest_path):
     try:
         subprocess.run(args)
     except:
-        print("Error finding tmp directory: waiting 7.0 sec...")
-        time.sleep(7.0)
+        print("Error finding tmp directory: waiting 10.0 sec...")
+        time.sleep(10.0)
         subprocess.run(args)
 
 def render(src_dng_path, dst_path, pipe_stage_flags, tapout, module=None):
