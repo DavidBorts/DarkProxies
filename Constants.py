@@ -135,7 +135,7 @@ PARAM_NAMES= {
     'graduateddensity': ['density', 'hardness', 'rotation',
                          'hue', 'saturation'],
     'hazeremoval': ['strength', 'distance'],
-    'denoiseprofile': ['radius', 'nbhood', 'strength', 'shadows', 
+    'denoiseprofile': ['strength', 'shadows', 
                        'bias', 'scattering', 'central_pixel_weight', 
                        'overshooting'],
     'lowpass': ['radius', 'contrast', 'brightness', 'saturation'],
