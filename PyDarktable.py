@@ -674,7 +674,12 @@ def extract_pfm(log, module):
     for line in log.stdout.split('\n'):
             tmp_dir = line.split('\'')[-2]
             tmp_dir = os.path.join(tmp_dir, 'export')
-            pfm_files = os.listdir(tmp_dir)
+            try:
+                pfm_files = os.listdir(tmp_dir)
+            except:
+                print("Error finding tmp directory: waiting 5.0 sec...")
+                time.sleep(5.0)
+                pfm_files = os.listdir(tmp_dir)
             if type(module) is list:
                 module_tapouts = [os.path.join(tmp_dir, pfm_file) for pfm_file in pfm_files 
                               if (f"{str(module[0])}_cpu_in" in pfm_file or f"{str(module[1])}_cpu_out" in pfm_file)
@@ -693,7 +698,8 @@ def pfm_to_tif(pfm_path, dest_path):
     try:
         subprocess.run(args)
     except:
-        time.sleep(5.0)
+        print("Error finding tmp directory: waiting 7.0 sec...")
+        time.sleep(7.0)
         subprocess.run(args)
 
 def render(src_dng_path, dst_path, pipe_stage_flags, tapout, module=None):
