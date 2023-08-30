@@ -674,9 +674,15 @@ def extract_pfm(log, module):
             tmp_dir = line.split('\'')[-2]
             tmp_dir = os.path.join(tmp_dir, 'export')
             pfm_files = os.listdir(tmp_dir)
-            module_tapouts = [os.path.join(tmp_dir, pfm_file) for pfm_file in pfm_files 
+            if type(module) is list:
+                module_tapouts = [os.path.join(tmp_dir, pfm_file) for pfm_file in pfm_files 
+                              if (f"{str(module[0])}_cpu_in" in pfm_file or f"{str(module[1])}_cpu_out" in pfm_file)
+                              and "diff" not in pfm_file]
+            else:
+                module_tapouts = [os.path.join(tmp_dir, pfm_file) for pfm_file in pfm_files 
                               if str(module) in pfm_file 
                               and "diff" not in pfm_file]
+            assert(len(module_tapouts) == 2)
             return module_tapouts
 
 def pfm_to_tif(pfm_path, dest_path):
@@ -694,7 +700,10 @@ def render(src_dng_path, dst_path, pipe_stage_flags, tapout, module=None):
         "--disable-opencl", "-d", "perf"
     ]
     if tapout:
-        args += ["--dump-pipe", str(module)]
+        if type(module) is list:
+            args += ["--dump-pipe", str(module[0]), str(module[-1])]
+        else:
+            args += ["--dump-pipe", str(module)]
     print('Running:\n', ' '.join(args), '\n')
     result = subprocess.run(args, capture_output=True, text=True)
     if tapout:

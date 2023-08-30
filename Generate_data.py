@@ -326,20 +326,24 @@ def generate_pipeline(proxy_order, input_path, label_path, dng_path=None):
         
         # Filling the dictionary with the sampled params
         for proxy_type, param_names, sampled_values in zip(proxy_type_list, param_names_list, sampled_values_list):
+            print(f"sample: {str(proxy_type)} - {str(param_names)} - {str(sampled_values)}")
             params_dict = dt.get_params_dict(proxy_type, param_names, sampled_values, None, None, dict=params_dict)
         print('Assembled params dict: \n' + params_dict)
 
         # Rendering an image with Darktable
+        input_file_path = os.path.join(input_path, f'{image}_piepline')
+        input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
         label_file_path = os.path.join(label_path, f'{image}_pipeline')
         label_file_path = (repr(label_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
-        dt.render(src_path, label_file_path, params_dict)
+        tapouts = dt.render(src_path, label_file_path, params_dict, True, proxy_type_list)
 
-        # Extracting input and GT tapouts
-        #TODO: uncomment me
-        #if proxy_type_list[-1].lower() != "colorout":
-            #os.remove(label_file_path)
-        #TODO: programmatically extract and convert .pfm tapouts
-
+        # Converting PFM tapouts to usable TIFF files
+        #TODO: don't use sRGB DT renders as GT
+        #os.remove(label_file_path)
+        #dt.pfm_to_tif(tapouts[1], label_file_path)
+        os.remove(tapouts[1])
+        dt.pfm_to_tif(tapouts[0], input_file_path)
+        os.remove(tapouts[0])
     print('Pipeline images generated.')
 
 def generate_finetune(proxy_type, param, finetune, param_finetune, possible_values, possible_values_finetune, num):

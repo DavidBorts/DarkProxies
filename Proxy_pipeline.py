@@ -73,7 +73,7 @@ class ProxyPipeline:
             proxy_type = proxy_name.split('_')[0]
 
             # Getting necessary params to load in the proxy
-            params = params.split('_')
+            params = params.split(',')
             possible_values = get_possible_values(proxy_type, params)
             possible_values_list.append(possible_values)
             if len(possible_values) == 0:
