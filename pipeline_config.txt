@@ -1,5 +1,7 @@
+temperature full 1
 demosaic full 1
 colorin full 1
-colorbalancergb_no_grey vibrance_contrast 1
+exposure exposure 1
+colorbalancergb_sat_no_greyvib saturation_global,contrast 1
 bloom full 0
 colorout full 0
