@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 import math
 import numpy as np
 import struct
@@ -689,7 +690,11 @@ def pfm_to_tif(pfm_path, dest_path):
     args = [c.MAGICK_COMMAND, pfm_path, dest_path]
     print('Running:\n', ' '.join(args), '\n')
     sys.stdout.flush()
-    subprocess.run(args)
+    try:
+        subprocess.run(args)
+    except:
+        time.sleep(5.0)
+        subprocess.run(args)
 
 def render(src_dng_path, dst_path, pipe_stage_flags, tapout, module=None):
     with tempfile.NamedTemporaryFile(mode="w+t", suffix=".xmp",
@@ -707,7 +712,8 @@ def render(src_dng_path, dst_path, pipe_stage_flags, tapout, module=None):
             args += ["--dump-pipe", str(module)]
     print('Running:\n', ' '.join(args), '\n')
     result = subprocess.run(args, capture_output=True, text=True)
-    print(result.stdout)
+    if c.PRINT_STDOUT:
+        print(result.stdout)
     sys.stdout.flush()
     if tapout:
         tapout_in, tapout_out = extract_pfm(result, module)

@@ -14,7 +14,7 @@ DARKTABLE_PATH = "/home/dborts/programs/testing/nt-darktable/darktable/build/bin
 IMAGE_ROOT_DIR = '.'                     #   Root directory from which to construct all file paths
 LOG_DIR  = 'runs'                        #   Directory name in which to dump TensorBoard logs
 INTERACTIVE = False                      #   Toggle interactive prompts between stages
-MAGICK_COMMAND = "convert"
+MAGICK_COMMAND = "magick"
 NUM_IMAGE_CHANNEL = 3                    # X Number of channels in each image (3 for RGB)
 IMG_SIZE = 736                           # X Dimensions to crop all images to (IMG_SIZE x IMG_SIZE)
 CLIP_OUTPUT = True                       # X Toggle clipping of proxy outputs
@@ -35,6 +35,7 @@ OUTPUT_DIR = 'output/'                   #   Name of directories that store grou
 STAGE_1_DNG_PATH = 'images/stage_1/'     # X Path to folder with all DNG files for proxy training
 STAGE_2_DNG_PATH = 'images/stage_2/'     # X Path to folder with all DNG files for slider regression
 STAGE_3_DNG_PATH = 'images/stage_3/'     # X Path to folder with all DNG files for pipeline regression
+PRINT_STDOUT = False
 TAPOUTS = False
 
 # Training the proxies (Stage 1)
