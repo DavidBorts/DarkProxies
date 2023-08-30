@@ -1,4 +1,4 @@
-import io
+import sys
 import os
 import math
 import numpy as np
@@ -688,6 +688,7 @@ def extract_pfm(log, module):
 def pfm_to_tif(pfm_path, dest_path):
     args = [c.MAGICK_COMMAND, pfm_path, dest_path]
     print('Running:\n', ' '.join(args), '\n')
+    sys.stdout.flush()
     subprocess.run(args)
 
 def render(src_dng_path, dst_path, pipe_stage_flags, tapout, module=None):
@@ -705,6 +706,7 @@ def render(src_dng_path, dst_path, pipe_stage_flags, tapout, module=None):
         else:
             args += ["--dump-pipe", str(module)]
     print('Running:\n', ' '.join(args), '\n')
+    sys.stdout.flush()
     result = subprocess.run(args, capture_output=True, text=True)
     if tapout:
         tapout_in, tapout_out = extract_pfm(result, module)
