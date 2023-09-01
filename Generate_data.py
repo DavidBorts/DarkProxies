@@ -119,13 +119,13 @@ def generate(proxy_type, params, stage, possible_values, num, name):
         input_file_path = os.path.join(input_path, image.split('.')[0])
         input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
 
-        # Checking if input image already exists
-        # (this can happen if a previous data generation job was interrupted)
-        input_exists = os.path.exists(input_file_path)
-
         # Parameter value sweep
         # (to generate ground truth images)
         for values in sampler:
+
+            # Checking if input image already exists
+            # (this can happen if a previous data generation job was interrupted)
+            input_exists = os.path.exists(input_file_path)
 
             # Getting path of the ground truth image
             gt_file_path = f'{image}_{proxy_type}'
