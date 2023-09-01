@@ -28,7 +28,7 @@ NPF_BASELINE = False                     # X Toggles NPF (Tseng et al. 2022) mod
 SKIP_CONNECT = True                      # X Toggles skip connections in the neural networks
 
 # Data generation constants (Stage 0)
-GENERATE_STAGE_1 = False                  #   Toggles new data generation for proxy training (stage 1)
+GENERATE_STAGE_1 = True                  #   Toggles new data generation for proxy training (stage 1)
 GENERATE_STAGE_2 = False                 #   Toggles new data generation for slider regression (stage 2)
 INPUT_DIR = 'input/'                     #   Name of directories that store training data
 OUTPUT_DIR = 'output/'                   #   Name of directories that store ground truth data
@@ -36,13 +36,13 @@ STAGE_1_DNG_PATH = 'images/stage_1/'     # X Path to folder with all DNG files f
 STAGE_2_DNG_PATH = 'images/stage_2/'     # X Path to folder with all DNG files for slider regression
 STAGE_3_DNG_PATH = 'images/stage_3/'     # X Path to folder with all DNG files for pipeline regression
 PRINT_STDOUT = False
-TAPOUTS = False
+TAPOUTS = True
 
 # Training the proxies (Stage 1)
-TRAIN_PROXY = True                       #   Toggles proxy training
+TRAIN_PROXY = False                      #   Toggles proxy training
 STAGE_1_PATH = 'stage_1/'                #   Directory that stores all training data, model weights, and predictions
 PROXY_MODEL_BATCH_SIZE = 2               #   Batch size for proxy training
-PROXY_MODEL_NUM_EPOCH = 4500              #   Number of epochs for which to train
+PROXY_MODEL_NUM_EPOCH = 4500             #   Number of epochs for which to train
 MODEL_WEIGHTS_PATH = 'model_weights/'    #   Name of directories where model weights are stored
 SAVE_OUTPUT_FREQ = 10                    #   Frequency at which to save model predictions (in terms of epochs)
 OUTPUT_PREDICTIONS_PATH = 'predictions/' #   Name of directories where model predictions are stored
@@ -55,7 +55,7 @@ SWEEP_OUTPUT_DIR = 'sweep_output'        #   Name of directories that store prox
 EVAL_PATH = 'eval/'                      #   Name of directories that store evluations data and results
 
 # Slider regression on trained proxies (Stage 2)
-REGRESS_PROXY = False                     #   Toggles proxy regression
+REGRESS_PROXY = False                    #   Toggles proxy regression
 STAGE_2_PATH = 'stage_2/'                #   Directory that stores all training data and predictions
 STAGE_2_PARAM_PATH = 'stage_2/params/'   #   Directory that stores optimized proxy params
 ANIMATIONS_DIR = 'animations/'           #   Directory that stores frames for all animations

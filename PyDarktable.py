@@ -395,7 +395,7 @@ class FilmicRGBParams:
         return to_hex_string([getattr(self, fd.name) for fd in fields(self)])
 
 # dt_iop_highlights_params_t
-#TODO: Update to reflected updated params in Darktable highlights.c source code
+#TODO: Update to reflect updated params in Darktable highlights.c source code
 @dataclass
 class HighlightsParams:
     # In C, they are enums:

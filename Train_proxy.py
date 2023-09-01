@@ -215,11 +215,11 @@ def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possi
     writer.close()
     print(f'{name}: proxy training completed.')
 
-'''
-Evaluate the model on a any input(s)
-'''
 # TODO: move this to eval file?
 def run_eval_procedure(model_out_dir, use_gpu, params_file, possible_params, proxy_type, params, name, append_params=True):
+    '''
+    Evaluate the model on a any input(s)
+    '''
 
     # Constants
     input_path = os.path.join(c.IMAGE_ROOT_DIR, c.EVAL_PATH, f'{name}_input')
@@ -253,10 +253,9 @@ def run_eval_procedure(model_out_dir, use_gpu, params_file, possible_params, pro
     num_input_channels, params_size, num_output_channels = get_num_channels(proxy_type, possible_params, append_params)
     model = None
     if proxy_type == "demosaic":
-        print("model: ChenNet")
+        print("model: DemosaicNet")
         model = DemosaicNet(num_input_channels=num_input_channels, num_output_channels=num_output_channels,
                             skip_connect=skip_connect, clip_output=clip_output)
-        #model = ChenNet(0, clip_output=clip_output, add_params=False)
     else:
         print("model: UNET")
         channel_list = [32, 64, 128, 256, 512]

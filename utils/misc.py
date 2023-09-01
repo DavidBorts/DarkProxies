@@ -7,7 +7,7 @@ import tifffile
 # Local files
 import Constants as c
 
-def sort_params(proxy_type, params):
+def sort_params(proxy_type, params, values=None):
     '''
     Re-arrange a params list into a standard order (returns list)
     '''
@@ -16,6 +16,16 @@ def sort_params(proxy_type, params):
 
     names_lower = [name.lower() for name in c.PARAM_NAMES[proxy_type]]
     params_lower = [param.lower() for param in params]
+
+    if values is not None:
+        sorted_params = []
+        sorted_values = []
+        for name in names_lower:
+            for param, val in zip(params_lower, values):
+                if name == param:
+                    sorted_params.append(param)
+                    sorted_values.append(val)
+        return sorted_params, sorted_values
 
     sorted = [name for name in names_lower if name in params_lower]
     return sorted
