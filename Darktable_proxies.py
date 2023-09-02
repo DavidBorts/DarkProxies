@@ -10,7 +10,7 @@ import Generate_data as data
 import Constants as c
 import Train_proxy
 import Parameter_regression
-from utils.misc import get_possible_values, write_img_list, read_img_list, sort_params
+from utils.misc import get_possible_values, write_img_list, read_img_list, sort_params, unroll_possible_values
 
 if __name__ != '__main__':
     raise RuntimeError("This script is only configured to be called directly by the user!")
@@ -87,6 +87,7 @@ else:
     # Proxy has no input parameters - use inputs of a "sampler" block instead
     sampler_block, sampler_param = c.SAMPLER_BLOCKS[proxy_type].split('_')
     possible_values = get_possible_values(sampler_block, [sampler_param])
+possible_values = unroll_possible_values(possible_values)
 
 # Creating stage 1 and 2 directories if they do not already exist
 stage_1_path = os.path.join(image_root_dir, c.STAGE_1_PATH)

@@ -568,6 +568,20 @@ def read_dng_params(dng_file):
         # temperature_params.g2 = float(raw.camera_whitebalance[3])
     return raw_prepare_params, temperature_params
 
+def format_values(new_values, index, current_values):
+    dims = ()
+    total_num_values = 1
+    i0 = current_values
+    while type(i0) is list:
+        dims.append(len(i0))
+        total_num_values *= len(i0)
+        i0 = i0[0]
+
+    values_to_fill = new_values[index:index+total_num_values]
+    formatted_values = np.array(values_to_fill).astype(np.float64).reshape(dims).tolist()
+    
+    return formatted_values, total_num_values
+
 def fill(params_dict, proxy_type, params, values):
     ops = {
         "colorbalancergb": ColorBalanceRGBParams,
@@ -587,9 +601,16 @@ def fill(params_dict, proxy_type, params, values):
     }
     params_class = ops[proxy_type]()
 
-    #TODO: replace enumerate w/ zip)() ??
-    for i, param in enumerate(params):
-        setattr(params_class, param, float(values[i]))
+    i = 0
+    for param in params:
+        default = getattr(params_class, param)
+        if type(default) is list:
+            formatted_values, total_num_values = format_values(values, i, default)
+            setattr(params_class, param, formatted_values)
+            i += total_num_values
+        else:
+            setattr(params_class, param, float(values[i]))
+            i += 1
 
     params_dict[f"{proxy_type}_params"] = params_class
     return params_dict

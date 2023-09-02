@@ -51,6 +51,32 @@ def get_possible_values(proxy_type, params):
     possible_values = [all_possible_values[all_param_names.index(param)] for param in params_sorted]
     return possible_values
 
+def unroll_possible_values(possible_values):
+    '''
+    Given a list of tuples of possible values, finds any nested lists and
+    unrolls them (useful for paramaters that are list-based in Darktable).
+
+    Example:
+    [(0.0, 1.0), [(3.0, 4.0), (4.0, 5.0)]] -> [(0.0, 1.0), (3.0, 4.0), (4.0, 5.0)]
+    '''
+    def has_list(list_rolled):
+        for item in list_rolled:
+            if type(item) is list:
+                return True
+            return False
+
+    unrolled_values = possible_values
+    while has_list(unrolled_values):
+        unrolled_values_t = []
+        for item in unrolled_values:
+            if type(item) is list:
+                for i in item:
+                    unrolled_values_t.append(i)
+            else:
+                unrolled_values_t.append(item)
+        unrolled_values = unrolled_values_t
+    return unrolled_values
+
 def write_img_list(name, stage, img_list):
 
     img_list_path = os.path.join(c.IMAGE_ROOT_DIR,

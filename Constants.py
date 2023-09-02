@@ -112,9 +112,7 @@ POSSIBLE_VALUES = {
                  (-18.0, 18.0)],# FIXME: exposure is actually -18.0 - 18.0??
     'graduateddensity':[(-8.0, 8.0), (0.0, 100.0), (-180.0, 180.0), (0.0, 1.0), (0.0, 1.0)],
     'hazeremoval': [(-1.0, 1.0), (0.0, 1.0)],
-    'denoiseprofile': [(0.0, 12.0), (1.0, 30.0), (0.001, 1000.0), 
-                       (0.0, 1.8), (-1000.0, 100.0), (0.0, 20.0), 
-                       (0.0, 10.0), (0.001, 1000.0)],
+    'denoiseprofile': [(0.001, 1000.0), (0.0, 1.8), (-1000.0, 100.0), ()],
     'lowpass': [(0.1, 20.0), (-3.0, 3.0), (-3.0, 3.0), (-3.0, 3.0)],# NOTE: radius truncated to 20.0, not 500.0
     'filmicrgb': [],
     'bloom': [(0.0, 100.0), (0.0, 100.0), (0.0, 100.0)],
@@ -136,9 +134,8 @@ PARAM_NAMES= {
     'graduateddensity': ['density', 'hardness', 'rotation',
                          'hue', 'saturation'],
     'hazeremoval': ['strength', 'distance'],
-    'denoiseprofile': ['strength', 'shadows', 
-                       'bias', 'scattering', 'central_pixel_weight', 
-                       'overshooting'],
+    'denoiseprofile': ['strength', 'shadows', 'bias',
+                       'x'],
     'lowpass': ['radius', 'contrast', 'brightness', 'saturation'],
     'filmic': [],
     'bloom': ['size', 'threshold', 'strength'],
