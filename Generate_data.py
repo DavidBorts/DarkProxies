@@ -48,7 +48,7 @@ class ParamSampler():
         self.possible_values = possible_values
         self.num = int(num)
 
-        if len(self.params) > 1:
+        if len(self.possible_values) > 1:
             self.list = lhs(self.possible_values, self.num)
         else:
             self.list = np.linspace(self.possible_values[0][0], self.possible_values[0][1], self.num)
