@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("proxy", help="Name of the Darktable block for which to train a proxy network", 
                     choices = ['colorbalancergb', 'sharpen', 'exposure', 'colorin', 'colorout', 
                                'demosaic', 'filmic', 'colorize', 'bloom', 'soften', 'graduateddensity',
-                               "lowpass", "temperature"])
+                               "lowpass", "temperature, denoiseprofile"])
 parser.add_argument("-p", "--params", help="[OPTIONAL] Specify a list of comma-separated input\
                     parameters on which to train a proxy, keeping all others fixed (i.e. \
                     -p contrast,radius,brightness)", default=None)
