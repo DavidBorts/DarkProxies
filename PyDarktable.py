@@ -573,7 +573,7 @@ def format_values(new_values, index, current_values):
     total_num_values = 1
     i0 = current_values
     while type(i0) is list:
-        dims += (len(i0))
+        dims += tuple(len(i0))
         total_num_values *= len(i0)
         i0 = i0[0]
 
