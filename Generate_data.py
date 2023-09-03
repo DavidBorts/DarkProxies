@@ -130,8 +130,12 @@ def generate(proxy_type, params, stage, possible_values, num, name):
 
             # Getting path of the ground truth image
             gt_file_path = f'{image}_{proxy_type}'
+            param_string = ''
             for val in values:
-                gt_file_path += '_' + str(val)[0:5]
+                param_string += '_' + str(val)[0:4]
+            if len(param_string) > 40:
+                param_string = param_string[0:41]
+            gt_file_path += param_string
             gt_file_path += '.tif'
             gt_imgs.append(gt_file_path)
             gt_file_path = os.path.join(output_path, gt_file_path)
