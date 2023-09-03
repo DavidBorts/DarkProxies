@@ -14,9 +14,10 @@ class ParamSamplerIterator():
     '''
     Iterator for sampled parameter values
     '''
-    def __init__(self, sampler, params, list):
+    def __init__(self, sampler, params, list, possible_values):
         self.sampler = sampler
         self.params = params
+        self.possible_values = possible_values
         self.list = list
         self.num = len(sampler)
         self.idx = 0
@@ -26,7 +27,7 @@ class ParamSamplerIterator():
         vals = None
         if self.idx < self.num:
 
-            if len(self.params) > 1:
+            if len(self.possible_values) > 1:
                 vals = np.squeeze(self.list[:, self.idx])
             else:
                 vals = [self.list[self.idx]]
@@ -53,7 +54,7 @@ class ParamSampler():
             self.list = np.linspace(self.possible_values[0][0], self.possible_values[0][1], self.num)
 
     def __iter__(self):
-        return ParamSamplerIterator(self, self.params, self.list)
+        return ParamSamplerIterator(self, self.params, self.list, self.possible_values)
     
     def __len__(self):
         return self.num
