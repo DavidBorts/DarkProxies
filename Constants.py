@@ -112,7 +112,8 @@ POSSIBLE_VALUES = {
                  (-18.0, 18.0)],# FIXME: exposure is actually -18.0 - 18.0??
     'graduateddensity':[(-8.0, 8.0), (0.0, 100.0), (-180.0, 180.0), (0.0, 1.0), (0.0, 1.0)],
     'hazeremoval': [(-1.0, 1.0), (0.0, 1.0)],
-    'denoiseprofile': [(0.001, 1000.0), (0.0, 1.8), (-1000.0, 100.0), ()],
+    'denoiseprofile': [(0.001, 1000.0), (0.0, 1.8), (-1000.0, 100.0), 
+                       [[(0.0, 1.0) for _ in range(7)] for _ in range(6)]],
     'lowpass': [(0.1, 20.0), (-3.0, 3.0), (-3.0, 3.0), (-3.0, 3.0)],# NOTE: radius truncated to 20.0, not 500.0
     'filmicrgb': [],
     'bloom': [(0.0, 100.0), (0.0, 100.0), (0.0, 100.0)],
