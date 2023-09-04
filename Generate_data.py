@@ -262,7 +262,7 @@ def generate_pipeline(proxy_order, input_path, label_path, dng_path=None):
         for proxy_name, params in proxy_order:
             proxy_type = proxy_name.split('_')[0]
             proxy_type_list.append(proxy_type)
-            params = params.split('_')
+            params = params.split(',')
             if proxy_type not in c.NO_PARAMS:
                 param_names_list.append(sort_params(proxy_type, params))
                 sampled_values_list.append(lhs(get_possible_values(proxy_type, params), 1))
