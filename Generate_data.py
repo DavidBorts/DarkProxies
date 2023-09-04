@@ -263,8 +263,12 @@ def generate_pipeline(proxy_order, input_path, label_path, dng_path=None):
             proxy_type = proxy_name.split('_')[0]
             proxy_type_list.append(proxy_type)
             params = params.split('_')
-            param_names_list.append(sort_params(proxy_type, params))
-            sampled_values_list.append(lhs(get_possible_values(proxy_type, params), 1))
+            if proxy_type not in c.NO_PARAMS:
+                param_names_list.append(sort_params(proxy_type, params))
+                sampled_values_list.append(lhs(get_possible_values(proxy_type, params), 1))
+            else:
+                param_names_list.append(None)
+                sampled_values_list.append(None)
 
         # Assembling a dictionary of all of the parameters to apply to the source DNG in order
         # to render a given ground truth label image
@@ -274,11 +278,12 @@ def generate_pipeline(proxy_order, input_path, label_path, dng_path=None):
         # Filling the dictionary with the sampled params
         for proxy_type, param_names, sampled_values in zip(proxy_type_list, param_names_list, sampled_values_list):
             print(f"sample: {str(proxy_type)} - {str(param_names)} - {str(sampled_values)}")
-            params_dict = dt.get_params_dict(proxy_type, param_names, sampled_values, None, None, dict=params_dict)
+            if param_names is not None:
+                params_dict = dt.get_params_dict(proxy_type, param_names, sampled_values, None, None, dict=params_dict)
         print('Assembled params dict: \n' + params_dict)
 
         # Rendering an image with Darktable
-        input_file_path = os.path.join(input_path, f'{image}_piepline')
+        input_file_path = os.path.join(input_path, f'{image}_pipeline')
         input_file_path = (repr(input_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
         label_file_path = os.path.join(label_path, f'{image}_pipeline')
         label_file_path = (repr(label_file_path).replace('\\\\', '/')).strip("'") + '.tif' # Dealing with Darktable CLI pickiness
