@@ -77,7 +77,7 @@ PIPELINE_CREATE_ANIMATION = True         #   If True, saves frames from regressi
 WHICH_LOSS = {
     'highlights': ['MSE', 'L1'],
     'demosaic': ['MSE', 'L1'],
-    'denoise': ['MSE', 'L1'],
+    'denoiseprofile': ['MSE', 'L1'],
     'hazeremoval': ['MSE', 'L1'],
     'exposure': ['MSE', 'L1'],
     'graduateddensity': ['MSE', 'L1'],
