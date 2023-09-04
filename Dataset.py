@@ -26,6 +26,63 @@ from utils.extract_RAW import get_cfa
 import warnings
 warnings.filterwarnings("ignore")
 
+def pack_input_demosaic(image, cfa):
+    '''
+    Packs image tensor into a smaller 4-channel image. For neural demosaicing.
+    '''
+    mosaic = torch.squeeze(image, 0)
+    mosaic = torch.unsqueeze(mosaic, 2)
+    H, W, _ = mosaic.size()
+
+    # Checking for 2x2 Bayer pattern
+    if len(cfa) != 4:
+        print("Provided CFA: " + cfa)
+        raise ValueError("Only 2 X 2 Bayer patterns are currently supported.")
+
+    # Checking for pattern with 2 green tiles
+    if cfa.upper().count('G') != 2:
+        print("Provided CFA: " + cfa)
+        raise ValueError("Only CFA patterns with 2 green tiles are currently supported.")
+
+    # Distinguishing G's in CFA
+    g_indices = [index for index, char in enumerate(cfa.upper()) if char == 'G']
+    cfa_new = ""
+    for idx, c in enumerate(cfa):
+        if idx == g_indices[0]:
+            cfa_new += '1'
+        elif idx == g_indices[1]:
+            cfa_new += '2'
+        else:
+            cfa_new += c
+    #cfa[g_indices[0]] = 'G1'
+    #cfa[g_indices[1]] = 'G2'
+
+    # Getting color channels
+    TL = mosaic[0:H:2, 0:W:2, :]
+    TR = mosaic[0:H:2, 1:W:2, :]
+    BL = mosaic[1:H:2, 0:W:2, :]
+    BR = mosaic[1:H:2, 1:W:2, :]
+    channels = [TL, TR, BL, BR]
+
+    # Assigning channels to R, G, & B
+    COLORS = ['R', '1', 'B', '2']
+    for i in range(len(cfa_new)):
+        color = cfa_new[i].upper()
+
+        # Checking for RGB-only CFA
+        if color not in COLORS:
+            print("Provided CFA: " + cfa)
+            raise ValueError("Only RGB-based CFAs are currently supported.")
+        
+        # Re-mapping each channel to the correct location, based on the Bayer pattern
+        idx = COLORS.index(color)
+        if idx != i:
+            channels[idx], channels[i] = channels[i], channels[idx]
+
+    # Packing the channels together as RGBG
+    # (axes rearranged to be C x H x W)
+    return torch.moveaxis(torch.cat(channels, dim=2), -1, 0)
+
 class Darktable_Dataset(Dataset):
     '''
     Darktable_Dataset. This is the dataset for any Darktable data, and is used for the
@@ -230,63 +287,6 @@ class Darktable_Dataset(Dataset):
                     torch.tensor((), dtype=torch.float).new_full((width, height), parameter)
                 channel_index += 1
             return torch.cat([image, param_tensor], dim=0)
-        
-        def pack_input_demosaic(image, cfa):
-            '''
-            Packs image tensor into a smaller 4-channel image. For neural demosaicing.
-            '''
-            mosaic = torch.squeeze(image, 0)
-            mosaic = torch.unsqueeze(mosaic, 2)
-            H, W, _ = mosaic.size()
-
-            # Checking for 2x2 Bayer pattern
-            if len(cfa) != 4:
-                print("Provided CFA: " + cfa)
-                raise ValueError("Only 2 X 2 Bayer patterns are currently supported.")
-
-            # Checking for pattern with 2 green tiles
-            if cfa.upper().count('G') != 2:
-                print("Provided CFA: " + cfa)
-                raise ValueError("Only CFA patterns with 2 green tiles are currently supported.")
-
-            # Distinguishing G's in CFA
-            g_indices = [index for index, char in enumerate(cfa.upper()) if char == 'G']
-            cfa_new = ""
-            for idx, c in enumerate(cfa):
-                if idx == g_indices[0]:
-                    cfa_new += '1'
-                elif idx == g_indices[1]:
-                    cfa_new += '2'
-                else:
-                    cfa_new += c
-            #cfa[g_indices[0]] = 'G1'
-            #cfa[g_indices[1]] = 'G2'
-
-            # Getting color channels
-            TL = mosaic[0:H:2, 0:W:2, :]
-            TR = mosaic[0:H:2, 1:W:2, :]
-            BL = mosaic[1:H:2, 0:W:2, :]
-            BR = mosaic[1:H:2, 1:W:2, :]
-            channels = [TL, TR, BL, BR]
-
-            # Assigning channels to R, G, & B
-            COLORS = ['R', '1', 'B', '2']
-            for i in range(len(cfa_new)):
-                color = cfa_new[i].upper()
-
-                # Checking for RGB-only CFA
-                if color not in COLORS:
-                    print("Provided CFA: " + cfa)
-                    raise ValueError("Only RGB-based CFAs are currently supported.")
-                
-                # Re-mapping each channel to the correct location, based on the Bayer pattern
-                idx = COLORS.index(color)
-                if idx != i:
-                    channels[idx], channels[i] = channels[i], channels[idx]
-
-            # Packing the channels together as RGBG
-            # (axes rearranged to be C x H x W)
-            return torch.moveaxis(torch.cat(channels, dim=2), -1, 0)
 
         to_tensor_transform = transforms.Compose([transforms.ToTensor()])
 

@@ -49,20 +49,22 @@ import sys
 
 # Local files
 import Constants as c
-from Dataset import Darktable_Dataset
+from Dataset import Darktable_Dataset, pack_input_demosaic
 from Generate_data import generate_pipeline
 from Models import UNet, ChenNet, DemosaicNet, generic_load
 from utils.misc import get_possible_values, get_num_channels
 
 class ProxyPipeline:
-    def __init__(self, proxies_list, use_gpu):
+    def __init__(self, proxies_list, use_gpu, cfa):
         
         self.num_proxies = len(proxies_list)
         self.use_gpu = use_gpu
+        self.cfa = cfa
 
         # Loading in all of the specified proxies
         # in the correct order
         proxies = []
+        proxy_type_list = []
         possible_values_list = []
         params_lower_bounds_list = []
         params_diff_list = []
@@ -71,6 +73,7 @@ class ProxyPipeline:
         for proxy_name, params in proxies_list:
 
             proxy_type = proxy_name.split('_')[0]
+            proxy_type_list.append(proxy_type)
 
             # Getting necessary params to load in the proxy
             params = params.split(',')
@@ -100,6 +103,7 @@ class ProxyPipeline:
             # Loding proxy
             proxies.append(load_model(proxy_type, params, proxy_name, possible_values, weight_out_dir, self.use_gpu))
         self.models = proxies
+        self.proxy_types = proxy_type_list
         self.possible_values = possible_values_list #NOTE: this is a list of lists
         self.param_lower_bounds = params_lower_bounds_list #NOTE: this is a list of lists
         self.param_diffs = params_diff_list #NOTE: this is a list of lists
@@ -120,6 +124,9 @@ class ProxyPipeline:
         for num in range(self.num_proxies):
             model = self.models[num]
             input = input_tensors[num]
+
+            if num > 0 and self.proxy_types[num] == "demosaic":
+                input = torch.squeeze(pack_input_demosaic(input, self.cfa))
 
             output = model(input)
 

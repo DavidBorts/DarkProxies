@@ -171,7 +171,7 @@ def regress(
     best_params = [param for params in best_params for param in params]
     return best_params
 
-def regression_procedure(proxy_order, input_path, label_path, use_gpu):
+def regression_procedure(proxy_order, input_path, label_path, use_gpu, cfa):
 
     # Constants
     param_out_dir = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_PATH, c.STAGE_3_PARAM_DIR)
@@ -183,7 +183,7 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu):
         dtype = torch.cuda.FloatTensor
 
     # Differentiable ISP
-    isp = ProxyPipeline(proxy_order, use_gpu)
+    isp = ProxyPipeline(proxy_order, use_gpu, cfa)
 
     # Creating any directories that do nto already exist
     if not os.path.exists(param_out_dir):
@@ -304,9 +304,9 @@ with open(config_path, 'r') as file:
 # Generating data
 if not skip_data:
     print("Generating data.")
-    generate_pipeline(proxy_order, input_path, label_path)
+    cfa = generate_pipeline(proxy_order, input_path, label_path)
 else:
     print("Skipping data generation.")
 
 # Running regression procedure
-regression_procedure(proxy_order, input_path, label_path, use_gpu)
+regression_procedure(proxy_order, input_path, label_path, use_gpu, cfa)

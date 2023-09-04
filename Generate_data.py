@@ -9,6 +9,7 @@ import PyDarktable as dt
 from utils.npy_convert import convert
 from utils.lhs import lhs
 from utils.misc import get_possible_values, sort_params
+from utils.extract_RAW import get_cfa
 
 class ParamSamplerIterator():
     '''
@@ -247,10 +248,12 @@ def generate_pipeline(proxy_order, input_path, label_path, dng_path=None):
         dng_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_DNG_PATH)
     src_images = os.listdir(dng_path)
 
+    cfa = None
     for image in src_images:
 
         # Getting path of individual source DNG file
         src_path = os.path.join(dng_path, image)
+        cfa = get_cfa(src_path)
 
         # Extracting necessary params from the source image
         raw_prepare_params, temperature_params = dt.read_dng_params(src_path)
@@ -297,6 +300,7 @@ def generate_pipeline(proxy_order, input_path, label_path, dng_path=None):
         dt.pfm_to_tif(tapouts[0], input_file_path)
         os.remove(tapouts[0])
     print('Pipeline images generated.')
+    return cfa
 
 def generate_finetune(proxy_type, param, finetune, param_finetune, possible_values, possible_values_finetune, num):
     '''
