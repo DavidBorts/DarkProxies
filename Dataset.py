@@ -298,15 +298,16 @@ class Darktable_Dataset(Dataset):
         
         gt_image_name = self.image_name_list[index].strip('\n')
         input_image_name = gt_image_name.split(".")[0] + '.tif'
-        if self.sampler: # colorin/colorout/demosaic
+        if self.sampler or self.stage == 3: # colorin/colorout/demosaic
             input_image_name = gt_image_name
 
         # Loading in input tensor
+        input_image_path = os.path.join(self.input_image_dir, input_image_name)
         try:
-            input_image = Image.open(os.path.join(self.input_image_dir, input_image_name))
+            input_image = Image.open(input_image_path)
             input_image = ImageOps.exif_transpose(input_image)
         except:
-            input_image = imageio.imread(os.path.join(self.input_image_dir, input_image_name))
+            input_image = imageio.imread(input_image_path)
         
         # Reformatting input tensor
         if self.transform is not None:
