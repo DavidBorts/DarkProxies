@@ -263,7 +263,7 @@ def generate_pipeline(proxy_order, input_path, label_path, dng_path=None):
             proxy_type = proxy_name.split('_')[0]
             proxy_type_list.append(proxy_type)
             params = params.split('_')
-            param_names_list.append(sort_params(params))
+            param_names_list.append(sort_params(proxy_type, params))
             sampled_values_list.append(lhs(get_possible_values(proxy_type, params), 1))
 
         # Assembling a dictionary of all of the parameters to apply to the source DNG in order
