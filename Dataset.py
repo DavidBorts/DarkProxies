@@ -31,12 +31,13 @@ def pack_input_demosaic(image, cfa):
     Packs image tensor into a smaller 4-channel image. For neural demosaicing.
     '''
     mosaic = torch.squeeze(image, 0)
-    mosaic = torch.unsqueeze(mosaic, 2)
     try:
+        mosaic = torch.unsqueeze(mosaic, 2)
         H, W, _ = mosaic.size()
     except:
+        mosaic = torch.moveaxis(mosaic, -1, 0)
         print(mosaic.size())
-        _, H, W, _ = mosaic.size()
+        H, W, _ = mosaic.size()
 
     # Checking for 2x2 Bayer pattern
     if len(cfa) != 4:

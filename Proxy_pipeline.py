@@ -126,7 +126,7 @@ class ProxyPipeline:
             input = input_tensors[num]
 
             if num > 0 and self.proxy_types[num] == "demosaic":
-                input = pack_input_demosaic(input, self.cfa)
+                input = torch.unsqueeze(pack_input_demosaic(input, self.cfa), 0)
 
             output = model(input)
 
