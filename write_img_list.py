@@ -2,7 +2,7 @@ import sys
 import os
 
 import Constants as c
-from misc import write_img_list
+from utils.misc import write_img_list
 
 name = sys.argv[1]
 
