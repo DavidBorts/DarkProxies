@@ -280,7 +280,7 @@ def generate_pipeline(proxy_order, input_path, label_path, dng_path=None):
             print(f"sample: {str(proxy_type)} - {str(param_names)} - {str(sampled_values)}")
             if param_names is not None:
                 params_dict = dt.get_params_dict(proxy_type, param_names, sampled_values, None, None, dict=params_dict)
-        print('Assembled params dict: \n' + params_dict)
+        print('Assembled params dict: \n' + str(params_dict))
 
         # Rendering an image with Darktable
         input_file_path = os.path.join(input_path, f'{image}_pipeline')
