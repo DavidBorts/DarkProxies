@@ -17,8 +17,12 @@ def lhs(possible_values, num):
 
     dim = len(possible_values)
     if dim < 2:
-        raise ValueError("This method is only implemented for \
-                         parameter spaces of dimension 2 or greater.")
+        print("WARNING: This method is only implemented for \
+                         parameter spaces of dimension 2 or greater. \
+                        Returning np.random.uniform samples.")
+        min = possible_values[0]
+        max = possible_values[1]
+        return np.array([np.random.uniform(min, max, num)])
     
     # List of lists to store sampled values
     values = []
