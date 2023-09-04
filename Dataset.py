@@ -90,9 +90,10 @@ class Darktable_Dataset(Dataset):
         self.gt_list = gt_list
         self.proxy_order = proxy_order
 
-        self.param_lower_bounds = np.array([range[0] for range in param_ranges])
-        self.param_upper_bounds = np.array([range[1] for range in param_ranges])
-        self.param_diff = self.param_upper_bounds - self.param_lower_bounds
+        if param_ranges is not None:
+            self.param_lower_bounds = np.array([range[0] for range in param_ranges])
+            self.param_upper_bounds = np.array([range[1] for range in param_ranges])
+            self.param_diff = self.param_upper_bounds - self.param_lower_bounds
         
         # Configuring input & output directories
         if input_dir is None:
