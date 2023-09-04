@@ -35,7 +35,7 @@ def pack_input_demosaic(image, cfa):
         mosaic = torch.unsqueeze(mosaic, 2)
         H, W, _ = mosaic.size()
     else:
-        mosaic = torch.moveaxis(mosaic, -1, 0)
+        mosaic = torch.moveaxis(mosaic, 0, -1)
         print(mosaic.size())
         H, W, _ = mosaic.size()
 
