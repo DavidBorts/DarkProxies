@@ -15,6 +15,7 @@ from torch.utils.tensorboard import SummaryWriter
 from Models import UNet, ChenNet, DemosaicNet, train_model, load_checkpoint, eval
 from Dataset import Darktable_Dataset
 from Loss_functions import losses
+from utils.misc import get_num_channels
 import Constants as c
 
 # Constants
@@ -26,47 +27,6 @@ use_checkpoint = True
 learning_rate = 0.0001 # was 0.0001
 gamma = 0.1 # was 0.1
 step_size = 1000 # was 7
-
-def get_num_channels(proxy_type, possible_params, append_params):
-    '''
-    TODO: add comment
-    '''
-    # Bayer mosaics are always unpacked into 4 channels,
-    # with no appended parameter channels
-    if proxy_type == "demosaic":
-        return 4, 0, 12
-
-    num_input_channels = c.NUM_IMAGE_CHANNEL # input tensor
-    if proxy_type in c.SINGLE_IMAGE_CHANNEL:
-        num_input_channels = 1
-    params_size = (len(possible_params), c.IMG_SIZE, c.IMG_SIZE) # tuple size of the appended params
-    num_output_channels = num_input_channels
-
-    # Depending on c.EMBEDDING_TYPE, some number of parameter
-    # channels might be appended to the input tensor
-    #TODO: move this into Models.py
-    if append_params:
-        num_params = len(possible_params)
-        embedding_type = c.EMBEDDING_TYPES[c.EMBEDDING_TYPE]
-
-        if embedding_type == "none":
-            num_input_channels += len(possible_params)
-
-        elif embedding_type == "linear_to_channel":
-            channels = int(np.ceil(float(num_params) / c.EMBEDDING_RATIO))
-            if c.EMBED_TO_SINGLE:
-                channels = 1
-            params_size = (c.PROXY_MODEL_BATCH_SIZE, channels, int(c.IMG_SIZE/16), int(c.IMG_SIZE/16))
-            num_input_channels += channels
-
-        else: # embedding type is "linear_to_value"
-            final = int(np.ceil(num_params*1.0 / c.EMBEDDING_RATIO))
-            if c.EMBED_TO_SINGLE:
-                final = 1
-            params_size = (c.PROXY_MODEL_BATCH_SIZE, final, c.IMG_SIZE, c.IMG_SIZE)
-            num_input_channels += final
-    return num_input_channels, params_size, num_output_channels
-
 
 def run_training_procedure(model_out_dir, batch_size, num_epochs, use_gpu, possible_params, proxy_type, params, append_params, name, dataset_name, gt_list=None):
     '''

@@ -52,7 +52,7 @@ import Constants as c
 from Dataset import Darktable_Dataset
 from Generate_data import generate_pipeline
 from Models import UNet, ChenNet, DemosaicNet, generic_load
-from utils.misc import get_possible_values
+from utils.misc import get_possible_values, get_num_channels
 
 class ProxyPipeline:
     def __init__(self, proxies_list, use_gpu):
@@ -151,18 +151,25 @@ def load_model(proxy_type, params, name, possible_values, weight_out_dir, use_gp
     print(f'Using model weights from {final_weights}.')
 
     # Loading the weights into a Unet
-    num_input_channels = c.NUM_IMAGE_CHANNEL + len(possible_values)
-    add_params = proxy_type not in c.NO_PARAMS
+    append_params = proxy_type not in c.NO_PARAMS
+    num_input_channels, params_size, num_output_channels = get_num_channels(proxy_type, possible_values, append_params)
     state_dict = generic_load(weight_out_dir, final_weights)
     if proxy_type == "demosaic":
         model = DemosaicNet(num_input_channels=4, num_output_channels=12,
                             skip_connect=False, clip_output=True)
     else:
-        model = UNet(
-                    num_input_channels=num_input_channels,
-                    num_output_channels=c.NUM_IMAGE_CHANNEL,
-                    add_params=add_params
-                    )
+        print("model: UNET")
+        if append_params:
+            model = UNet(
+                        num_input_channels=num_input_channels,
+                        num_output_channels=num_output_channels,
+                        add_params=append_params, num_params=len(possible_values),
+                        params_size=params_size)
+        else: 
+            model = UNet(
+                        num_input_channels=num_input_channels,
+                        num_output_channels=num_output_channels,
+                        add_params=append_params)
     model.load_state_dict(state_dict)
     
     # Locking the weights in the U-Net

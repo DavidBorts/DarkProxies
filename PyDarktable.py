@@ -703,7 +703,7 @@ def extract_pfm(log, module):
                 pfm_files = os.listdir(tmp_dir)
             if type(module) is list:
                 module_tapouts = [os.path.join(tmp_dir, pfm_file) for pfm_file in pfm_files 
-                              if (f"{str(module[0])}_cpu_in" in pfm_file or f"{str(module[1])}_cpu_out" in pfm_file)
+                              if (f"{str(module[0])}_cpu_in" in pfm_file or f"{str(module[-1])}_cpu_out" in pfm_file)
                               and "diff" not in pfm_file]
             else:
                 module_tapouts = [os.path.join(tmp_dir, pfm_file) for pfm_file in pfm_files 
@@ -734,7 +734,7 @@ def render(src_dng_path, dst_path, pipe_stage_flags, tapout, module=None):
     ]
     if tapout:
         if type(module) is list:
-            args += ["--dump-pipe", str(module[0]), str(module[-1])]
+            args += ["--dump-pipe", str(module[0]) + ',' + str(module[-1])]
         else:
             args += ["--dump-pipe", str(module)]
     print('Running:\n', ' '.join(args), '\n')
