@@ -32,7 +32,11 @@ def pack_input_demosaic(image, cfa):
     '''
     mosaic = torch.squeeze(image, 0)
     mosaic = torch.unsqueeze(mosaic, 2)
-    H, W, _ = mosaic.size()
+    try:
+        H, W, _ = mosaic.size()
+    except:
+        print(mosaic.size())
+        _, H, W, _ = mosaic.size()
 
     # Checking for 2x2 Bayer pattern
     if len(cfa) != 4:
