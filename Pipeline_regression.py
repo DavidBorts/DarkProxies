@@ -103,7 +103,7 @@ def regress(
                 input_tensor = torch.tensor((), \
                            dtype=torch.float).new_ones((1 , \
                             num_img_channels[proxy_num], \
-                                width, width)).type(dtype)
+                                c.IMG_SIZE, c.IMG_SIZE)).type(dtype)
             
             # Fill in hyper-parameter guesses
             if param_tensors[proxy_num] is not None:
