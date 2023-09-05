@@ -125,6 +125,7 @@ class ProxyPipeline:
             model = self.models[num]
             input = input_tensors[num]
 
+            # Packing demosaic input tensor into 4 X H/2 X W/2 shape
             if num > 0 and self.proxy_types[num] == "demosaic":
                 input = torch.unsqueeze(pack_input_demosaic(input, self.cfa), 0)
 
@@ -133,10 +134,9 @@ class ProxyPipeline:
             # Filling in the output of the previous proxy into the input tensor of the
             # following proxy
             if (num + 1) < self.num_proxies:
-                input_tensors[num + 1].data[:, 0:img_channels[num], :, :] = output
+                input_tensors[num + 1].data[:, 0:img_channels[num + 1], :, :] = output
 
             outputs.append(output)
-
         return outputs
 
 def load_model(proxy_type, params, name, possible_values, weight_out_dir, use_gpu):
