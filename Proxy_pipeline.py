@@ -69,6 +69,7 @@ class ProxyPipeline:
         params_lower_bounds_list = []
         params_diff_list = []
         img_channels_list = []
+        input_channels_list = []
         width_list = []
         for proxy_name, params in proxies_list:
 
@@ -87,12 +88,15 @@ class ProxyPipeline:
                 params_diff_list.append([values[1] - values[0] for values in possible_values])
             if proxy_type in c.SINGLE_IMAGE_CHANNEL:
                 img_channels_list.append(1)
-                width_list.append(c.IMG_SIZE)
-            elif proxy_type == "demosaic":
-                img_channels_list.append(4)
-                width_list.append(int(c.IMG_SIZE/2))
+                if proxy_type == "demosaic":
+                    input_channels_list.append(4)
+                    width_list.append(int(c.IMG_SIZE/2))
+                else:
+                    input_channels_list.append(1)
+                    width_list.append(c.IMG_SIZE)
             else:
                 img_channels_list.append(c.NUM_IMAGE_CHANNEL)
+                input_channels_list.append(c.NUM_IMAGE_CHANNEL)
                 width_list.append(c.IMG_SIZE)
 
             proxy_type = proxy_name
@@ -108,6 +112,7 @@ class ProxyPipeline:
         self.param_lower_bounds = params_lower_bounds_list #NOTE: this is a list of lists
         self.param_diffs = params_diff_list #NOTE: this is a list of lists
         self.img_channels = img_channels_list
+        self.input_channels = input_channels_list
         self.widths = width_list
     
     def process(self, orig_tensor, input_tensors):
@@ -115,7 +120,8 @@ class ProxyPipeline:
         img_channels = self.img_channels
 
         # Filling in the image for the input to the first proxy
-        input_tensors[0].data[:, 0:img_channels[0], :, :] = orig_tensor[:, 0:img_channels[0], :, :]
+        img_0_c = self.input_channels[0]
+        input_tensors[0].data[:, 0:img_0_c, :, :] = orig_tensor[:, 0:img_0_c, :, :]
 
         # Storing the pipeline outputs
         outputs = []

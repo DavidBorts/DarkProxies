@@ -74,7 +74,7 @@ def regress(
 
         scheduler.step()
 
-        num_input_channels = [num_img_channels + len(params) for num_img_channels, params in zip(isp.img_channels, best_params)]
+        num_input_channels = [num_img_channels + len(params) for num_img_channels, params in zip(isp.input_channels, best_params)]
         #num_input_channels = [c.NUM_IMAGE_CHANNEL + len(params) for params in best_params]
 
         # Fill in the best guess into the hyper-param tensor
@@ -100,7 +100,7 @@ def regress(
             
             # Fill in hyper-parameter guesses
             if param_tensors[proxy_num] is not None:
-                input_tensor[:, isp.img_channels[proxy_num]:, :, :] = param_tensors[proxy_num]
+                input_tensor[:, isp.input_channels[proxy_num]:, :, :] = param_tensors[proxy_num]
             #print(f"Input tensor #{proxy_num+1}, size: {str(input_tensor.size())}")
             input_tensors.append(input_tensor)
                 
