@@ -111,6 +111,8 @@ def regress(
                     input_tensor[:, isp.input_channels[proxy_num]:, :, :] = param_tensors[proxy_num]
                 else:
                     input_tensor[:, isp.img_channels[proxy_num]:, :, :] = param_tensors[proxy_num]
+            else:
+                input_tensor = Variable(input_tensor, requires_grad=True)
             #print(f"Input tensor #{proxy_num+1}, size: {str(input_tensor.size())}")
             input_tensors.append(input_tensor)
                 
