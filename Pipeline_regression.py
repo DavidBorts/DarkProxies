@@ -16,7 +16,8 @@ from Loss_functions import losses
 from Dataset import Darktable_Dataset
 from Proxy_pipeline import ProxyPipeline
 from Generate_data import generate_pipeline
-from utils.regression import initial_guess, decide, project_param_values
+from utils.regression import initial_guess, project_param_values
+from utils.extract_RAW import get_cfa
 
 # Constants
 image_root_dir = c.IMAGE_ROOT_DIR
@@ -307,6 +308,10 @@ if not skip_data:
     cfa = generate_pipeline(proxy_order, input_path, label_path)
 else:
     print("Skipping data generation.")
+    dng_path = os.path.join(c.IMAGE_ROOT_DIR, c.STAGE_3_DNG_PATH)
+    src_images = os.listdir(dng_path)
+    src_path = os.path.join(dng_path, src_images[0])
+    cfa = get_cfa(src_path)
 
 # Running regression procedure
 regression_procedure(proxy_order, input_path, label_path, use_gpu, cfa)
