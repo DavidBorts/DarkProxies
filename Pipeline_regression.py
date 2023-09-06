@@ -32,6 +32,15 @@ def regress(
             possible_values,
             ):
     
+    # Starting off with an initial guess
+    # NOTE: this is a list of lists
+    best_params = [initial_guess(vals) for vals in possible_values]
+    print('Initial Parameters: ')
+    print(best_params)
+    
+    num_input_channels = [num_img_channels + len(params) for num_img_channels, params in zip(isp.input_channels, best_params)]
+    num_img_channels = [num_img_channels + len(params) for num_img_channels, params in zip(isp.img_channels, best_params)]
+
     # Assemble list of pipeline input tensors and fill them in
     # with the best guess for all hyper-parameter channels
     # (Proxies with no params still need to be torch.Variables and should be 
@@ -67,12 +76,6 @@ def regress(
     else:	
         criterion = losses[c.STAGE_3_LOSS_FN]()
     
-    # Starting off with an initial guess
-    # NOTE: this is a list of lists
-    best_params = [initial_guess(vals) for vals in possible_values]
-    print('Initial Parameters: ')
-    print(best_params)
-    
     # Tracking loss
     loss = None
 
@@ -99,10 +102,6 @@ def regress(
     for i in range(num_iters):
 
         scheduler.step()
-
-        num_input_channels = [num_img_channels + len(params) for num_img_channels, params in zip(isp.input_channels, best_params)]
-        num_img_channels = [num_img_channels + len(params) for num_img_channels, params in zip(isp.img_channels, best_params)]
-        #num_input_channels = [c.NUM_IMAGE_CHANNEL + len(params) for params in best_params]
 
         # Fill in the best guess into the hyper-param tensor
         for param_tensor, params, lower_bounds, diffs in zip(param_tensors, best_params, isp.param_lower_bounds, isp.param_diffs):
