@@ -27,12 +27,38 @@ def regress(
             orig_tensor,
             tm_tensor,
             param_tensors,
-            optimizer,
-            scheduler,
             num_iters,
             dtype,
             possible_values,
             ):
+    
+    # Assemble list of pipeline input tensors and fill them in
+    # with the best guess for all hyper-parameter channels
+    # (Proxies with no params still need to be torch.Variables and should be 
+    # added to the optimizer)
+    input_tensors = []
+    input_tensors_grad = []
+    for proxy_num in range(isp.num_proxies):
+        width = isp.widths[proxy_num]
+        if proxy_num == 0:
+            input_tensor = torch.tensor((), \
+                        dtype=torch.float).new_ones((1 , \
+                            num_input_channels[proxy_num], \
+                                width, width)).type(dtype)
+        else:
+            input_tensor = torch.tensor((), \
+                        dtype=torch.float).new_ones((1 , \
+                        num_img_channels[proxy_num], \
+                            c.IMG_SIZE, c.IMG_SIZE)).type(dtype)
+        if param_tensors[proxy_num] is None:
+            input_tensor = Variable(input_tensor, requires_grad=True)
+            input_tensors_grad.append(input_tensor)
+        input_tensors.append(input_tensor)
+
+    # Optimizer/scheduler
+    optimizer = optim.Adam([param_tensor for param_tensor in param_tensors if param_tensor is not None] + 
+                           input_tensors_grad, lr=0.1)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.9)
 
     #loss
     criterion = None	
@@ -88,33 +114,14 @@ def regress(
                 param_tensor.data[:, param_idx, :, :] = param_normalized
             #print("Normalized param tensor:")
             #print(param_tensor)
-
-        # Assemble list of pipeline input tensors and fill them in
-        # with the best guess for all hyper-parameter channels
-        input_tensors = []
-        for proxy_num in range(isp.num_proxies):
-            width = isp.widths[proxy_num]
-            if proxy_num == 0:
-                input_tensor = torch.tensor((), \
-                            dtype=torch.float).new_ones((1 , \
-                                num_input_channels[proxy_num], \
-                                    width, width)).type(dtype)
-            else:
-                input_tensor = torch.tensor((), \
-                           dtype=torch.float).new_ones((1 , \
-                            num_img_channels[proxy_num], \
-                                c.IMG_SIZE, c.IMG_SIZE)).type(dtype)
             
-            # Fill in hyper-parameter guesses
+        # Fill in hyper-parameter guesses
+        for proxy_num, input_tensor in enumerate(input_tensors):
             if param_tensors[proxy_num] is not None:
                 if proxy_num == 0:
                     input_tensor[:, isp.input_channels[proxy_num]:, :, :] = param_tensors[proxy_num]
                 else:
                     input_tensor[:, isp.img_channels[proxy_num]:, :, :] = param_tensors[proxy_num]
-            else:
-                input_tensor = Variable(input_tensor, requires_grad=True)
-            #print(f"Input tensor #{proxy_num+1}, size: {str(input_tensor.size())}")
-            input_tensors.append(input_tensor)
                 
         # forward
         with torch.set_grad_enabled(True):
@@ -264,16 +271,11 @@ def regression_procedure(proxy_order, input_path, label_path, use_gpu, cfa):
         label_tensor.unsqueeze_(0)
         print("Input tensor size: " + str(orig_tensor.size()))
 
-        optimizer = optim.Adam([param_tensor for param_tensor in param_tensors if param_tensor is not None], lr=0.1)
-        scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.9)
-
         best_params_mat[:, index] = regress(
                                         isp,
                                         orig_tensor,
                                         label_tensor,
                                         param_tensors,
-                                        optimizer,
-                                        scheduler,
                                         num_iters,
                                         dtype,
                                         possible_values
