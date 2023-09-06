@@ -36,7 +36,6 @@ def pack_input_demosaic(image, cfa):
         H, W, _ = mosaic.size()
     else:
         mosaic = torch.moveaxis(mosaic, 0, -1)
-        print(mosaic.size())
         H, W, _ = mosaic.size()
 
     # Checking for 2x2 Bayer pattern
